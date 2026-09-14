@@ -7,6 +7,7 @@
         <item name="android:statusBarColor">@color/transparent</item>
         <item name="android:navigationBarColor">@color/transparent</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowBackground">@color/background</item>
         <item name="bottomSheetDialogTheme">@style/BottomSheetDialog</item>
     </style>
 
@@ -51,11 +52,12 @@
     </style>
 
     <style name="Indicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <item name="android:color">@color/indicator</item>
+        <item name="android:color">@color/primary</item>
     </style>
 
     <style name="ToolbarTextAppearance" parent="TextAppearance.Material3.TitleLarge">
-        <item name="android:textSize">20sp</item>
+        <item name="android:textSize">24sp</item>
+        <item name="android:textStyle">bold</item>
         <item name="android:textColor">@color/white</item>
         <item name="titleTextColor">@color/white</item>
     </style>

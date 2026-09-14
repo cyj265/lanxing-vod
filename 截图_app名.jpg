@@ -1,0 +1,81 @@
+Skip to content
+cyj265
+lanxing-vod
+Repository navigation
+Code
+Issues
+Pull requests
+Agents
+Actions
+Projects
+Wiki
+Security and quality
+More
+items
+Actions: cyj265/lanxing-vod
+Actions
+New workflow
+All workflows
+构建揽星影视 APK
+Management
+Caches
+Attestations
+Runners
+Usage metrics
+Performance metrics
+All workflows
+Showing runs from all workflows
+12 workflow runs
+Workflow
+Event
+Status
+Branch
+Actor
+移除误提交的敏感文件与本地脚本，加入 .gitignore
+构建揽星影视 APK #5: Commit b101da0 pushed by cyj265
+	main	
+ 4m 12s
+回滚 UI 特色化改动，恢复蓝色主题版（用户反馈新 UI 不如原版）
+构建揽星影视 APK #4: Commit 39a9768 pushed by cyj265
+	main	
+ 4m 54s
+构建揽星影视 APK
+构建揽星影视 APK #3: Manually run by cyj265
+	main	
+ 4m 54s
+构建揽星影视 APK
+构建揽星影视 APK #2: Manually run by cyj265
+	main	
+ 2m 0s
+揽星影视 UI 特色化 + GitHub Actions 云端构建 + 签名容错
+构建揽星影视 APK #1: Commit 2e2aee2 pushed by cyj265
+	main	
+ 1m 44s
+feat: TVBox DEX 爬虫宿主运行时兼容层 + 中文路径编码
+Build APK #7: Commit bd33428 pushed by cyj265
+	main	
+ 2m 35s
+fix: 相对路径解析 + DEX 签名兼容 + 失败原因显示
+Build APK #6: Commit 074d818 pushed by cyj265
+	main	
+ 2m 46s
+fix: 支持图片藏配置（饭太硬类）+ 中文域名 IDN 转码
+Build APK #5: Commit 48f94bc pushed by cyj265
+	main	
+ 3m 4s
+feat: 更新下载通知栏进度条 + Android13 通知权限
+Build APK #4: Commit b2ae9b0 pushed by cyj265
+	main	
+ 2m 35s
+docs: 移除推荐接口列表
+Build APK #3: Commit fcf470b pushed by cyj265
+	main	
+ 2m 23s
+feat: minSdk30 + TVBox spider engine (QuickJS+DEX) + 站点选择 UI
+Build APK #2: Commit 7e7c19a pushed by cyj265
+	main	
+ 2m 47s
+fix: 补推 CI workflow（首次推送遗漏）
+Build APK #1: Commit 5b4544d pushed by cyj265
+	main	
+ 3m 37s

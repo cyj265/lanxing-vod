@@ -4,14 +4,14 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="wrap_content"
     android:layout_height="wrap_content"
-    android:layout_margin="8dp"
+    android:layout_margin="6dp"
     android:foreground="@drawable/shape_vod">
 
     <com.google.android.material.imageview.ShapeableImageView
         android:id="@+id/image"
         android:layout_width="match_parent"
         android:layout_height="80dp"
-        android:background="@color/black_20"
+        android:background="@color/surface_variant"
         app:shapeAppearanceOverlay="@style/Vod.Grid" />
 
     <com.google.android.material.imageview.ShapeableImageView
@@ -60,7 +60,7 @@
         android:layout_alignStart="@+id/image"
         android:layout_alignEnd="@+id/image"
         android:background="@color/black_20"
-        app:indicatorColor="@color/white"
+        app:indicatorColor="@color/primary"
         app:trackColor="@color/transparent"
         app:trackStopIndicatorSize="0dp" />
 

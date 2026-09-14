@@ -3,8 +3,8 @@
     android:color="?attr/colorControlHighlight">
     <item>
         <shape android:shape="rectangle">
-            <solid android:color="@color/black_40" />
-            <corners android:radius="28dp" />
+            <solid android:color="@color/primary" />
+            <corners android:radius="18dp" />
             <padding
                 android:bottom="6dp"
                 android:left="12dp"
