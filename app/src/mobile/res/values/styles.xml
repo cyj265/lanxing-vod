@@ -51,17 +51,13 @@
     </style>
 
     <style name="Indicator" parent="Widget.Material3.BottomNavigationView.ActiveIndicator">
-        <item name="android:color">@color/accent</item>
-        <item name="shapeAppearance">@style/IndicatorShape</item>
+        <item name="android:color">@color/indicator</item>
     </style>
-
-    <style name="IndicatorShape" parent="ShapeAppearance.Material3.Corner.Full"/>
 
     <style name="ToolbarTextAppearance" parent="TextAppearance.Material3.TitleLarge">
         <item name="android:textSize">20sp</item>
-        <item name="android:textStyle">bold</item>
-        <item name="android:textColor">#F7C948</item>
-        <item name="titleTextColor">#F7C948</item>
+        <item name="android:textColor">@color/white</item>
+        <item name="titleTextColor">@color/white</item>
     </style>
 
 </resources>

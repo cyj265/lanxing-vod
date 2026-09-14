@@ -8,6 +8,6 @@
     android:layout_marginEnd="8dp"
     android:background="@drawable/selector_item_round"
     android:gravity="center"
-    android:textColor="@color/selector_type_text"
+    android:textColor="@color/white"
     android:textSize="14sp"
     tools:text="電影" />
