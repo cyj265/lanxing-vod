@@ -26,7 +26,7 @@
             android:id="@+id/navigation"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:background="@android:color/transparent"
+            android:background="@color/nav_glass"
             app:itemActiveIndicatorStyle="@style/Indicator"
             app:itemIconTint="@color/nav"
             app:itemTextColor="@color/nav"
