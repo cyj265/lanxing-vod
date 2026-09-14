@@ -50,7 +50,7 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     protected boolean customWall() {
-        return true;
+        return false;
     }
 
     protected void initView(Bundle savedInstanceState) {

@@ -5,8 +5,8 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_gradient"
-    android:fitsSystemWindows="true"
-    android:orientation="vertical">
+    android:orientation="vertical"
+    android:paddingBottom="90dp">
 
     <com.google.android.material.appbar.MaterialToolbar
         android:id="@+id/toolbar"
@@ -14,7 +14,6 @@
         android:layout_height="?attr/actionBarSize"
         android:background="@color/surface_variant"
         app:menu="@menu/menu_history"
-        app:navigationIconTint="@android:color/white"
         app:title="@string/app_history"
         app:titleTextAppearance="@style/ToolbarTextAppearance" />
 

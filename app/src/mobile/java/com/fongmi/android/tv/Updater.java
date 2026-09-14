@@ -55,7 +55,7 @@ public class Updater implements Download.Callback {
         try {
             String[] parts = version.replace("v", "").split("\\.");
             int code = 0;
-            for (String part : parts) code = code * 100 + Integer.parseInt(part);
+            for (String part : parts) code = code * 10 + Integer.parseInt(part);
             return code;
         } catch (Exception e) {
             return 0;
