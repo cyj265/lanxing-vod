@@ -259,7 +259,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         if (!mBinding.navigation.getMenu().findItem(R.id.vod).isVisible()) {
             setNavigation();
         } else if (mManager.isVisible(3)) {
-            hideNav();
+            showNav();
             change(2);
         } else if (mManager.isVisible(2)) {
             showNav();
