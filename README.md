@@ -1,13 +1,13 @@
 # 揽星影视
 
-手机端 TVBox 类影视播放器，开箱即用饭太硬等 DEX 爬虫源，支持点播与直播。
+手机端 TVBox 类影视播放器，开箱即用 TVBox 类接口源，支持点播与直播。
 
 基于 [FongMi/TV](https://github.com/FongMi/TV) 改造，适配手机端（mobile flavor）。
 
 ## 功能
 
 - 点播 / 直播 / 搜索 / 收藏 / 历史记录
-- 兼容 TVBox JSON 接口协议与饭太硬类 DEX 爬虫源
+- 兼容 TVBox JSON 接口协议与 DEX 爬虫源
 - 弹幕、投屏（DLNA）、画中画、倍速、字幕
 - 硬解 / 软解切换，HLS / DASH / RTSP 全格式支持
 

@@ -1,8 +1,8 @@
 <resources>
 
-    <color name="primary">@color/blue_500</color>
-    <color name="primaryDark">@color/blue_700</color>
-    <color name="accent">@color/blue_500</color>
+    <color name="primary">#3D8BFF</color>
+    <color name="primaryDark">#1F5CC8</color>
+    <color name="accent">#3D8BFF</color>
     <color name="indicator">@color/white_80</color>
 
 </resources>

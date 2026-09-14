@@ -24,7 +24,23 @@
 -keep class okio.** { *; }
 -keep class okhttp3.** { *; }
 
+# Media3 反射加载类（DefaultMediaSourceFactory 按类名反射）
+-keep class androidx.media3.exoplayer.hls.** { *; }
+-keep class androidx.media3.exoplayer.dash.** { *; }
+-keep class androidx.media3.exoplayer.rtsp.** { *; }
+-keep class androidx.media3.exoplayer.smoothstreaming.** { *; }
+-keep class androidx.media3.exoplayer.source.DefaultMediaSourceFactory { *; }
+
+# CatVod 全包（DEX 爬虫宿主反射调用）
+-keep class com.github.catvod.** { *; }
+
+# EventBus 订阅方法
+-keepclassmembers class * {
+    @org.greenrobot.eventbus.Subscribe <methods>;
+}
+
 # CatVod
+
 -keep class com.github.catvod.Proxy { *; }
 -keep class com.github.catvod.crawler.** { *; }
 -keep class * extends com.github.catvod.crawler.Spider
