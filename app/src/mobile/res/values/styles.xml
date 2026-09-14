@@ -1,13 +1,13 @@
 <resources>
 
-    <style name="Theme.Base" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.Base" parent="Theme.Material3.Dark.NoActionBar">
         <item name="colorAccent">@color/accent</item>
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryDark">@color/primaryDark</item>
         <item name="android:statusBarColor">@color/transparent</item>
         <item name="android:navigationBarColor">@color/transparent</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
-        <item name="android:windowBackground">@color/background</item>
+        <item name="android:windowBackground">@drawable/bg_gradient</item>
         <item name="bottomSheetDialogTheme">@style/BottomSheetDialog</item>
     </style>
 
@@ -32,7 +32,7 @@
         <item name="android:textSize">14sp</item>
     </style>
 
-    <style name="BottomSheetDialog" parent="Theme.Material3.DayNight.BottomSheetDialog">
+    <style name="BottomSheetDialog" parent="Theme.Material3.Dark.BottomSheetDialog">
         <item name="colorAccent">@color/accent</item>
         <item name="colorPrimary">@color/primary</item>
         <item name="colorPrimaryDark">@color/primaryDark</item>
@@ -40,6 +40,11 @@
         <item name="android:backgroundDimEnabled">false</item>
         <item name="android:statusBarColor">@color/transparent</item>
         <item name="android:navigationBarColor">@color/transparent</item>
+        <item name="android:colorBackground">@color/surface</item>
+        <item name="colorSurface">@color/surface</item>
+        <item name="colorSurfaceContainer">@color/surface_variant</item>
+        <item name="colorSurfaceContainerLow">@color/surface_variant</item>
+        <item name="colorSurfaceContainerHigh">@color/surface_variant</item>
         <item name="bottomSheetStyle">@style/ModalBottomSheetDialog</item>
     </style>
 

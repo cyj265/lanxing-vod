@@ -16,8 +16,8 @@ android {
         minSdk 30
         //noinspection ExpiredTargetSdkVersion
         targetSdk 30
-        versionCode 529
-        versionName "5.2.9"
+        versionCode 530
+        versionName "5.3.0"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
@@ -141,6 +141,7 @@ dependencies {
     implementation 'cat.ereza:customactivityoncrash:2.4.0'
     implementation 'com.airbnb.android:lottie:6.7.1'
     implementation 'com.github.bassaer:materialdesigncolors:1.0.0'
+    implementation 'com.github.Dimezis:BlurView:version-2.0.6'
     implementation 'com.github.bumptech.glide:glide:' + glideVersion
     implementation 'com.github.bumptech.glide:annotations:' + glideVersion
     implementation 'com.github.bumptech.glide:okhttp3-integration:' + glideVersion

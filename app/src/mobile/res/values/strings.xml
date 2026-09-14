@@ -59,4 +59,5 @@
         <item>PiP</item>
     </string-array>
 
+    <string name="search_hint">Search movies / sites / actors</string>
 </resources>

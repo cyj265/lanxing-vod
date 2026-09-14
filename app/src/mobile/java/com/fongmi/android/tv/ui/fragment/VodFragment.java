@@ -102,6 +102,7 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
     @Override
     protected void initEvent() {
         mBinding.top.setOnClickListener(this::onTop);
+        mBinding.searchBar.setOnClickListener(v -> SearchActivity.start(requireActivity()));
         mBinding.logo.setOnClickListener(this::onLogo);
         mBinding.link.setOnClickListener(this::onLink);
         mBinding.title.setOnClickListener(this::onSite);
@@ -191,7 +192,6 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
 
     private boolean onMenuItemClick(MenuItem item) {
         if (item.getItemId() == R.id.keep) KeepActivity.start(requireActivity());
-        else if (item.getItemId() == R.id.search) SearchActivity.start(requireActivity());
         else if (item.getItemId() == R.id.history) HistoryActivity.start(requireActivity());
         return true;
     }

@@ -21,6 +21,7 @@ import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Path;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
@@ -29,7 +30,6 @@ import java.util.Locale;
 public class Updater implements Download.Callback {
 
     private DialogUpdateBinding binding;
-    private final Download download;
     private AlertDialog dialog;
 
     private File getFile() {
@@ -37,20 +37,36 @@ public class Updater implements Download.Callback {
     }
 
     private String getJson() {
-        return Github.getJson(BuildConfig.FLAVOR_mode);
+        return Github.RELEASE;
     }
 
-    private String getApk() {
-        return Github.getApk(BuildConfig.FLAVOR_mode + "-" + BuildConfig.FLAVOR_abi);
+    private String getApk(JSONObject object) {
+        JSONArray assets = object.optJSONArray("assets");
+        if (assets == null) return null;
+        for (int i = 0; i < assets.length(); i++) {
+            JSONObject asset = assets.optJSONObject(i);
+            String name = asset == null ? "" : asset.optString("name");
+            if (name.contains("arm64") && name.endsWith(".apk")) return asset.optString("browser_download_url");
+        }
+        return null;
+    }
+
+    private int getCode(String version) {
+        try {
+            String[] parts = version.replace("v", "").split("\\.");
+            int code = 0;
+            for (String part : parts) code = code * 100 + Integer.parseInt(part);
+            return code;
+        } catch (Exception e) {
+            return 0;
+        }
     }
 
     public static Updater create() {
         return new Updater();
     }
 
-    public Updater() {
-        this.download = Download.create(getApk(), getFile());
-    }
+    private Download download;
 
     public Updater force() {
         Notify.show(R.string.update_check);
@@ -71,16 +87,18 @@ public class Updater implements Download.Callback {
     private void doInBackground(Activity activity) {
         try {
             JSONObject object = new JSONObject(OkHttp.string(getJson()));
-            String name = object.optString("name");
-            String desc = object.optString("desc");
-            int code = object.optInt("code");
-            if (code > BuildConfig.VERSION_CODE) App.post(() -> show(activity, name, desc));
+            String name = object.optString("tag_name");
+            String desc = object.optString("body");
+            String apk = getApk(object);
+            int code = getCode(name);
+            if (code > BuildConfig.VERSION_CODE && apk != null) App.post(() -> show(activity, name, desc, apk));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void show(Activity activity, String version, String desc) {
+    private void show(Activity activity, String version, String desc, String apk) {
+        this.download = Download.create(apk, getFile());
         binding = DialogUpdateBinding.inflate(LayoutInflater.from(activity));
         check().create(activity, ResUtil.getString(R.string.update_version, version)).show();
         dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(this::confirm);
@@ -94,7 +112,7 @@ public class Updater implements Download.Callback {
 
     private void cancel(View view) {
         Setting.putUpdate(false);
-        download.cancel();
+        if (download != null) download.cancel();
         dismiss();
     }
 
@@ -112,7 +130,7 @@ public class Updater implements Download.Callback {
 
     @Override
     public void progress(int progress) {
-        dialog.getButton(DialogInterface.BUTTON_POSITIVE).setText(String.format(Locale.getDefault(), "%1$d%%", progress));
+        if (dialog != null) dialog.getButton(DialogInterface.BUTTON_POSITIVE).setText(String.format(Locale.getDefault(), "%1$d%%", progress));
     }
 
     @Override

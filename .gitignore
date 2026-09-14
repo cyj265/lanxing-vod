@@ -30,3 +30,8 @@ secrets-values.txt
 
 .git-rewrite/
 *.jpg
+
+# 本地分析临时文件
+frames*.json
+jitpack_rbv.json
+frames/

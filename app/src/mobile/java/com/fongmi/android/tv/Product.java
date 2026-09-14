@@ -16,7 +16,7 @@ public class Product {
     public static int getColumn(Context context) {
         int count = ResUtil.isLand(context) ? 7 : 4;
         count = count + (ResUtil.isPad() ? 1 : 0);
-        return Math.abs(Setting.getSize() - count);
+        return Math.max(1, count - 1 - Setting.getSize());
     }
 
     public static int getColumn(Context context, Style style) {
@@ -29,8 +29,8 @@ public class Product {
 
     public static int[] getSpec(Context context, Style style) {
         int column = getColumn(context, style);
-        int space = ResUtil.dp2px(32) + ResUtil.dp2px(16 * (column - 1)) + getCutout(context);
-        if (style.isOval()) space += ResUtil.dp2px(column * 16);
+        int space = ResUtil.dp2px(32) + ResUtil.dp2px(12 * (column - 1)) + getCutout(context);
+        if (style.isOval()) space += ResUtil.dp2px(column * 10);
         return getSpec(context, space, column, style);
     }
 

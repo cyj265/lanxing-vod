@@ -59,4 +59,5 @@
         <item>画中画</item>
     </string-array>
 
+    <string name="search_hint">搜索影片 / 站点 / 演员</string>
 </resources>

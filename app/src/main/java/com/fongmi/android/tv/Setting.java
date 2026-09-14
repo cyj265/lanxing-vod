@@ -75,11 +75,11 @@ public class Setting {
     }
 
     public static int getSize() {
-        return Prefers.getInt("size", 2);
+        return Prefers.getInt("size_v2", 1);
     }
 
     public static void putSize(int size) {
-        Prefers.put("size", size);
+        Prefers.put("size_v2", size);
     }
 
     public static int getScale() {

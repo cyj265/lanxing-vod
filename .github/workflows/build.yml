@@ -1,5 +1,8 @@
 name: 构建揽星影视 APK
 
+permissions:
+  contents: write
+
 on:
   push:
     branches: [ main ]
@@ -52,3 +55,20 @@ jobs:
           name: 揽星影视-release
           path: app/build/outputs/apk/mobileArm64_v8a/release/*.apk
           if-no-files-found: error
+
+      - name: 读取版本号
+        id: ver
+        run: |
+          echo "name=$(grep -oP 'versionName \"\K[^"]+' app/build.gradle)" >> $GITHUB_OUTPUT
+
+      - name: 发布 GitHub Release（app 内一键更新）
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.name }}
+          name: 揽星影视 v${{ steps.ver.outputs.name }}
+          body: |
+            自动构建发布
+            更新内容见仓库提交记录
+          files: app/build/outputs/apk/mobileArm64_v8a/release/mobile-arm64_v8a.apk
+          generate_release_notes: false
+          fail_on_unmatched_files: true

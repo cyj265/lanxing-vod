@@ -4,7 +4,15 @@ import android.app.PendingIntent;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.os.Bundle;
+import android.graphics.Outline;
+import android.os.Build;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewOutlineProvider;
+
+import eightbitlab.com.blurview.BlurAlgorithm;
+import eightbitlab.com.blurview.RenderEffectBlur;
+import eightbitlab.com.blurview.RenderScriptBlur;
 import android.view.View;
 
 import androidx.annotation.NonNull;
@@ -82,8 +90,29 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
 
     @Override
     protected void initEvent() {
+        mBinding.navigation.setLabelVisibilityMode(NavigationBarView.LABEL_VISIBILITY_LABELED);
         mBinding.navigation.setOnItemSelectedListener(this);
         mBinding.navigation.findViewById(R.id.live).setOnLongClickListener(this::addShortcut);
+        initBlur();
+    }
+
+    private void initBlur() {
+        try {
+            BlurAlgorithm algorithm = Build.VERSION.SDK_INT >= 31 ? new RenderEffectBlur() : new RenderScriptBlur(this);
+            mBinding.blurView.setupWith(findViewById(android.R.id.content), algorithm)
+                    .setBlurRadius(20f)
+                    .setBlurAutoUpdate(true);
+            int radius = (int) (26 * getResources().getDisplayMetrics().density);
+            mBinding.blurView.setOutlineProvider(new ViewOutlineProvider() {
+                @Override
+                public void getOutline(View view, Outline outline) {
+                    outline.setRoundRect(0, 0, view.getWidth(), view.getHeight(), radius);
+                }
+            });
+            mBinding.blurView.setClipToOutline(true);
+        } catch (Exception e) {
+            // 模糊初始化失败时透明导航兜底，不影响使用
+        }
     }
 
     private void checkAction(Intent intent) {
