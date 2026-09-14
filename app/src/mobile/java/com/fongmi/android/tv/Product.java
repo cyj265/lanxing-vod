@@ -14,7 +14,7 @@ public class Product {
     }
 
     public static int getColumn(Context context) {
-        int count = ResUtil.isLand(context) ? 7 : 5;
+        int count = ResUtil.isLand(context) ? 7 : 4;
         count = count + (ResUtil.isPad() ? 1 : 0);
         return Math.abs(Setting.getSize() - count);
     }

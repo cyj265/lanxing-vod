@@ -62,7 +62,9 @@ public class TypeFragment extends BaseFragment implements CustomScroller.Callbac
     }
 
     private Style getStyle() {
-        return isFolder() ? Style.list() : getSite().getStyle(getArguments().getParcelable("style"));
+        if (isFolder()) return Style.list();
+        Style style = getSite().getStyle(getArguments().getParcelable("style"));
+        return style.isRect() ? Style.oval() : style;
     }
 
     private HashMap<String, String> getExtend() {
