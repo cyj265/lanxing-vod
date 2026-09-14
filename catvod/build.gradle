@@ -1,0 +1,48 @@
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    namespace 'com.github.catvod.crawler'
+
+    compileSdk {
+        version = release(36) {
+            it.minorApiLevel = 1
+        }
+    }
+
+    defaultConfig {
+        minSdk 24
+        targetSdk 36
+    }
+
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs_nio:2.1.5'
+    api 'androidx.annotation:annotation:1.9.1'
+    api 'androidx.preference:preference:1.2.1'
+    api 'androidx.startup:startup-runtime:1.2.0'
+    api 'com.github.thegrizzlylabs:sardine-android:0.9'
+    api 'com.google.code.gson:gson:' + gsonVersion
+    api 'com.google.zxing:core:3.5.4'
+    api 'com.googlecode.juniversalchardet:juniversalchardet:1.0.3'
+    api 'com.hierynomus:smbj:0.14.0'
+    api 'com.orhanobut:logger:2.2.0'
+    api 'com.squareup.okhttp3:okhttp:' + okhttpVersion
+    api 'com.squareup.okhttp3:okhttp-dnsoverhttps:' + okhttpVersion
+    api 'com.squareup.okhttp3:logging-interceptor:' + okhttpVersion
+    api('com.google.guava:guava:33.5.0-android') {
+        exclude group: 'com.google.code.findbugs', module: 'jsr305'
+        exclude group: 'org.checkerframework', module: 'checker-compat-qual'
+        exclude group: 'org.checkerframework', module: 'checker-qual'
+        exclude group: 'com.google.errorprone', module: 'error_prone_annotations'
+        exclude group: 'com.google.j2objc', module: 'j2objc-annotations'
+        exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
+    }
+}

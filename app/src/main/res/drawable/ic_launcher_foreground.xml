@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 自适应图标前景：银白播放三角 + 金色星芒（108 画布，内容限制在中心 66 安全区内） -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 银白播放三角 -->
+    <path
+        android:fillColor="#F2F5FF"
+        android:pathData="M36,30 L80,54 L36,78 Z" />
+
+    <!-- 金色四角星 -->
+    <path
+        android:fillColor="#FFD36B"
+        android:pathData="M76,22 L79,30.5 L87.5,33.5 L79,36.5 L76,45 L73,36.5 L64.5,33.5 L73,30.5 Z" />
+
+    <!-- 星点 -->
+    <path
+        android:fillColor="#66FFFFFF"
+        android:pathData="M28,72 a3,3 0 1 0 6,0 a3,3 0 1 0 -6,0" />
+    <path
+        android:fillColor="#66FFFFFF"
+        android:pathData="M26,26 a2.2,2.2 0 1 0 4.4,0 a2.2,2.2 0 1 0 -4.4,0" />
+</vector>

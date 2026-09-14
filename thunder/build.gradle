@@ -1,0 +1,29 @@
+plugins {
+    id 'com.android.library'
+}
+
+android {
+    namespace 'com.ghost.thunder'
+
+    compileSdk {
+        version = release(36) {
+            it.minorApiLevel = 1
+        }
+    }
+
+    defaultConfig {
+        minSdk 24
+        targetSdk 36
+    }
+
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation project(':catvod')
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs_nio:2.1.5'
+}

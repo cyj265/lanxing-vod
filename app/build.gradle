@@ -1,0 +1,151 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.cyj265.lanxingvod'
+
+    compileSdk {
+        version = release(36) {
+            it.minorApiLevel = 1
+        }
+    }
+
+    defaultConfig {
+        applicationId "com.cyj265.lanxingvod"
+        minSdk 30
+        //noinspection ExpiredTargetSdkVersion
+        targetSdk 30
+        versionCode 529
+        versionName "5.2.9"
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
+            }
+        }
+    }
+
+    flavorDimensions = ["mode", "abi"]
+
+    productFlavors {
+        leanback {
+            dimension "mode"
+        }
+        mobile {
+            dimension "mode"
+        }
+        arm64_v8a {
+            dimension "abi"
+            ndk { abiFilters "arm64-v8a" }
+        }
+        armeabi_v7a {
+            dimension "abi"
+            ndk { abiFilters "armeabi-v7a" }
+        }
+    }
+
+    buildFeatures {
+        buildConfig true
+        viewBinding true
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'proguard-rules-media.pro'
+        }
+    }
+
+    packagingOptions {
+        resources {
+            exclude 'META-INF/beans.xml'
+            exclude 'META-INF/versions/9/OSGI-INF/MANIFEST.MF'
+        }
+    }
+
+    android.applicationVariants.configureEach { variant ->
+        variant.outputs.configureEach { output ->
+            outputFileName = "${variant.productFlavors[0].name}-${variant.productFlavors[1].name}.apk"
+        }
+    }
+
+    configurations.configureEach {
+        resolutionStrategy {
+            force 'com.squareup.okhttp3:okhttp:' + okhttpVersion
+        }
+    }
+
+    lint {
+        disable 'UnsafeOptInUsageError'
+    }
+
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+dependencies {
+    implementation fileTree(dir: "libs", include: ["*.aar"])
+    implementation project(':hook')
+    implementation project(':forcetech')
+    implementation project(':jianpian')
+    implementation project(':thunder')
+    implementation project(':tvbus')
+    implementation project(':dlna-dmc')
+    implementation project(':catvod')
+    implementation project(':chaquo')
+    implementation project(':quickjs')
+    implementation 'androidx.appcompat:appcompat:1.7.1'
+    implementation 'androidx.core:core-splashscreen:1.2.0'
+    implementation 'androidx.media:media:1.7.1'
+    implementation 'androidx.media3:media3-common:1.11.1'
+    implementation 'androidx.media3:media3-database:1.11.1'
+    implementation 'androidx.media3:media3-datasource:1.11.1'
+    implementation 'androidx.media3:media3-datasource-okhttp:1.11.1'
+    implementation 'androidx.media3:media3-exoplayer:1.11.1'
+    implementation 'androidx.media3:media3-exoplayer-hls:1.11.1'
+    implementation 'androidx.media3:media3-exoplayer-dash:1.11.1'
+    implementation 'androidx.media3:media3-exoplayer-rtsp:1.11.1'
+    implementation 'androidx.media3:media3-exoplayer-smoothstreaming:1.11.1'
+    implementation 'androidx.media3:media3-extractor:1.11.1'
+    implementation 'androidx.media3:media3-ui:1.11.1'
+    implementation 'androidx.palette:palette:1.0.0'
+    implementation 'androidx.recyclerview:recyclerview:1.4.0'
+    implementation 'androidx.room:room-runtime:2.8.4'
+    implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.2.0'
+    implementation 'androidx.viewpager2:viewpager2:1.1.0'
+    implementation 'cat.ereza:customactivityoncrash:2.4.0'
+    implementation 'com.airbnb.android:lottie:6.7.1'
+    implementation 'com.github.bassaer:materialdesigncolors:1.0.0'
+    implementation 'com.github.bumptech.glide:glide:' + glideVersion
+    implementation 'com.github.bumptech.glide:annotations:' + glideVersion
+    implementation 'com.github.bumptech.glide:avif-integration:' + glideVersion
+    implementation 'com.github.bumptech.glide:okhttp3-integration:' + glideVersion
+    implementation 'com.github.jahirfiquitiva:TextDrawable:1.0.3'
+    implementation 'com.github.mcxinyu:LibRtmp-Client-for-Android:v3.2.0.m2'
+    implementation 'com.github.teamnewpipe:NewPipeExtractor:v0.26.0'
+    implementation 'com.google.android.material:material:1.13.0'
+    implementation 'com.guolindev.permissionx:permissionx:1.8.1'
+    implementation 'javax.servlet:javax.servlet-api:3.1.0'
+    implementation 'org.eclipse.jetty:jetty-client:8.1.21.v20160908'
+    implementation('org.eclipse.jetty:jetty-server:8.1.21.v20160908') { exclude group: 'org.eclipse.jetty.orbit', module: 'javax.servlet' }
+    implementation('org.eclipse.jetty:jetty-servlet:8.1.21.v20160908') { exclude group: 'org.eclipse.jetty.orbit', module: 'javax.servlet' }
+    implementation 'org.fourthline.cling:cling-core:2.1.1'
+    implementation 'org.fourthline.cling:cling-support:2.1.1'
+    implementation 'org.greenrobot:eventbus:3.3.1'
+    implementation 'org.nanohttpd:nanohttpd:2.3.1'
+    implementation('org.simpleframework:simple-xml:2.7.1') { exclude group: 'stax', module: 'stax-api' exclude group: 'xpp3', module: 'xpp3' }
+    implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.31'
+    leanbackImplementation 'androidx.leanback:leanback:1.2.0'
+    leanbackImplementation 'com.github.JessYanCoding:AndroidAutoSize:1.2.1'
+    mobileImplementation 'androidx.biometric:biometric:1.1.0'
+    mobileImplementation 'com.google.android.flexbox:flexbox:3.0.0'
+    mobileImplementation 'com.journeyapps:zxing-android-embedded:4.3.0'
+    annotationProcessor 'androidx.room:room-compiler:2.8.4'
+    annotationProcessor 'com.github.bumptech.glide:compiler:' + glideVersion
+    annotationProcessor 'org.greenrobot:eventbus-annotation-processor:3.3.1'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs_nio:2.1.5'
+}

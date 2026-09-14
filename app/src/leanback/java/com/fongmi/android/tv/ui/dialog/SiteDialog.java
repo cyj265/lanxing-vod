@@ -1,0 +1,135 @@
+package com.fongmi.android.tv.ui.dialog;
+
+import android.app.Activity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.WindowManager;
+
+import androidx.appcompat.app.AlertDialog;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.cyj265.lanxingvod.R;
+import com.fongmi.android.tv.Setting;
+import com.fongmi.android.tv.api.config.VodConfig;
+import com.fongmi.android.tv.bean.Site;
+import com.cyj265.lanxingvod.databinding.DialogSiteBinding;
+import com.fongmi.android.tv.impl.SiteCallback;
+import com.fongmi.android.tv.ui.adapter.SiteAdapter;
+import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
+import com.fongmi.android.tv.utils.ResUtil;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
+public class SiteDialog implements SiteAdapter.OnClickListener {
+
+    private final DialogSiteBinding binding;
+    private final SiteAdapter adapter;
+    private final AlertDialog dialog;
+    private final int GRID_COUNT = 10;
+
+    private RecyclerView.ItemDecoration decoration;
+    private SiteCallback callback;
+    private int type;
+
+    public static SiteDialog create(Activity activity) {
+        return new SiteDialog(activity);
+    }
+
+    public SiteDialog(Activity activity) {
+        this.adapter = new SiteAdapter(this);
+        this.binding = DialogSiteBinding.inflate(LayoutInflater.from(activity));
+        this.dialog = new MaterialAlertDialogBuilder(activity).setView(binding.getRoot()).create();
+        if (activity instanceof SiteCallback) this.callback = (SiteCallback) activity;
+    }
+
+    public SiteDialog search() {
+        type = 1;
+        return this;
+    }
+
+    public SiteDialog action() {
+        binding.action.setVisibility(View.VISIBLE);
+        return this;
+    }
+
+    public void show() {
+        setType(type);
+        initView();
+        initEvent();
+    }
+
+    private boolean list() {
+        return Setting.getSiteMode() == 0 || adapter.getItemCount() < GRID_COUNT;
+    }
+
+    private int getCount() {
+        return list() ? 1 : Math.max(2, Math.min((int) Math.ceil((double) adapter.getItemCount() / GRID_COUNT), 3));
+    }
+
+    private int getIcon() {
+        return list() ? R.drawable.ic_site_grid : R.drawable.ic_site_list;
+    }
+
+    private float getWidth() {
+        return 0.4f + (getCount() - 1) * 0.2f;
+    }
+
+    private void initView() {
+        setRecyclerView();
+        setDialog();
+        setMode();
+    }
+
+    private void initEvent() {
+        binding.mode.setOnClickListener(this::setMode);
+        binding.select.setOnClickListener(v -> adapter.selectAll());
+        binding.cancel.setOnClickListener(v -> adapter.cancelAll());
+        binding.search.setOnClickListener(v -> setType(v.isActivated() ? 0 : 1));
+        binding.change.setOnClickListener(v -> setType(v.isActivated() ? 0 : 2));
+    }
+
+    private void setRecyclerView() {
+        binding.recycler.setAdapter(adapter);
+        binding.recycler.setHasFixedSize(true);
+        binding.recycler.setItemAnimator(null);
+        if (decoration != null) binding.recycler.removeItemDecoration(decoration);
+        binding.recycler.addItemDecoration(decoration = new SpaceItemDecoration(getCount(), 16));
+        binding.recycler.setLayoutManager(new GridLayoutManager(dialog.getContext(), getCount()));
+        if (!binding.mode.hasFocus()) binding.recycler.post(() -> binding.recycler.scrollToPosition(VodConfig.getHomeIndex()));
+    }
+
+    private void setDialog() {
+        if (adapter.getItemCount() == 0) return;
+        WindowManager.LayoutParams params = dialog.getWindow().getAttributes();
+        params.width = (int) (ResUtil.getScreenWidth() * getWidth());
+        dialog.getWindow().setAttributes(params);
+        dialog.getWindow().setDimAmount(0);
+        dialog.show();
+    }
+
+    private void setMode() {
+        if (adapter.getItemCount() < GRID_COUNT) Setting.putSiteMode(0);
+        binding.mode.setEnabled(adapter.getItemCount() >= GRID_COUNT);
+        binding.mode.setImageResource(getIcon());
+    }
+
+    private void setType(int type) {
+        binding.search.setActivated(type == 1);
+        binding.change.setActivated(type == 2);
+        binding.select.setClickable(type > 0);
+        binding.cancel.setClickable(type > 0);
+        adapter.setType(this.type = type);
+    }
+
+    private void setMode(View view) {
+        Setting.putSiteMode(Math.abs(Setting.getSiteMode() - 1));
+        initView();
+    }
+
+    @Override
+    public void onItemClick(Site item) {
+        if (callback == null) return;
+        callback.setSite(item);
+        dialog.dismiss();
+    }
+}
