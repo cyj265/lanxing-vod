@@ -383,7 +383,7 @@ public class VideoActivity extends BaseActivity implements Clock.Callback, Custo
         mPlayers.setTag(tag = UUID.randomUUID().toString());
         if (isPort() && ResUtil.isLand(this)) enterFullscreen();
         mBinding.control.action.decode.setText(mPlayers.getDecodeText());
-        mBinding.control.action.danmaku.setVisibility(Setting.isDanmakuLoad() ? View.VISIBLE : View.GONE);
+        mBinding.control.action.danmaku.setVisibility(View.GONE);
         mBinding.control.action.reset.setText(ResUtil.getStringArray(R.array.select_reset)[Setting.getReset()]);
         mBinding.video.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> mPiP.update(this, view));
     }
@@ -966,7 +966,7 @@ public class VideoActivity extends BaseActivity implements Clock.Callback, Custo
     }
 
     private void showDanmaku() {
-        mBinding.danmaku.setVisibility(Setting.isDanmakuShow() ? View.VISIBLE : View.INVISIBLE);
+        mBinding.danmaku.setVisibility(View.GONE);
     }
 
     private void hideDanmaku() {
@@ -975,7 +975,7 @@ public class VideoActivity extends BaseActivity implements Clock.Callback, Custo
 
     private void showControl() {
         if (isInPictureInPictureMode()) return;
-        mBinding.control.danmaku.setVisibility(isLock() || !mPlayers.haveDanmaku() ? View.GONE : View.VISIBLE);
+        mBinding.control.danmaku.setVisibility(View.GONE);
         mBinding.control.setting.setVisibility(mHistory == null || isFullscreen() ? View.GONE : View.VISIBLE);
         mBinding.control.right.rotate.setVisibility(!isLock() ? View.VISIBLE : View.GONE);
         mBinding.control.keep.setVisibility(mHistory == null || isFullscreen() ? View.GONE : View.VISIBLE);
