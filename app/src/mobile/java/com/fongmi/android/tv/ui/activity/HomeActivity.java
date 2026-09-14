@@ -199,7 +199,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
 
     public void change(int position) {
         mManager.change(position);
-        if (position >= 2) hideNav();
+        if (position >= 3) hideNav();
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
@@ -228,7 +228,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         if (mBinding.navigation.getSelectedItemId() == item.getItemId()) return false;
         if (item.getItemId() == R.id.vod) { showNav(); return mManager.change(0); }
         if (item.getItemId() == R.id.history) { showNav(); return mManager.change(1); }
-        if (item.getItemId() == R.id.setting) { hideNav(); return mManager.change(2); }
+        if (item.getItemId() == R.id.setting) { showNav(); return mManager.change(2); }
         if (item.getItemId() == R.id.live) return openLive();
         return false;
     }

@@ -102,6 +102,7 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
 
     @Override
     protected void initEvent() {
+        mBinding.recordClear.setOnClickListener(v -> mRecordAdapter.clear());
         mBinding.keyword.setOnEditorActionListener((textView, actionId, event) -> {
             if (actionId == EditorInfo.IME_ACTION_SEARCH) search();
             return true;
@@ -201,6 +202,7 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
     @Override
     public void onDataChanged(int size) {
         mBinding.record.setVisibility(size == 0 ? View.GONE : View.VISIBLE);
+        mBinding.recordClear.setVisibility(size == 0 ? View.GONE : View.VISIBLE);
         mBinding.recordRecycler.setVisibility(size == 0 ? View.GONE : View.VISIBLE);
         mBinding.recordRecycler.postDelayed(() -> mBinding.recordRecycler.requestLayout(), 250);
     }
