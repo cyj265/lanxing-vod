@@ -29,6 +29,9 @@ jobs:
         with:
           python-version: '3.10'
 
+      - name: 设置 Gradle（缓存发行版与依赖，避免重复下载超时）
+        uses: gradle/actions/setup-gradle@v4
+
       - name: 安装 Android SDK 命令行工具
         uses: android-actions/setup-android@v3
 
