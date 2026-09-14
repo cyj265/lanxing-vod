@@ -101,6 +101,7 @@ public class SettingFragment extends BaseFragment implements ConfigCallback, Sit
     private void setOtherText() {
         mBinding.dohText.setText(getDohList()[getDohIndex()]);
         mBinding.incognitoText.setText(getSwitch(Setting.isIncognito()));
+        mBinding.liveEnableText.setText(getSwitch(Setting.isLiveEnabled()));
         mBinding.sizeText.setText((size = ResUtil.getStringArray(R.array.select_size))[Setting.getSize()]);
     }
 
@@ -131,6 +132,7 @@ public class SettingFragment extends BaseFragment implements ConfigCallback, Sit
         mBinding.liveHome.setOnClickListener(this::onLiveHome);
         mBinding.wall.setOnLongClickListener(this::onWallEdit);
         mBinding.incognito.setOnClickListener(this::setIncognito);
+        mBinding.liveEnable.setOnClickListener(this::setLiveEnable);
         mBinding.vodHistory.setOnClickListener(this::onVodHistory);
         mBinding.liveHistory.setOnClickListener(this::onLiveHistory);
         mBinding.wallDefault.setOnClickListener(this::setWallDefault);
@@ -263,6 +265,12 @@ public class SettingFragment extends BaseFragment implements ConfigCallback, Sit
     private void setIncognito(View view) {
         Setting.putIncognito(!Setting.isIncognito());
         mBinding.incognitoText.setText(getSwitch(Setting.isIncognito()));
+    }
+
+    private void setLiveEnable(View view) {
+        Setting.putLiveEnabled(!Setting.isLiveEnabled());
+        mBinding.liveEnableText.setText(getSwitch(Setting.isLiveEnabled()));
+        ConfigEvent.common();
     }
 
     private void setSize(View view) {

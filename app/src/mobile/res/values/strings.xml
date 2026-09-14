@@ -8,6 +8,8 @@
     <string name="nav_vod">Vod</string>
     <string name="nav_live">Live</string>
     <string name="nav_setting">Setting</string>
+    <string name="nav_history">History</string>
+    <string name="setting_live_enable">Live</string>
 
     <!-- Menu -->
     <string name="menu_sync">Sync</string>

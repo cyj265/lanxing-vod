@@ -6,31 +6,31 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- 渐变蓝播放三角 -->
+    <!-- 渐变蓝播放三角（安全区内） -->
     <path
-        android:pathData="M34,28 L82,54 L34,80 Z">
+        android:pathData="M38,34 L76,54 L38,74 Z">
         <aapt:attr name="android:fillColor">
             <gradient
                 android:startColor="#4FC3F7"
                 android:endColor="#1F5CC8"
-                android:startX="34"
-                android:endX="82"
-                android:startY="28"
-                android:endY="80"
+                android:startX="38"
+                android:endX="76"
+                android:startY="34"
+                android:endY="74"
                 android:type="linear" />
         </aapt:attr>
     </path>
 
-    <!-- 金色四角星 -->
+    <!-- 金色四角星（安全区内，右上方） -->
     <path
         android:fillColor="#FFD36B"
-        android:pathData="M78,20 L81,29 L90,32 L81,35 L78,44 L75,35 L66,32 L75,29 Z" />
+        android:pathData="M75,30 L77.5,35.5 L82,37.5 L77.5,39.5 L75,45 L72.5,39.5 L68,37.5 L72.5,35.5 Z" />
 
-    <!-- 星点 -->
+    <!-- 星点（安全区内） -->
     <path
         android:fillColor="#66FFFFFF"
-        android:pathData="M28,74 a3,3 0 1 0 6,0 a3,3 0 1 0 -6,0" />
+        android:pathData="M32,68 a2.6,2.6 0 1 0 5.2,0 a2.6,2.6 0 1 0 -5.2,0" />
     <path
         android:fillColor="#66FFFFFF"
-        android:pathData="M24,26 a2.2,2.2 0 1 0 4.4,0 a2.2,2.2 0 1 0 -4.4,0" />
+        android:pathData="M30,36 a2,2 0 1 0 4,0 a2,2 0 1 0 -4,0" />
 </vector>

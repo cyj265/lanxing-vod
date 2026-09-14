@@ -8,6 +8,8 @@
     <string name="nav_vod">点播</string>
     <string name="nav_live">直播</string>
     <string name="nav_setting">设置</string>
+    <string name="nav_history">历史</string>
+    <string name="setting_live_enable">直播功能</string>
 
     <!-- Menu -->
     <string name="menu_sync">同步</string>

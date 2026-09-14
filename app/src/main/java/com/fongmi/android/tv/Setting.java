@@ -138,6 +138,14 @@ public class Setting {
         Prefers.put("incognito", incognito);
     }
 
+    public static boolean isLiveEnabled() {
+        return Prefers.getBoolean("live_enable");
+    }
+
+    public static void putLiveEnabled(boolean enabled) {
+        Prefers.put("live_enable", enabled);
+    }
+
     public static boolean isBootLive() {
         return Prefers.getBoolean("boot_live");
     }

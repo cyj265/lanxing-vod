@@ -24,6 +24,7 @@ import androidx.fragment.app.Fragment;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.App;
+import com.fongmi.android.tv.Setting;
 import com.cyj265.lanxingvod.R;
 import com.fongmi.android.tv.Updater;
 import com.fongmi.android.tv.api.config.LiveConfig;
@@ -44,6 +45,7 @@ import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.custom.FragmentStateManager;
+import com.fongmi.android.tv.ui.activity.HistoryActivity;
 import com.fongmi.android.tv.ui.fragment.SettingFragment;
 import com.fongmi.android.tv.ui.fragment.SettingPlayerFragment;
 import com.fongmi.android.tv.ui.fragment.VodFragment;
@@ -178,7 +180,8 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
     private void setNavigation() {
         mBinding.navigation.getMenu().findItem(R.id.vod).setVisible(true);
         mBinding.navigation.getMenu().findItem(R.id.setting).setVisible(true);
-        mBinding.navigation.getMenu().findItem(R.id.live).setVisible(LiveConfig.hasUrl());
+        mBinding.navigation.getMenu().findItem(R.id.history).setVisible(true);
+        mBinding.navigation.getMenu().findItem(R.id.live).setVisible(Setting.isLiveEnabled() && LiveConfig.hasUrl());
     }
 
     private boolean openLive() {
@@ -224,6 +227,10 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         if (item.getItemId() == R.id.setting) return mManager.change(1);
         if (item.getItemId() == R.id.vod) return mManager.change(0);
         if (item.getItemId() == R.id.live) return openLive();
+        if (item.getItemId() == R.id.history) {
+            HistoryActivity.start(this);
+            return true;
+        }
         return false;
     }
 

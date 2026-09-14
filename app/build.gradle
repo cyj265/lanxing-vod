@@ -16,8 +16,8 @@ android {
         minSdk 30
         //noinspection ExpiredTargetSdkVersion
         targetSdk 30
-        versionCode 530
-        versionName "5.3.0"
+        versionCode 540
+        versionName "5.4.0"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
