@@ -98,6 +98,8 @@ public class Updater implements Download.Callback {
     }
 
     private void show(Activity activity, String version, String desc, String apk) {
+        File oldFile = getFile();
+        if (oldFile.exists()) oldFile.delete();
         this.download = Download.create(apk, getFile());
         binding = DialogUpdateBinding.inflate(LayoutInflater.from(activity));
         check().create(activity, ResUtil.getString(R.string.update_version, version)).show();

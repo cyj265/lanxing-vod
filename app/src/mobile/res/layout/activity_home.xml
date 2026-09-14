@@ -14,11 +14,13 @@
     <eightbitlab.com.blurview.BlurView
         android:id="@+id/blurView"
         android:layout_width="match_parent"
-        android:layout_height="80dp"
+        android:layout_height="@dimen/nav_height"
         android:layout_alignParentBottom="true"
-        android:layout_marginStart="12dp"
-        android:layout_marginEnd="12dp"
-        android:layout_marginBottom="8dp">
+        android:layout_centerHorizontal="true"
+        android:layout_marginStart="@dimen/nav_margin_side"
+        android:layout_marginEnd="@dimen/nav_margin_side"
+        android:layout_marginBottom="@dimen/nav_margin_bottom"
+        android:maxWidth="@dimen/nav_max_width">
 
         <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/navigation"

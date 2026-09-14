@@ -14,9 +14,20 @@ public class Product {
     }
 
     public static int getColumn(Context context) {
-        int count = ResUtil.isLand(context) ? 7 : 4;
-        count = count + (ResUtil.isPad() ? 1 : 0);
-        return Math.max(1, count - 1 - Setting.getSize());
+        int widthDp = ResUtil.getScreenWidth(context) / (int) ResUtil.getDisplayMetrics().density;
+        int count;
+        if (ResUtil.isLand(context)) {
+            if (widthDp >= 1200) count = 7;
+            else if (widthDp >= 900) count = 6;
+            else if (widthDp >= 600) count = 5;
+            else count = 4;
+        } else {
+            if (widthDp >= 800) count = 5;
+            else if (widthDp >= 600) count = 4;
+            else if (widthDp >= 400) count = 3;
+            else count = 2;
+        }
+        return Math.max(1, count - Setting.getSize());
     }
 
     public static int getColumn(Context context, Style style) {
