@@ -23,3 +23,7 @@ rel.json
 tags.json
 rename.ps1
 
+
+# 本地敏感与脚本文件（勿提交）
+secrets-values.txt
+*.py
