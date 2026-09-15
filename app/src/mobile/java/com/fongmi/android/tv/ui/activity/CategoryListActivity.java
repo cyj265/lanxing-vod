@@ -15,6 +15,7 @@ import com.fongmi.android.tv.model.SiteViewModel;
 import com.fongmi.android.tv.ui.adapter.CategoryListAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class CategoryListActivity extends BaseActivity {
@@ -22,11 +23,21 @@ public class CategoryListActivity extends BaseActivity {
     private ActivityCategoryListBinding mBinding;
     private SiteViewModel mViewModel;
     private CategoryListAdapter mAdapter;
+    private String mTypeId;
 
     public static void start(Activity activity, String typeId, String typeName) {
         Intent intent = new Intent(activity, CategoryListActivity.class);
         intent.putExtra("typeId", typeId);
         intent.putExtra("typeName", typeName);
+        activity.startActivity(intent);
+        activity.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+    }
+
+    public static void start(Activity activity, String typeId, String typeName, ArrayList<Vod> initialList) {
+        Intent intent = new Intent(activity, CategoryListActivity.class);
+        intent.putExtra("typeId", typeId);
+        intent.putExtra("typeName", typeName);
+        intent.putParcelableArrayListExtra("initialList", initialList);
         activity.startActivity(intent);
         activity.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
     }
@@ -39,7 +50,7 @@ public class CategoryListActivity extends BaseActivity {
     @Override
     protected void initView(Bundle savedInstanceState) {
         String typeName = getIntent().getStringExtra("typeName");
-        String typeId = getIntent().getStringExtra("typeId");
+        mTypeId = getIntent().getStringExtra("typeId");
         mBinding.toolbar.setTitle(typeName);
         mBinding.toolbar.setNavigationOnClickListener(v -> finish());
 
@@ -47,14 +58,20 @@ public class CategoryListActivity extends BaseActivity {
         mBinding.recycler.setAdapter(mAdapter);
         mBinding.recycler.setLayoutManager(new LinearLayoutManager(this));
 
-        mViewModel = new ViewModelProvider(this).get(SiteViewModel.class);
-        mViewModel.result.observe(this, result -> {
+        ArrayList<Vod> initialList = getIntent().getParcelableArrayListExtra("initialList");
+        if (initialList != null && !initialList.isEmpty()) {
+            mAdapter.addAll(initialList);
             mBinding.loading.setVisibility(View.GONE);
-            if (result != null && result.getList() != null) {
-                mAdapter.addAll(result.getList());
-            }
-        });
-        mViewModel.categoryContent(VodConfig.get().getHome().getKey(), typeId, "1", false, new HashMap<>());
+        } else {
+            mViewModel = new ViewModelProvider(this).get(SiteViewModel.class);
+            mViewModel.result.observe(this, result -> {
+                mBinding.loading.setVisibility(View.GONE);
+                if (result != null && result.getList() != null) {
+                    mAdapter.addAll(result.getList());
+                }
+            });
+            mViewModel.categoryContent(VodConfig.get().getHome().getKey(), mTypeId, "1", false, new HashMap<>());
+        }
     }
 
     private void onItemClick(Vod item) {

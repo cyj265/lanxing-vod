@@ -57,6 +57,13 @@ public class RecommendRowAdapter extends RecyclerView.Adapter<RecommendRowAdapte
         notifyDataSetChanged();
     }
 
+    public List<Vod> getListByCategoryIndex(int categoryIndex) {
+        for (Row row : mItems) {
+            if (row.categoryIndex == categoryIndex) return row.list;
+        }
+        return null;
+    }
+
     @NonNull
     @Override
     public ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {

@@ -78,7 +78,12 @@ public class HomeFragment extends Fragment {
             public void onMoreClick(int categoryIndex) {
                 if (mTypes != null && categoryIndex >= 0 && categoryIndex < mTypes.size()) {
                     Class type = mTypes.get(categoryIndex);
-                    CategoryListActivity.start(requireActivity(), type.getTypeId(), type.getTypeName());
+                    java.util.List<Vod> cachedList = mRecommendAdapter.getListByCategoryIndex(categoryIndex);
+                    if (cachedList != null && !cachedList.isEmpty()) {
+                        CategoryListActivity.start(requireActivity(), type.getTypeId(), type.getTypeName(), new ArrayList<>(cachedList));
+                    } else {
+                        CategoryListActivity.start(requireActivity(), type.getTypeId(), type.getTypeName());
+                    }
                 }
             }
         });
