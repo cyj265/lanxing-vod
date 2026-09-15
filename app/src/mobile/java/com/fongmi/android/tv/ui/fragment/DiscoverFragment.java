@@ -24,8 +24,11 @@ import com.fongmi.android.tv.utils.Douban;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 内置精选首页：豆瓣榜单数据，不依赖用户配置的源
@@ -35,7 +38,8 @@ public class DiscoverFragment extends Fragment {
 
     private FragmentHomeBinding mBinding;
     private RecommendRowAdapter mRecommendAdapter;
-    private final ExecutorService mExecutor = Executors.newFixedThreadPool(3);
+    private ExecutorService mExecutor;
+    private boolean mLoading;
 
     // 榜单配置：显示名 -> 豆瓣 collection_id
     private static final List<String[]> RANKS = Arrays.asList(
@@ -70,6 +74,10 @@ public class DiscoverFragment extends Fragment {
     private void initView() {
         mBinding.continueRecycler.setLayoutManager(new LinearLayoutManager(requireContext(), LinearLayoutManager.HORIZONTAL, false));
         mBinding.continueMore.setOnClickListener(v -> HistoryActivity.start(requireActivity()));
+        mBinding.emptyText.setOnClickListener(v -> {
+            mBinding.emptyText.setVisibility(View.GONE);
+            loadRanks();
+        });
 
         mRecommendAdapter = new RecommendRowAdapter(new RecommendRowAdapter.OnClickListener() {
             @Override
@@ -109,8 +117,15 @@ public class DiscoverFragment extends Fragment {
         ));
     }
 
-    private void loadRanks() {
+    private synchronized void loadRanks() {
+        if (mLoading) return;
+        mLoading = true;
+        mRecommendAdapter.clear();
         mBinding.loading.setVisibility(View.VISIBLE);
+        mBinding.emptyText.setVisibility(View.GONE);
+        mExecutor = Executors.newFixedThreadPool(3);
+        final AtomicInteger done = new AtomicInteger(0);
+        final CountDownLatch latch = new CountDownLatch(RANKS.size());
         for (int i = 0; i < RANKS.size(); i++) {
             final int index = i;
             final String title = RANKS.get(i)[0];
@@ -119,22 +134,34 @@ public class DiscoverFragment extends Fragment {
                 try {
                     List<Vod> list = Douban.getRank(collectionId, 12);
                     if (list != null && !list.isEmpty()) {
-                        App.post(() -> {
-                            mRecommendAdapter.addRow(title, list, index);
-                            mBinding.loading.setVisibility(View.GONE);
-                        });
+                        App.post(() -> mRecommendAdapter.addRow(title, list, index));
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
+                } finally {
+                    done.incrementAndGet();
+                    latch.countDown();
                 }
             });
         }
+        mExecutor.submit(() -> {
+            try {
+                latch.await(20, TimeUnit.SECONDS);
+            } catch (InterruptedException ignored) {}
+            App.post(() -> {
+                mLoading = false;
+                mBinding.loading.setVisibility(View.GONE);
+                if (mRecommendAdapter.getItemCount() == 0) {
+                    mBinding.emptyText.setVisibility(View.VISIBLE);
+                }
+            });
+        });
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        mExecutor.shutdownNow();
+        if (mExecutor != null) mExecutor.shutdownNow();
         mBinding = null;
     }
 }

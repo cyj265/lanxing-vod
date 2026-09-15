@@ -85,7 +85,11 @@ public class Douban {
                     vod.setId(item.optString("id", ""));
                     vod.setName(item.optString("title", ""));
                     JSONObject cover = item.optJSONObject("cover");
-                    if (cover != null) vod.setPic(cover.optString("url", ""));
+                    if (cover != null) {
+                        // 豆瓣图片防盗链，必须带 Referer 否则 418
+                        String pic = cover.optString("url", "");
+                        if (!TextUtils.isEmpty(pic)) vod.setPic(pic + "@Referer=https://movie.douban.com/");
+                    }
                     JSONObject rating = item.optJSONObject("rating");
                     if (rating != null && rating.has("value")) {
                         double val = rating.optDouble("value", 0);

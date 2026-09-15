@@ -87,6 +87,20 @@
             android:indeterminateTint="@color/primary"
             android:visibility="gone" />
 
+        <!-- 空状态 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/emptyText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="48dp"
+            android:padding="16dp"
+            android:text="首页加载失败\n点击重试"
+            android:textColor="#8AFFFFFF"
+            android:textSize="14sp"
+            android:gravity="center"
+            android:visibility="gone" />
+
     </androidx.appcompat.widget.LinearLayoutCompat>
 
 </androidx.core.widget.NestedScrollView>
