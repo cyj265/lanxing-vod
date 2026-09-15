@@ -10,20 +10,28 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.cyj265.lanxingvod.databinding.ActivityCategoryListBinding;
 import com.fongmi.android.tv.api.config.VodConfig;
+import com.fongmi.android.tv.bean.Result;
+import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.model.SiteViewModel;
 import com.fongmi.android.tv.ui.adapter.CategoryListAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
+import com.github.catvod.crawler.Spider;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class CategoryListActivity extends BaseActivity {
+
+    private static final int MAX_FETCH = 10;
 
     private ActivityCategoryListBinding mBinding;
     private SiteViewModel mViewModel;
     private CategoryListAdapter mAdapter;
+    private ExecutorService mDetailExecutor;
     private String mTypeId;
     private List<Vod> mCurrentList;
 
@@ -61,6 +69,7 @@ public class CategoryListActivity extends BaseActivity {
         mBinding.recycler.setLayoutManager(new LinearLayoutManager(this));
 
         mViewModel = new ViewModelProvider(this).get(SiteViewModel.class);
+        mDetailExecutor = Executors.newSingleThreadExecutor();
 
         mViewModel.result.observe(this, result -> {
             mBinding.loading.setVisibility(View.GONE);
@@ -90,6 +99,49 @@ public class CategoryListActivity extends BaseActivity {
 
     private void fetchMissingContent() {
         if (mCurrentList == null || mCurrentList.isEmpty()) return;
+        Site site = VodConfig.get().getHome();
+        if (site.getType() == 3) {
+            fetchSingleContents(site);
+        } else {
+            fetchBatchContents(site);
+        }
+    }
+
+    // type=3 (JS/Python 爬虫)：detailContent 只处理单个 id，必须逐个请求
+    private void fetchSingleContents(Site site) {
+        int count = 0;
+        for (Vod vod : mCurrentList) {
+            if (count >= MAX_FETCH) break;
+            String content = vod.getContent();
+            if (content == null || content.isEmpty()) {
+                count++;
+                fetchSingle(site, vod);
+            }
+        }
+    }
+
+    private void fetchSingle(Site site, Vod vod) {
+        mDetailExecutor.execute(() -> {
+            try {
+                Spider spider = site.recent().spider();
+                String detail = spider.detailContent(java.util.Collections.singletonList(vod.getId()));
+                Result result = Result.fromJson(detail);
+                if (result.getList() == null || result.getList().isEmpty()) return;
+                Vod d = result.getList().get(0);
+                if (d.getContent() == null || d.getContent().isEmpty()) return;
+                vod.setContent(d.getContent());
+                int index = mCurrentList.indexOf(vod);
+                if (index >= 0) {
+                    int pos = index;
+                    runOnUiThread(() -> mAdapter.notifyItemChanged(pos));
+                }
+            } catch (Exception ignored) {
+            }
+        });
+    }
+
+    // type=0/1 (标准接口)：批量 ac=detail&ids= 获取
+    private void fetchBatchContents(Site site) {
         StringBuilder ids = new StringBuilder();
         int count = 0;
         for (Vod vod : mCurrentList) {
@@ -101,7 +153,7 @@ public class CategoryListActivity extends BaseActivity {
             }
         }
         if (count > 0 && ids.length() > 0) {
-            mViewModel.detailContentBatch(VodConfig.get().getHome().getKey(), ids.toString());
+            mViewModel.detailContentBatch(site.getKey(), ids.toString());
         }
     }
 
@@ -126,5 +178,11 @@ public class CategoryListActivity extends BaseActivity {
 
     private void onItemClick(Vod item) {
         VideoActivity.start(this, VodConfig.get().getHome().getKey(), item.getId(), item.getName(), item.getPic());
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (mDetailExecutor != null) mDetailExecutor.shutdownNow();
+        super.onDestroy();
     }
 }
