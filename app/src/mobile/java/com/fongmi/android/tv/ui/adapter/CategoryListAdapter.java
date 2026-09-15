@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.ui.adapter;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -9,7 +10,6 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.cyj265.lanxingvod.databinding.ItemCategoryListBinding;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.utils.ImgUtil;
-import com.google.android.material.chip.Chip;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,24 +44,29 @@ public class CategoryListAdapter extends RecyclerView.Adapter<CategoryListAdapte
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Vod item = mItems.get(position);
         holder.binding.name.setText(item.getName());
-        holder.binding.remark.setText(item.getRemarks());
-        holder.binding.desc.setText(item.getContent());
         ImgUtil.load(item.getName(), item.getPic(), holder.binding.pic);
 
-        holder.binding.tags.removeAllViews();
+        String remark = item.getRemarks();
+        if (remark != null && !remark.isEmpty()) {
+            holder.binding.remark.setText(remark);
+            holder.binding.remark.setVisibility(View.VISIBLE);
+        } else {
+            holder.binding.remark.setVisibility(View.GONE);
+        }
+
         String typeName = item.getTypeName();
         if (typeName != null && !typeName.isEmpty()) {
-            String[] types = typeName.split("[,，/\\s]+");
-            for (String t : types) {
-                if (!t.isEmpty()) {
-                    Chip chip = new Chip(holder.binding.tags.getContext());
-                    chip.setText(t);
-                    chip.setTextSize(10);
-                    chip.setCheckable(false);
-                    chip.setChipMinHeight(24);
-                    holder.binding.tags.addView(chip);
-                }
-            }
+            holder.binding.type.setText("类型：" + typeName.replace(",", "、").replace("/", "、"));
+            holder.binding.type.setVisibility(View.VISIBLE);
+        } else {
+            holder.binding.type.setVisibility(View.GONE);
+        }
+
+        String content = item.getContent();
+        if (content != null && !content.isEmpty()) {
+            holder.binding.desc.setText(content);
+        } else {
+            holder.binding.desc.setText("暂无简介");
         }
 
         holder.itemView.setOnClickListener(v -> mListener.onItemClick(item));
