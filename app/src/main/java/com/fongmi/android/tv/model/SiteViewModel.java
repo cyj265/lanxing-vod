@@ -51,6 +51,7 @@ public class SiteViewModel extends ViewModel {
     public final MutableLiveData<Result> player;
     public final MutableLiveData<Result> search;
     public final MutableLiveData<Result> action;
+    public final MutableLiveData<Result> detailList;
 
     public SiteViewModel() {
         taskId = new AtomicInteger(0);
@@ -58,6 +59,7 @@ public class SiteViewModel extends ViewModel {
         player = new MutableLiveData<>();
         search = new MutableLiveData<>();
         action = new MutableLiveData<>();
+        detailList = new MutableLiveData<>();
         searchFuture = new ArrayList<>();
         executor = Executors.newSingleThreadExecutor();
     }
@@ -159,6 +161,26 @@ public class SiteViewModel extends ViewModel {
                 Result result = Result.fromType(site.getType(), detailContent);
                 Source.get().parse(result.getVod().setFlags());
                 return result;
+            }
+        });
+    }
+
+    public void detailContentBatch(String key, String ids) {
+        execute(detailList, () -> {
+            Site site = VodConfig.get().getSite(key);
+            SpiderDebug.log("detailBatch", "key=%s,ids=%s", key, ids);
+            if (site.getType() == 3) {
+                Spider spider = site.recent().spider();
+                String detailContent = spider.detailContent(Arrays.asList(ids.split(",")));
+                SpiderDebug.log("detailBatch", detailContent);
+                return Result.fromJson(detailContent);
+            } else {
+                ArrayMap<String, String> params = new ArrayMap<>();
+                params.put("ac", site.getType() == 0 ? "videolist" : "detail");
+                params.put("ids", ids);
+                String detailContent = call(site, params);
+                SpiderDebug.log("detailBatch", detailContent);
+                return Result.fromType(site.getType(), detailContent);
             }
         });
     }
