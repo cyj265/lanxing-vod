@@ -172,7 +172,7 @@ public class Updater implements Download.Callback {
         try {
             PackageManager pm = App.get().getPackageManager();
             PackageInfo info = pm.getPackageArchiveInfo(file.getAbsolutePath(), 0);
-            if (info == null || info.versionCode < BuildConfig.VERSION_CODE) {
+            if (info == null || info.versionCode <= BuildConfig.VERSION_CODE) {
                 file.delete();
                 Notify.show(R.string.update_version_invalid);
                 dismiss();
