@@ -260,11 +260,11 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
         switch (event.getType()) {
             case HOME:
                 setTitle();
-            case HISTORY:
-                setContinue();
-                break;
             case SIZE:
                 homeContent();
+                break;
+            case HISTORY:
+                setContinue();
                 break;
         }
     }
