@@ -338,7 +338,7 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
         @NonNull
         @Override
         public Fragment getItem(int position) {
-            if (position == 0) return HomeFragment.newInstance();
+            if (position == 0) return DiscoverFragment.newInstance();
             Class type = mAdapter.get(position - 1);
             return FolderFragment.newInstance(getHome().getKey(), type, 4);
         }
