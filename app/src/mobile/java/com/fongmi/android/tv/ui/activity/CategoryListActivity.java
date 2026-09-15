@@ -16,6 +16,7 @@ import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.model.SiteViewModel;
 import com.fongmi.android.tv.ui.adapter.CategoryListAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
+import com.fongmi.android.tv.utils.Douban;
 import com.github.catvod.crawler.Spider;
 
 import java.util.ArrayList;
@@ -122,20 +123,25 @@ public class CategoryListActivity extends BaseActivity {
 
     private void fetchSingle(Site site, Vod vod) {
         mDetailExecutor.execute(() -> {
+            String content = "";
             try {
                 Spider spider = site.recent().spider();
                 String detail = spider.detailContent(java.util.Collections.singletonList(vod.getId()));
                 Result result = Result.fromJson(detail);
-                if (result.getList() == null || result.getList().isEmpty()) return;
-                Vod d = result.getList().get(0);
-                if (d.getContent() == null || d.getContent().isEmpty()) return;
-                vod.setContent(d.getContent());
-                int index = mCurrentList.indexOf(vod);
-                if (index >= 0) {
-                    int pos = index;
-                    runOnUiThread(() -> mAdapter.notifyItemChanged(pos));
+                if (result.getList() != null && !result.getList().isEmpty()) {
+                    content = result.getList().get(0).getContent();
                 }
             } catch (Exception ignored) {
+            }
+            if (content == null || content.isEmpty()) {
+                content = Douban.getIntro(vod.getName());
+            }
+            if (content == null || content.isEmpty()) return;
+            vod.setContent(content);
+            int index = mCurrentList.indexOf(vod);
+            if (index >= 0) {
+                int pos = index;
+                runOnUiThread(() -> mAdapter.notifyItemChanged(pos));
             }
         });
     }
