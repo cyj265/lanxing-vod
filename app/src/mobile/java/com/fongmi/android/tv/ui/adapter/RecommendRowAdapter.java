@@ -20,15 +20,17 @@ public class RecommendRowAdapter extends RecyclerView.Adapter<RecommendRowAdapte
 
     public interface OnClickListener {
         void onItemClick(Vod item);
-        void onMoreClick(String title, int position);
+        void onMoreClick(int categoryIndex);
     }
 
     public static class Row {
         public String title;
         public List<Vod> list;
-        public Row(String title, List<Vod> list) {
+        public int categoryIndex;
+        public Row(String title, List<Vod> list, int categoryIndex) {
             this.title = title;
             this.list = list;
+            this.categoryIndex = categoryIndex;
         }
     }
 
@@ -37,7 +39,7 @@ public class RecommendRowAdapter extends RecyclerView.Adapter<RecommendRowAdapte
         this.mItems = new ArrayList<>();
     }
 
-    public void addRow(String title, List<Vod> list) {
+    public void addRow(String title, List<Vod> list, int categoryIndex) {
         if (list == null || list.isEmpty()) return;
         for (int i = 0; i < mItems.size(); i++) {
             if (mItems.get(i).title.equals(title)) {
@@ -46,7 +48,7 @@ public class RecommendRowAdapter extends RecyclerView.Adapter<RecommendRowAdapte
                 return;
             }
         }
-        mItems.add(new Row(title, list));
+        mItems.add(new Row(title, list, categoryIndex));
         notifyItemInserted(mItems.size() - 1);
     }
 
@@ -65,7 +67,7 @@ public class RecommendRowAdapter extends RecyclerView.Adapter<RecommendRowAdapte
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Row row = mItems.get(position);
         holder.binding.title.setText(row.title);
-        holder.binding.more.setOnClickListener(v -> mListener.onMoreClick(row.title, position));
+        holder.binding.more.setOnClickListener(v -> mListener.onMoreClick(row.categoryIndex));
         RecommendVodAdapter adapter = new RecommendVodAdapter(mListener::onItemClick);
         adapter.addAll(row.list);
         holder.binding.recycler.setAdapter(adapter);

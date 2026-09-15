@@ -70,9 +70,9 @@ public class HomeFragment extends Fragment {
                 VideoActivity.start(requireActivity(), VodConfig.get().getHome().getKey(), item.getId(), item.getName(), item.getPic());
             }
             @Override
-            public void onMoreClick(String title, int position) {
+            public void onMoreClick(int categoryIndex) {
                 if (getParentFragment() instanceof VodFragment) {
-                    ((VodFragment) getParentFragment()).showCategory(position);
+                    ((VodFragment) getParentFragment()).showCategory(categoryIndex);
                 }
             }
         });
@@ -95,9 +95,8 @@ public class HomeFragment extends Fragment {
     }
 
     private void setViewModel() {
-        mViewModel = new ViewModelProvider(this).get(SiteViewModel.class);
+        mViewModel = new ViewModelProvider(requireActivity()).get(SiteViewModel.class);
         mViewModel.result.observe(getViewLifecycleOwner(), this::onHomeResult);
-        mViewModel.homeContent();
     }
 
     private void onHomeResult(Result result) {
@@ -110,12 +109,13 @@ public class HomeFragment extends Fragment {
         mBinding.loading.setVisibility(View.VISIBLE);
         for (int i = 0; i < count; i++) {
             final Class type = types.get(i);
+            final int index = i;
             App.submit(() -> {
                 try {
                     List<Vod> list = loadCategory(type.getTypeId());
                     if (list != null && !list.isEmpty()) {
                         App.post(() -> {
-                            mRecommendAdapter.addRow(type.getTypeName(), new ArrayList<>(list));
+                            mRecommendAdapter.addRow(type.getTypeName(), new ArrayList<>(list), index);
                             mBinding.loading.setVisibility(View.GONE);
                         });
                     }

@@ -136,7 +136,7 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
     }
 
     private void setViewModel() {
-        mViewModel = new ViewModelProvider(this).get(SiteViewModel.class);
+        mViewModel = new ViewModelProvider(requireActivity()).get(SiteViewModel.class);
         mViewModel.result.observe(getViewLifecycleOwner(), this::setAdapter);
     }
 
@@ -319,9 +319,7 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
     @Override
     public boolean canBack() {
         if (mBinding.pager.getCurrentItem() == 0) return true;
-        if (mBinding.pager.getAdapter() == null || mBinding.pager.getAdapter().getCount() == 0) return true;
-        if (!getFragment().canBack()) return true;
-        getFragment().goBack();
+        mBinding.pager.setCurrentItem(0);
         return false;
     }
 
