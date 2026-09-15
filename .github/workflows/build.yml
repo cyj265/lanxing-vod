@@ -67,6 +67,10 @@ jobs:
         run: |
           echo "name=$(grep -oP 'versionName \"\K[^"]+' app/build.gradle)" >> $GITHUB_OUTPUT
 
+      - name: 重命名 APK（文件名带版本号，防缓存串版本）
+        run: |
+          cp app/build/outputs/apk/mobileArm64_v8a/release/mobile-arm64_v8a.apk app/build/outputs/apk/mobileArm64_v8a/release/mobile-arm64_v8a_${{ steps.ver.outputs.name }}.apk
+
       - name: 发布 GitHub Release（app 内一键更新）
         uses: softprops/action-gh-release@v2
         with:
@@ -75,6 +79,6 @@ jobs:
           body: |
             自动构建发布
             更新内容见仓库提交记录
-          files: app/build/outputs/apk/mobileArm64_v8a/release/mobile-arm64_v8a.apk
+          files: app/build/outputs/apk/mobileArm64_v8a/release/mobile-arm64_v8a_${{ steps.ver.outputs.name }}.apk
           generate_release_notes: false
           fail_on_unmatched_files: true

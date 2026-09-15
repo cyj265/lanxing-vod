@@ -6,6 +6,8 @@ import com.cyj265.lanxingvod.BuildConfig;
 
 import android.app.Activity;
 import android.content.DialogInterface;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.view.LayoutInflater;
 import android.view.View;
 
@@ -168,6 +170,14 @@ public class Updater implements Download.Callback {
             return;
         }
         try {
+            PackageManager pm = App.get().getPackageManager();
+            PackageInfo info = pm.getPackageArchiveInfo(file.getAbsolutePath(), 0);
+            if (info == null || info.versionCode < BuildConfig.VERSION_CODE) {
+                file.delete();
+                Notify.show(R.string.update_version_invalid);
+                dismiss();
+                return;
+            }
             FileUtil.openFile(file);
             Notify.show(R.string.update_install_hint);
         } catch (Exception e) {
