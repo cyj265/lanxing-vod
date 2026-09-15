@@ -68,9 +68,8 @@ public class RecommendRowAdapter extends RecyclerView.Adapter<RecommendRowAdapte
         Row row = mItems.get(position);
         holder.binding.title.setText(row.title);
         holder.binding.more.setOnClickListener(v -> mListener.onMoreClick(row.categoryIndex));
-        RecommendVodAdapter adapter = new RecommendVodAdapter(mListener::onItemClick);
-        adapter.addAll(row.list);
-        holder.binding.recycler.setAdapter(adapter);
+        holder.mAdapter.addAll(row.list);
+        holder.mAdapter.setListener(mListener::onItemClick);
     }
 
     @Override
@@ -80,12 +79,18 @@ public class RecommendRowAdapter extends RecyclerView.Adapter<RecommendRowAdapte
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         private final ItemRecommendRowBinding binding;
+        private final RecommendVodAdapter mAdapter;
 
         ViewHolder(ItemRecommendRowBinding binding) {
             super(binding.getRoot());
             this.binding = binding;
-            binding.recycler.setLayoutManager(new LinearLayoutManager(binding.getRoot().getContext(), LinearLayoutManager.HORIZONTAL, false));
+            LinearLayoutManager lm = new LinearLayoutManager(binding.getRoot().getContext(), LinearLayoutManager.HORIZONTAL, false);
+            binding.recycler.setLayoutManager(lm);
             binding.recycler.setHasFixedSize(true);
+            binding.recycler.setItemViewCacheSize(12);
+            binding.recycler.setNestedScrollingEnabled(false);
+            mAdapter = new RecommendVodAdapter(v -> {});
+            binding.recycler.setAdapter(mAdapter);
         }
     }
 }

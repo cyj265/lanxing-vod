@@ -33,6 +33,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import okhttp3.Response;
 
@@ -42,6 +44,7 @@ public class HomeFragment extends Fragment {
     private RecommendRowAdapter mRecommendAdapter;
     private SiteViewModel mViewModel;
     private List<Class> mTypes;
+    private final ExecutorService mRecommendExecutor = Executors.newFixedThreadPool(2);
 
     public static HomeFragment newInstance() {
         return new HomeFragment();
@@ -81,6 +84,8 @@ public class HomeFragment extends Fragment {
         });
         mBinding.recommendRecycler.setAdapter(mRecommendAdapter);
         mBinding.recommendRecycler.setLayoutManager(new LinearLayoutManager(requireContext()));
+        mBinding.recommendRecycler.setHasFixedSize(true);
+        mBinding.recommendRecycler.setItemViewCacheSize(6);
     }
 
     private void setContinue() {
@@ -114,7 +119,7 @@ public class HomeFragment extends Fragment {
         for (int i = 0; i < count; i++) {
             final Class type = types.get(i);
             final int index = i;
-            App.submit(() -> {
+            mRecommendExecutor.submit(() -> {
                 try {
                     List<Vod> list = loadCategory(type.getTypeId());
                     if (list != null && !list.isEmpty()) {
@@ -157,6 +162,7 @@ public class HomeFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        mRecommendExecutor.shutdownNow();
         mBinding = null;
     }
 }

@@ -15,7 +15,7 @@ import java.util.List;
 
 public class RecommendVodAdapter extends RecyclerView.Adapter<RecommendVodAdapter.ViewHolder> {
 
-    private final OnClickListener mListener;
+    private OnClickListener mListener;
     private final List<Vod> mItems;
 
     public interface OnClickListener {
@@ -25,6 +25,10 @@ public class RecommendVodAdapter extends RecyclerView.Adapter<RecommendVodAdapte
     public RecommendVodAdapter(OnClickListener listener) {
         this.mListener = listener;
         this.mItems = new ArrayList<>();
+    }
+
+    public void setListener(OnClickListener listener) {
+        this.mListener = listener;
     }
 
     public void addAll(List<Vod> items) {
