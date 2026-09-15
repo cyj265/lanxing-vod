@@ -84,12 +84,21 @@ public class Douban {
                     Vod vod = new Vod();
                     vod.setId(item.optString("id", ""));
                     vod.setName(item.optString("title", ""));
+                    // 豆瓣榜单图片：部分榜单在 cover.url，部分在 pic.large
+                    String pic = "";
                     JSONObject cover = item.optJSONObject("cover");
-                    if (cover != null) {
-                        // 豆瓣图片防盗链，必须带 Referer 否则 418
-                        String pic = cover.optString("url", "");
-                        if (!TextUtils.isEmpty(pic)) vod.setPic(pic + "@Referer=https://movie.douban.com/");
+                    if (cover != null) pic = cover.optString("url", "");
+                    if (TextUtils.isEmpty(pic)) {
+                        JSONObject picObj = item.optJSONObject("pic");
+                        if (picObj != null) pic = picObj.optString("large", "");
                     }
+                    if (!TextUtils.isEmpty(pic)) {
+                        // 豆瓣图片防盗链，必须带 Referer 否则 418
+                        vod.setPic(pic + "@Referer=https://movie.douban.com/");
+                    }
+                    // 部分榜单(电视/动漫/韩剧)自带简介
+                    String comment = item.optString("comment", "");
+                    if (!TextUtils.isEmpty(comment)) vod.setContent(comment.trim());
                     JSONObject rating = item.optJSONObject("rating");
                     if (rating != null && rating.has("value")) {
                         double val = rating.optDouble("value", 0);
