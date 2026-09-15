@@ -2,7 +2,7 @@ package com.fongmi.android.tv.player.exo;
 
 import androidx.media3.database.StandaloneDatabaseProvider;
 import androidx.media3.datasource.cache.Cache;
-import androidx.media3.datasource.cache.NoOpCacheEvictor;
+import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor;
 import androidx.media3.datasource.cache.SimpleCache;
 
 import com.fongmi.android.tv.App;
@@ -26,7 +26,7 @@ public class CacheManager {
     }
 
     private void create() {
-        cache = new SimpleCache(Path.exo(), new NoOpCacheEvictor(), new StandaloneDatabaseProvider(App.get()));
+        cache = new SimpleCache(Path.exo(), new LeastRecentlyUsedCacheEvictor(300 * 1024 * 1024), new StandaloneDatabaseProvider(App.get()));
     }
 
     public void release() {

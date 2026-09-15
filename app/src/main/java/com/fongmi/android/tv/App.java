@@ -16,8 +16,10 @@ import com.fongmi.android.tv.utils.Notify;
 import com.tencent.bugly.crashreport.CrashReport;
 import com.fongmi.hook.Hook;
 import com.github.catvod.Init;
+import com.github.catvod.utils.Path;
 import com.google.gson.Gson;
 
+import java.io.File;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -59,6 +61,22 @@ public class App extends Application implements Application.ActivityLifecycleCal
         CrashReport.initCrashReport(getApplicationContext(), "69e90fd596", false);
         Notify.createChannel();
         registerActivityLifecycleCallbacks(this);
+        executor.execute(this::clearApkCache);
+    }
+
+    private void clearApkCache() {
+        try {
+            File dir = new File(Path.cache(), "apk");
+            if (dir.exists()) {
+                File[] files = dir.listFiles();
+                if (files != null) {
+                    for (File file : files) {
+                        if (file.isFile()) file.delete();
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
     }
 
     @Override
