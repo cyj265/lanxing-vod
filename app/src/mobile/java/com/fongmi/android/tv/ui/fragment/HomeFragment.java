@@ -21,6 +21,7 @@ import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.model.SiteViewModel;
+import com.fongmi.android.tv.ui.activity.CategoryListActivity;
 import com.fongmi.android.tv.ui.activity.HistoryActivity;
 import com.fongmi.android.tv.ui.activity.VideoActivity;
 import com.fongmi.android.tv.ui.adapter.ContinueAdapter;
@@ -40,6 +41,7 @@ public class HomeFragment extends Fragment {
     private FragmentHomeBinding mBinding;
     private RecommendRowAdapter mRecommendAdapter;
     private SiteViewModel mViewModel;
+    private List<Class> mTypes;
 
     public static HomeFragment newInstance() {
         return new HomeFragment();
@@ -71,8 +73,9 @@ public class HomeFragment extends Fragment {
             }
             @Override
             public void onMoreClick(int categoryIndex) {
-                if (getParentFragment() instanceof VodFragment) {
-                    ((VodFragment) getParentFragment()).showCategory(categoryIndex);
+                if (mTypes != null && categoryIndex >= 0 && categoryIndex < mTypes.size()) {
+                    Class type = mTypes.get(categoryIndex);
+                    CategoryListActivity.start(requireActivity(), type.getTypeId(), type.getTypeName());
                 }
             }
         });
@@ -105,6 +108,7 @@ public class HomeFragment extends Fragment {
             return;
         }
         List<Class> types = result.getTypes();
+        mTypes = types;
         int count = Math.min(6, types.size());
         mBinding.loading.setVisibility(View.VISIBLE);
         for (int i = 0; i < count; i++) {

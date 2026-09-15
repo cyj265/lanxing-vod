@@ -73,6 +73,11 @@
             android:windowSoftInputMode="adjustPan" />
 
         <activity
+            android:name="com.fongmi.android.tv.ui.activity.CategoryListActivity"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|uiMode"
+            android:screenOrientation="fullUser" />
+
+        <activity
             android:name="com.fongmi.android.tv.ui.activity.FileActivity"
             android:configChanges="screenSize|smallestScreenSize|screenLayout|uiMode"
             android:screenOrientation="fullUser" />

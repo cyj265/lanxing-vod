@@ -82,36 +82,18 @@
             android:paddingStart="8dp"
             android:paddingTop="2dp"
             android:paddingEnd="8dp"
-            android:paddingBottom="4dp"
+            android:paddingBottom="8dp"
             app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
             tools:listitem="@layout/adapter_type" />
 
     </com.google.android.material.appbar.AppBarLayout>
 
-    <com.fongmi.android.tv.ui.custom.CustomViewPager
-        android:id="@+id/pager"
+    <androidx.fragment.app.FragmentContainerView
+        android:id="@+id/container"
+        android:name="com.fongmi.android.tv.ui.fragment.HomeFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         app:layout_behavior="@string/appbar_scrolling_view_behavior" />
-
-    <include
-        android:id="@+id/progress"
-        layout="@layout/view_progress"
-        android:visibility="gone" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/filter"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:visibility="gone"
-        app:backgroundTint="@color/primary"
-        app:layout_anchor="@id/pager"
-        app:layout_anchorGravity="end|bottom"
-        app:layout_behavior="com.fongmi.android.tv.ui.custom.CustomFabBehavior"
-        app:srcCompat="@drawable/ic_fab_filter"
-        app:tint="@color/white"
-        tools:visibility="visible" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/link"
@@ -119,25 +101,10 @@
         android:layout_height="wrap_content"
         android:layout_margin="16dp"
         app:backgroundTint="@color/primary"
-        app:layout_anchor="@id/pager"
+        app:layout_anchor="@id/container"
         app:layout_anchorGravity="end|bottom"
         app:layout_behavior="com.fongmi.android.tv.ui.custom.CustomFabBehavior"
         app:srcCompat="@drawable/ic_fab_link"
-        app:tint="@color/white"
-        tools:visibility="visible" />
-
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/top"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:tag="top"
-        android:visibility="invisible"
-        app:backgroundTint="@color/primary"
-        app:layout_anchor="@id/pager"
-        app:layout_anchorGravity="end|bottom"
-        app:layout_behavior="com.fongmi.android.tv.ui.custom.CustomFabBehavior"
-        app:srcCompat="@drawable/ic_fab_top"
         app:tint="@color/white"
         tools:visibility="visible" />
 
