@@ -3,6 +3,7 @@ package com.fongmi.android.tv.ui.activity;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.View;
 
 import androidx.lifecycle.ViewModelProvider;
@@ -24,15 +25,19 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 public class CategoryListActivity extends BaseActivity {
 
     private static final int MAX_FETCH = 10;
+    private static final int SPIDER_TIMEOUT = 8;
 
     private ActivityCategoryListBinding mBinding;
     private SiteViewModel mViewModel;
     private CategoryListAdapter mAdapter;
     private ExecutorService mDetailExecutor;
+    private ExecutorService mSpiderExecutor;
     private String mTypeId;
     private List<Vod> mCurrentList;
 
@@ -71,6 +76,7 @@ public class CategoryListActivity extends BaseActivity {
 
         mViewModel = new ViewModelProvider(this).get(SiteViewModel.class);
         mDetailExecutor = Executors.newSingleThreadExecutor();
+        mSpiderExecutor = Executors.newSingleThreadExecutor();
 
         mViewModel.result.observe(this, result -> {
             mBinding.loading.setVisibility(View.GONE);
@@ -85,6 +91,7 @@ public class CategoryListActivity extends BaseActivity {
             if (result != null && result.getList() != null && !result.getList().isEmpty()) {
                 mergeContent(result.getList());
             }
+            doubanFallback();
         });
 
         ArrayList<Vod> initialList = getIntent().getParcelableArrayListExtra("initialList");
@@ -98,6 +105,10 @@ public class CategoryListActivity extends BaseActivity {
         }
     }
 
+    private boolean isEmptyContent(Vod vod) {
+        return vod == null || TextUtils.isEmpty(vod.getContent());
+    }
+
     private void fetchMissingContent() {
         if (mCurrentList == null || mCurrentList.isEmpty()) return;
         Site site = VodConfig.get().getHome();
@@ -108,13 +119,12 @@ public class CategoryListActivity extends BaseActivity {
         }
     }
 
-    // type=3 (JS/Python 爬虫)：detailContent 只处理单个 id，必须逐个请求
+    // type=3 (JS/Python 爬虫)：detailContent 只处理单个 id，必须逐个请求，源无简介时豆瓣兜底
     private void fetchSingleContents(Site site) {
         int count = 0;
         for (Vod vod : mCurrentList) {
             if (count >= MAX_FETCH) break;
-            String content = vod.getContent();
-            if (content == null || content.isEmpty()) {
+            if (isEmptyContent(vod)) {
                 count++;
                 fetchSingle(site, vod);
             }
@@ -123,27 +133,35 @@ public class CategoryListActivity extends BaseActivity {
 
     private void fetchSingle(Site site, Vod vod) {
         mDetailExecutor.execute(() -> {
-            String content = "";
-            try {
-                Spider spider = site.recent().spider();
-                String detail = spider.detailContent(java.util.Collections.singletonList(vod.getId()));
-                Result result = Result.fromJson(detail);
-                if (result.getList() != null && !result.getList().isEmpty()) {
-                    content = result.getList().get(0).getContent();
-                }
-            } catch (Exception ignored) {
-            }
-            if (content == null || content.isEmpty()) {
+            String content = fetchSourceContent(site, vod);
+            if (TextUtils.isEmpty(content)) {
                 content = Douban.getIntro(vod.getName());
             }
-            if (content == null || content.isEmpty()) return;
-            vod.setContent(content);
-            int index = mCurrentList.indexOf(vod);
-            if (index >= 0) {
-                int pos = index;
-                runOnUiThread(() -> mAdapter.notifyItemChanged(pos));
-            }
+            updateContent(vod, content);
         });
+    }
+
+    // 源 detailContent 放独立线程 + 超时，防止 JS 引擎卡死阻塞后续补全
+    private String fetchSourceContent(Site site, Vod vod) {
+        try {
+            Future<String> future = mSpiderExecutor.submit(() -> {
+                try {
+                    Spider spider = site.recent().spider();
+                    String detail = spider.detailContent(java.util.Collections.singletonList(vod.getId()));
+                    Result result = Result.fromJson(detail);
+                    if (result.getList() != null && !result.getList().isEmpty()) {
+                        String content = result.getList().get(0).getContent();
+                        return content == null ? "" : content;
+                    }
+                } catch (Exception ignored) {
+                }
+                return "";
+            });
+            String detail = future.get(SPIDER_TIMEOUT, TimeUnit.SECONDS);
+            return detail == null ? "" : detail;
+        } catch (Exception ignored) {
+            return "";
+        }
     }
 
     // type=0/1 (标准接口)：批量 ac=detail&ids= 获取
@@ -151,8 +169,7 @@ public class CategoryListActivity extends BaseActivity {
         StringBuilder ids = new StringBuilder();
         int count = 0;
         for (Vod vod : mCurrentList) {
-            String content = vod.getContent();
-            if (content == null || content.isEmpty()) {
+            if (isEmptyContent(vod)) {
                 if (ids.length() > 0) ids.append(",");
                 ids.append(vod.getId());
                 count++;
@@ -160,6 +177,34 @@ public class CategoryListActivity extends BaseActivity {
         }
         if (count > 0 && ids.length() > 0) {
             mViewModel.detailContentBatch(site.getKey(), ids.toString());
+        } else {
+            doubanFallback();
+        }
+    }
+
+    // 批量详情完成后，对仍缺简介的条目逐个豆瓣兜底
+    private void doubanFallback() {
+        if (mCurrentList == null) return;
+        int count = 0;
+        for (Vod vod : mCurrentList) {
+            if (count >= MAX_FETCH) break;
+            if (isEmptyContent(vod)) {
+                count++;
+                mDetailExecutor.execute(() -> {
+                    String content = Douban.getIntro(vod.getName());
+                    updateContent(vod, content);
+                });
+            }
+        }
+    }
+
+    private void updateContent(Vod vod, String content) {
+        if (vod == null || TextUtils.isEmpty(content)) return;
+        vod.setContent(content);
+        int index = mCurrentList.indexOf(vod);
+        if (index >= 0) {
+            int pos = index;
+            runOnUiThread(() -> mAdapter.notifyItemChanged(pos));
         }
     }
 
@@ -189,6 +234,7 @@ public class CategoryListActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         if (mDetailExecutor != null) mDetailExecutor.shutdownNow();
+        if (mSpiderExecutor != null) mSpiderExecutor.shutdownNow();
         super.onDestroy();
     }
 }
