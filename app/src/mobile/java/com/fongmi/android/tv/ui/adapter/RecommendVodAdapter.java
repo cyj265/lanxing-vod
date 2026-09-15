@@ -6,9 +6,9 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.cyj265.lanxingvod.databinding.ItemRecommendVodBinding;
 import com.fongmi.android.tv.bean.Vod;
+import com.fongmi.android.tv.utils.ImgUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,7 +44,7 @@ public class RecommendVodAdapter extends RecyclerView.Adapter<RecommendVodAdapte
         Vod item = mItems.get(position);
         holder.binding.name.setText(item.getName());
         holder.binding.remark.setText(item.getRemarks());
-        Glide.with(holder.binding.pic).load(item.getPic()).into(holder.binding.pic);
+        ImgUtil.load(item.getName(), item.getPic(), holder.binding.pic);
         holder.itemView.setOnClickListener(v -> mListener.onItemClick(item));
     }
 

@@ -102,7 +102,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         try {
             BlurAlgorithm algorithm = Build.VERSION.SDK_INT >= 31 ? new RenderEffectBlur() : new RenderScriptBlur(this);
             mBinding.blurView.setupWith(findViewById(android.R.id.content), algorithm)
-                    .setBlurRadius(32f)
+                    .setBlurRadius(16f)
                     .setBlurAutoUpdate(true);
             int radius = (int) (26 * getResources().getDisplayMetrics().density);
             mBinding.blurView.setOutlineProvider(new ViewOutlineProvider() {

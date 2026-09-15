@@ -28,6 +28,7 @@ public class CategoryListActivity extends BaseActivity {
         intent.putExtra("typeId", typeId);
         intent.putExtra("typeName", typeName);
         activity.startActivity(intent);
+        activity.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
     }
 
     @Override

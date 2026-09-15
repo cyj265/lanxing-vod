@@ -6,9 +6,9 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.bumptech.glide.Glide;
 import com.cyj265.lanxingvod.databinding.ItemCategoryListBinding;
 import com.fongmi.android.tv.bean.Vod;
+import com.fongmi.android.tv.utils.ImgUtil;
 import com.google.android.material.chip.Chip;
 
 import java.util.ArrayList;
@@ -46,7 +46,7 @@ public class CategoryListAdapter extends RecyclerView.Adapter<CategoryListAdapte
         holder.binding.name.setText(item.getName());
         holder.binding.remark.setText(item.getRemarks());
         holder.binding.desc.setText(item.getContent());
-        Glide.with(holder.binding.pic).load(item.getPic()).into(holder.binding.pic);
+        ImgUtil.load(item.getName(), item.getPic(), holder.binding.pic);
 
         holder.binding.tags.removeAllViews();
         String typeName = item.getTypeName();
