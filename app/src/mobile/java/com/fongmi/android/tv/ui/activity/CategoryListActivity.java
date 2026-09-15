@@ -23,6 +23,8 @@ import com.github.catvod.crawler.Spider;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -30,8 +32,14 @@ import java.util.concurrent.TimeUnit;
 
 public class CategoryListActivity extends BaseActivity {
 
-    private static final int MAX_FETCH = 10;
-    private static final int SPIDER_TIMEOUT = 8;
+    private static final int MAX_FETCH = 12;
+    private static final int SPIDER_TIMEOUT = 5;
+    private static final int CONCURRENCY = 3;
+
+    // 进程内简介缓存：片名 -> 简介，退出页面再进直接命中
+    private static final ConcurrentHashMap<String, String> sIntroCache = new ConcurrentHashMap<>();
+    // 标记 detailContent 不可用的源 key，避免每次都等超时
+    private static final Set<String> sSpiderBroken = ConcurrentHashMap.newKeySet();
 
     private ActivityCategoryListBinding mBinding;
     private SiteViewModel mViewModel;
@@ -75,7 +83,7 @@ public class CategoryListActivity extends BaseActivity {
         mBinding.recycler.setLayoutManager(new LinearLayoutManager(this));
 
         mViewModel = new ViewModelProvider(this).get(SiteViewModel.class);
-        mDetailExecutor = Executors.newSingleThreadExecutor();
+        mDetailExecutor = Executors.newFixedThreadPool(CONCURRENCY);
         mSpiderExecutor = Executors.newSingleThreadExecutor();
 
         mViewModel.result.observe(this, result -> {
@@ -119,7 +127,6 @@ public class CategoryListActivity extends BaseActivity {
         }
     }
 
-    // type=3 (JS/Python 爬虫)：detailContent 只处理单个 id，必须逐个请求，源无简介时豆瓣兜底
     private void fetchSingleContents(Site site) {
         int count = 0;
         for (Vod vod : mCurrentList) {
@@ -132,16 +139,33 @@ public class CategoryListActivity extends BaseActivity {
     }
 
     private void fetchSingle(Site site, Vod vod) {
+        // 先查缓存，命中则瞬间显示
+        String cached = sIntroCache.get(vod.getName());
+        if (cached != null && !cached.isEmpty()) {
+            updateContent(vod, cached);
+            return;
+        }
         mDetailExecutor.execute(() -> {
-            String content = fetchSourceContent(site, vod);
+            String c = sIntroCache.get(vod.getName());
+            if (c != null && !c.isEmpty()) {
+                updateContent(vod, c);
+                return;
+            }
+            String content = "";
+            // 源 detailContent 已标记不可用则跳过，直接豆瓣
+            if (!sSpiderBroken.contains(site.getKey())) {
+                content = fetchSourceContent(site, vod);
+            }
             if (TextUtils.isEmpty(content)) {
                 content = Douban.getIntro(vod.getName());
             }
-            updateContent(vod, content);
+            if (!TextUtils.isEmpty(content)) {
+                sIntroCache.put(vod.getName(), content);
+                updateContent(vod, content);
+            }
         });
     }
 
-    // 源 detailContent 放独立线程 + 超时，防止 JS 引擎卡死阻塞后续补全
     private String fetchSourceContent(Site site, Vod vod) {
         try {
             Future<String> future = mSpiderExecutor.submit(() -> {
@@ -158,13 +182,16 @@ public class CategoryListActivity extends BaseActivity {
                 return "";
             });
             String detail = future.get(SPIDER_TIMEOUT, TimeUnit.SECONDS);
+            if (TextUtils.isEmpty(detail)) {
+                sSpiderBroken.add(site.getKey());
+            }
             return detail == null ? "" : detail;
-        } catch (Exception ignored) {
+        } catch (Exception e) {
+            sSpiderBroken.add(site.getKey());
             return "";
         }
     }
 
-    // type=0/1 (标准接口)：批量 ac=detail&ids= 获取
     private void fetchBatchContents(Site site) {
         StringBuilder ids = new StringBuilder();
         int count = 0;
@@ -182,7 +209,6 @@ public class CategoryListActivity extends BaseActivity {
         }
     }
 
-    // 批量详情完成后，对仍缺简介的条目逐个豆瓣兜底
     private void doubanFallback() {
         if (mCurrentList == null) return;
         int count = 0;
@@ -191,8 +217,16 @@ public class CategoryListActivity extends BaseActivity {
             if (isEmptyContent(vod)) {
                 count++;
                 mDetailExecutor.execute(() -> {
+                    String cached = sIntroCache.get(vod.getName());
+                    if (cached != null && !cached.isEmpty()) {
+                        updateContent(vod, cached);
+                        return;
+                    }
                     String content = Douban.getIntro(vod.getName());
-                    updateContent(vod, content);
+                    if (!TextUtils.isEmpty(content)) {
+                        sIntroCache.put(vod.getName(), content);
+                        updateContent(vod, content);
+                    }
                 });
             }
         }
@@ -214,6 +248,7 @@ public class CategoryListActivity extends BaseActivity {
         for (Vod detail : details) {
             if (detail.getContent() != null && !detail.getContent().isEmpty()) {
                 contentMap.put(detail.getId(), detail.getContent());
+                sIntroCache.put(detail.getName(), detail.getContent());
             }
         }
         boolean changed = false;

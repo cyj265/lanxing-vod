@@ -19,17 +19,34 @@ public class Douban {
     private static final String UA = "Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/53.0.2785.143 Safari/537.36 MicroMessenger/7.0.9.501 NetType/WIFI MiniProgramEnv/Windows WindowsWechat";
     private static final String REFERER = "https://servicewechat.com/wx2f9b06c1de1ccfca/84/page-frame.html";
 
+    // 豆瓣请求限速锁，防止并发触发限流
+    private static final Object sLock = new Object();
+    private static long sLastRequest = 0;
+
+    private static void throttle() {
+        synchronized (sLock) {
+            long now = System.currentTimeMillis();
+            long wait = 120 - (now - sLastRequest);
+            if (wait > 0) {
+                try { Thread.sleep(wait); } catch (InterruptedException ignored) {}
+            }
+            sLastRequest = System.currentTimeMillis();
+        }
+    }
+
     public static String getIntro(String title) {
         if (TextUtils.isEmpty(title)) return "";
         try {
             Map<String, String> headers = new HashMap<>();
             headers.put("User-Agent", UA);
             headers.put("Referer", REFERER);
+            throttle();
             String suggest = OkHttp.string(String.format(SUGGEST, URLEncoder.encode(title, "UTF-8")), headers);
             JSONArray arr = new JSONArray(suggest);
             if (arr.length() == 0) return "";
             String id = arr.getJSONObject(0).optString("id");
             if (TextUtils.isEmpty(id)) return "";
+            throttle();
             String detail = OkHttp.string(String.format(DETAIL, id), headers);
             JSONObject obj = new JSONObject(detail);
             String intro = obj.optString("intro", "");
