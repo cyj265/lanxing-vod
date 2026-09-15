@@ -162,7 +162,17 @@ public class Updater implements Download.Callback {
 
     @Override
     public void success(File file) {
-        FileUtil.openFile(file);
+        if (file == null || !file.exists() || file.length() < 5 * 1024 * 1024) {
+            Notify.show(R.string.update_download_failed);
+            dismiss();
+            return;
+        }
+        try {
+            FileUtil.openFile(file);
+            Notify.show(R.string.update_install_hint);
+        } catch (Exception e) {
+            Notify.show(R.string.update_install_failed);
+        }
         dismiss();
     }
 }

@@ -141,6 +141,9 @@
     <string name="update_version">New version <xliff:g name="name">%s</xliff:g></string>
     <string name="update_check">Checking for updates…</string>
     <string name="update_confirm">Update</string>
+    <string name="update_download_failed">下载失败，请检查网络后重试</string>
+    <string name="update_install_hint">下载完成，请在弹出的安装界面点击「安装」</string>
+    <string name="update_install_failed">安装失败，请手动下载安装</string>
 
     <!-- Crash -->
     <string name="crash_info">An unexpected error occurred.\nSorry for the inconvenience.</string>
