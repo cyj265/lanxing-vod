@@ -176,7 +176,7 @@ public class SiteViewModel extends ViewModel {
                 return Result.fromJson(detailContent);
             } else {
                 ArrayMap<String, String> params = new ArrayMap<>();
-                params.put("ac", site.getType() == 0 ? "videolist" : "detail");
+                params.put("ac", "detail");
                 params.put("ids", ids);
                 String detailContent = call(site, params);
                 SpiderDebug.log("detailBatch", detailContent);
