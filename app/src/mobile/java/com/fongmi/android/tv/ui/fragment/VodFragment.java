@@ -41,7 +41,6 @@ import com.fongmi.android.tv.ui.activity.HistoryActivity;
 import com.fongmi.android.tv.ui.activity.KeepActivity;
 import com.fongmi.android.tv.ui.activity.SearchActivity;
 import com.fongmi.android.tv.ui.activity.VideoActivity;
-import com.fongmi.android.tv.ui.adapter.ContinueAdapter;
 import com.fongmi.android.tv.ui.adapter.TypeAdapter;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.dialog.FilterDialog;
@@ -67,7 +66,6 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
     private FragmentVodBinding mBinding;
     private SiteViewModel mViewModel;
     private TypeAdapter mAdapter;
-    private ContinueAdapter mContinueAdapter;
     private Result mResult;
 
     public static VodFragment newInstance() {
@@ -96,7 +94,6 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
         EventBus.getDefault().register(this);
         mBinding.title.setSelected(true);
         setRecyclerView();
-        setContinue();
         setViewModel();
         showProgress();
         setTitle();
@@ -108,7 +105,6 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
         mBinding.top.setOnClickListener(this::onTop);
         mBinding.searchBar.setOnClickListener(v -> SearchActivity.start(requireActivity()));
         mBinding.logo.setOnClickListener(this::onLogo);
-        mBinding.continueMore.setOnClickListener(v -> HistoryActivity.start(requireActivity()));
         mBinding.link.setOnClickListener(this::onLink);
         mBinding.title.setOnClickListener(this::onSite);
         mBinding.filter.setOnClickListener(this::onFilter);
@@ -123,8 +119,10 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
         mBinding.pager.addOnPageChangeListener(new ViewPager.SimpleOnPageChangeListener() {
             @Override
             public void onPageSelected(int position) {
-                mBinding.type.smoothScrollToPosition(position);
-                mAdapter.setActivated(position);
+                if (position > 0) {
+                    mBinding.type.smoothScrollToPosition(position - 1);
+                    mAdapter.setActivated(position - 1);
+                }
                 setFabVisible(position);
             }
         });
@@ -135,21 +133,6 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
         mBinding.type.setItemAnimator(null);
         mBinding.type.setAdapter(mAdapter = new TypeAdapter(this));
         mBinding.pager.setAdapter(new PageAdapter(getChildFragmentManager()));
-    }
-
-    private void setContinue() {
-        List<History> items = History.get();
-        if (items.isEmpty()) {
-            mBinding.continueLayout.setVisibility(View.GONE);
-            return;
-        }
-        int count = Math.min(items.size(), 10);
-        mBinding.continueLayout.setVisibility(View.VISIBLE);
-        mBinding.continueRecycler.setAdapter(mContinueAdapter = new ContinueAdapter(items.subList(0, count), this::onContinueClick));
-    }
-
-    private void onContinueClick(History item) {
-        VideoActivity.start(requireActivity(), item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic());
     }
 
     private void setViewModel() {
@@ -165,15 +148,18 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
     }
 
     private void setFabVisible(int position) {
-        if (mAdapter.getItemCount() == 0) {
+        if (position == 0 || mAdapter.getItemCount() == 0) {
             mBinding.top.setVisibility(View.INVISIBLE);
             mBinding.link.setVisibility(View.VISIBLE);
             mBinding.filter.setVisibility(View.GONE);
-        } else if (!mAdapter.get(position).getFilters().isEmpty()) {
+            return;
+        }
+        int idx = position - 1;
+        if (!mAdapter.get(idx).getFilters().isEmpty()) {
             mBinding.top.setVisibility(View.INVISIBLE);
             mBinding.link.setVisibility(View.GONE);
             mBinding.filter.show();
-        } else if (position == 0 || mAdapter.get(position).getFilters().isEmpty()) {
+        } else {
             mBinding.top.setVisibility(View.INVISIBLE);
             mBinding.filter.setVisibility(View.GONE);
             mBinding.link.show();
@@ -187,7 +173,7 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
     }
 
     private void onTop(View view) {
-        getFragment().scrollToTop();
+        if (mBinding.pager.getCurrentItem() > 0) getFragment().scrollToTop();
         mBinding.top.setVisibility(View.INVISIBLE);
         if (mBinding.filter.getVisibility() == View.INVISIBLE) mBinding.filter.show();
         else if (mBinding.link.getVisibility() == View.INVISIBLE) mBinding.link.show();
@@ -207,7 +193,8 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
     }
 
     private void onFilter(View view) {
-        if (mAdapter.getItemCount() > 0) FilterDialog.create().filter(mAdapter.get(mBinding.pager.getCurrentItem()).getFilters()).show(this);
+        int pos = mBinding.pager.getCurrentItem();
+        if (pos > 0 && mAdapter.getItemCount() > 0) FilterDialog.create().filter(mAdapter.get(pos - 1).getFilters()).show(this);
     }
 
     private boolean onMenuItemClick(MenuItem item) {
@@ -263,9 +250,6 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
             case SIZE:
                 homeContent();
                 break;
-            case HISTORY:
-                setContinue();
-                break;
         }
     }
 
@@ -317,8 +301,14 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
 
     @Override
     public void onItemClick(int position, Class item) {
-        mBinding.pager.setCurrentItem(position);
+        mBinding.pager.setCurrentItem(position + 1);
         mAdapter.setActivated(position);
+    }
+
+    public void showCategory(int categoryIndex) {
+        if (categoryIndex >= 0 && categoryIndex < mAdapter.getItemCount()) {
+            mBinding.pager.setCurrentItem(categoryIndex + 1);
+        }
     }
 
     @Override
@@ -328,6 +318,7 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
 
     @Override
     public boolean canBack() {
+        if (mBinding.pager.getCurrentItem() == 0) return true;
         if (mBinding.pager.getAdapter() == null || mBinding.pager.getAdapter().getCount() == 0) return true;
         if (!getFragment().canBack()) return true;
         getFragment().goBack();
@@ -354,13 +345,14 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
         @NonNull
         @Override
         public Fragment getItem(int position) {
-            Class type = mAdapter.get(position);
+            if (position == 0) return HomeFragment.newInstance();
+            Class type = mAdapter.get(position - 1);
             return FolderFragment.newInstance(getHome().getKey(), type, 4);
         }
 
         @Override
         public int getCount() {
-            return mAdapter.getItemCount();
+            return mAdapter.getItemCount() + 1;
         }
 
         @Override
