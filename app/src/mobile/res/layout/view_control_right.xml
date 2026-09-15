@@ -20,6 +20,6 @@
         android:layout_height="48dp"
         android:background="?attr/selectableItemBackgroundBorderless"
         android:scaleType="center"
-        android:src="@drawable/ic_control_rotate" />
+        android:src="@drawable/ic_control_fullscreen" />
 
 </androidx.appcompat.widget.LinearLayoutCompat>
