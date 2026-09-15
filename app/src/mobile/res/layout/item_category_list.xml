@@ -65,10 +65,10 @@
             android:id="@+id/desc"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="5dp"
-            android:textColor="#6AFFFFFF"
+            android:layout_marginTop="6dp"
+            android:textColor="#B3FFFFFF"
             android:textSize="12sp"
-            android:maxLines="4"
+            android:maxLines="3"
             android:ellipsize="end"
             android:lineSpacingMultiplier="1.2" />
 
