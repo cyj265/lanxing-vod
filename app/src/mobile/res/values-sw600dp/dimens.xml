@@ -6,4 +6,6 @@
     <dimen name="nav_margin_bottom">12dp</dimen>
     <dimen name="content_padding_side">20dp</dimen>
     <dimen name="poster_spacing">8dp</dimen>
+    <dimen name="recommend_poster_width">130dp</dimen>
+    <dimen name="recommend_poster_height">182dp</dimen>
 </resources>
