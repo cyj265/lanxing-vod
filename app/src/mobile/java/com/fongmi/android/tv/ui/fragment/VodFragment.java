@@ -302,7 +302,7 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
 
     @Override
     public void onItemClick(int position, Class item) {
-        mBinding.pager.setCurrentItem(position + 1);
+        mBinding.pager.setCurrentItem(position == 0 ? 0 : position + 1);
         mAdapter.setActivated(position);
     }
 
