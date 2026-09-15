@@ -23,6 +23,7 @@ import com.cyj265.lanxingvod.R;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Class;
 import com.fongmi.android.tv.bean.Config;
+import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.bean.Value;
@@ -40,6 +41,7 @@ import com.fongmi.android.tv.ui.activity.HistoryActivity;
 import com.fongmi.android.tv.ui.activity.KeepActivity;
 import com.fongmi.android.tv.ui.activity.SearchActivity;
 import com.fongmi.android.tv.ui.activity.VideoActivity;
+import com.fongmi.android.tv.ui.adapter.ContinueAdapter;
 import com.fongmi.android.tv.ui.adapter.TypeAdapter;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.dialog.FilterDialog;
@@ -65,6 +67,7 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
     private FragmentVodBinding mBinding;
     private SiteViewModel mViewModel;
     private TypeAdapter mAdapter;
+    private ContinueAdapter mContinueAdapter;
     private Result mResult;
 
     public static VodFragment newInstance() {
@@ -93,6 +96,7 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
         EventBus.getDefault().register(this);
         mBinding.title.setSelected(true);
         setRecyclerView();
+        setContinue();
         setViewModel();
         showProgress();
         setTitle();
@@ -104,6 +108,7 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
         mBinding.top.setOnClickListener(this::onTop);
         mBinding.searchBar.setOnClickListener(v -> SearchActivity.start(requireActivity()));
         mBinding.logo.setOnClickListener(this::onLogo);
+        mBinding.continueMore.setOnClickListener(v -> HistoryActivity.start(requireActivity()));
         mBinding.link.setOnClickListener(this::onLink);
         mBinding.title.setOnClickListener(this::onSite);
         mBinding.filter.setOnClickListener(this::onFilter);
@@ -130,6 +135,21 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
         mBinding.type.setItemAnimator(null);
         mBinding.type.setAdapter(mAdapter = new TypeAdapter(this));
         mBinding.pager.setAdapter(new PageAdapter(getChildFragmentManager()));
+    }
+
+    private void setContinue() {
+        List<History> items = History.get();
+        if (items.isEmpty()) {
+            mBinding.continueLayout.setVisibility(View.GONE);
+            return;
+        }
+        int count = Math.min(items.size(), 10);
+        mBinding.continueLayout.setVisibility(View.VISIBLE);
+        mBinding.continueRecycler.setAdapter(mContinueAdapter = new ContinueAdapter(items.subList(0, count), this::onContinueClick));
+    }
+
+    private void onContinueClick(History item) {
+        VideoActivity.start(requireActivity(), item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic());
     }
 
     private void setViewModel() {
@@ -240,6 +260,9 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
         switch (event.getType()) {
             case HOME:
                 setTitle();
+            case HISTORY:
+                setContinue();
+                break;
             case SIZE:
                 homeContent();
                 break;

@@ -31,13 +31,12 @@ public class Updater implements Download.Callback {
 
     private DialogUpdateBinding binding;
     private AlertDialog dialog;
+    private String apkUrl;
+    private boolean mirrorUsed;
+    private Download download;
 
     private File getFile() {
         return Path.cache("update.apk");
-    }
-
-    private String getJson() {
-        return Github.RELEASE;
     }
 
     private String getApk(JSONObject object) {
@@ -66,8 +65,6 @@ public class Updater implements Download.Callback {
         return new Updater();
     }
 
-    private Download download;
-
     public Updater force() {
         Notify.show(R.string.update_check);
         Setting.putUpdate(true);
@@ -85,8 +82,18 @@ public class Updater implements Download.Callback {
     }
 
     private void doInBackground(Activity activity) {
+        JSONObject object = null;
         try {
-            JSONObject object = new JSONObject(OkHttp.string(getJson()));
+            object = new JSONObject(OkHttp.string(Github.RELEASE));
+        } catch (Exception e) {
+            try {
+                object = new JSONObject(OkHttp.string(Github.RELEASE_MIRROR));
+            } catch (Exception e2) {
+                e2.printStackTrace();
+                return;
+            }
+        }
+        try {
             String name = object.optString("tag_name");
             String desc = object.optString("body");
             String apk = getApk(object);
@@ -100,7 +107,8 @@ public class Updater implements Download.Callback {
     private void show(Activity activity, String version, String desc, String apk) {
         File oldFile = getFile();
         if (oldFile.exists()) oldFile.delete();
-        this.download = Download.create(apk, getFile());
+        this.apkUrl = apk;
+        this.mirrorUsed = false;
         binding = DialogUpdateBinding.inflate(LayoutInflater.from(activity));
         check().create(activity, ResUtil.getString(R.string.update_version, version)).show();
         dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(this::confirm);
@@ -120,6 +128,12 @@ public class Updater implements Download.Callback {
 
     private void confirm(View view) {
         view.setEnabled(false);
+        startDownload();
+    }
+
+    private void startDownload() {
+        String url = mirrorUsed ? Github.DOWNLOAD_MIRROR_PREFIX + apkUrl : apkUrl;
+        download = Download.create(url, getFile());
         download.start(this);
     }
 
@@ -137,6 +151,11 @@ public class Updater implements Download.Callback {
 
     @Override
     public void error(String msg) {
+        if (!mirrorUsed) {
+            mirrorUsed = true;
+            App.post(this::startDownload);
+            return;
+        }
         Notify.show(msg);
         dismiss();
     }
