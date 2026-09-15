@@ -32,8 +32,11 @@ jobs:
       - name: 设置 Gradle（缓存发行版与依赖，避免重复下载超时）
         uses: gradle/actions/setup-gradle@v4
 
-      - name: 安装 Android SDK 命令行工具
-        uses: android-actions/setup-android@v3
+      - name: 设置 Android SDK 环境
+        run: |
+          echo "ANDROID_HOME=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
+          echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
       - name: 安装 platform-36 + build-tools
         run: |
