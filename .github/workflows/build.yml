@@ -82,3 +82,13 @@ jobs:
           files: app/build/outputs/apk/mobileArm64_v8a/release/mobile-arm64_v8a_${{ steps.ver.outputs.name }}.apk
           generate_release_notes: false
           fail_on_unmatched_files: true
+
+      - name: 清理旧 Release（只保留最新2个）
+        run: |
+          releases=$(gh release list --limit 100 --json tagName --jq '.[2:].[].tagName')
+          for tag in $releases; do
+            echo "删除旧 release: $tag"
+            gh release delete "$tag" --yes --cleanup-tag
+          done
+        env:
+          GH_TOKEN: ${{ github.token }}
