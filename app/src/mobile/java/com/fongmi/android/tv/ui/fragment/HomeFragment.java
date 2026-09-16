@@ -129,6 +129,7 @@ public class HomeFragment extends Fragment {
                     List<Vod> list = loadCategory(type.getTypeId());
                     if (list != null && !list.isEmpty()) {
                         App.post(() -> {
+                            if (mBinding == null || mRecommendAdapter == null) return;
                             mRecommendAdapter.addRow(type.getTypeName(), new ArrayList<>(list), index);
                             mBinding.loading.setVisibility(View.GONE);
                         });

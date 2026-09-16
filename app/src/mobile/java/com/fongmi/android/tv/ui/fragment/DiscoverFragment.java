@@ -149,6 +149,7 @@ public class DiscoverFragment extends Fragment {
                 latch.await(20, TimeUnit.SECONDS);
             } catch (InterruptedException ignored) {}
             App.post(() -> {
+                if (mBinding == null || mRecommendAdapter == null) return;
                 mLoading = false;
                 mBinding.loading.setVisibility(View.GONE);
                 if (mRecommendAdapter.getItemCount() == 0) {

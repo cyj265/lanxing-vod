@@ -16,8 +16,8 @@ android {
         minSdk 30
         //noinspection ExpiredTargetSdkVersion
         targetSdk 30
-        versionCode 575
-        versionName "5.4.35"
+        versionCode 576
+        versionName "5.4.36"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
@@ -159,7 +159,7 @@ dependencies {
     implementation 'org.nanohttpd:nanohttpd:2.3.1'
     implementation('org.simpleframework:simple-xml:2.7.1') { exclude group: 'stax', module: 'stax-api' exclude group: 'xpp3', module: 'xpp3' }
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.31'
-    implementation 'com.tencent.bugly:crashreport:4.0.4'
+    implementation 'com.tencent.bugly:crashreport:4.1.9.1'
     implementation 'com.tencent.bugly:nativecrashreport:3.9.2'
     leanbackImplementation 'androidx.leanback:leanback:1.2.0'
     leanbackImplementation 'com.github.JessYanCoding:AndroidAutoSize:1.2.1'
