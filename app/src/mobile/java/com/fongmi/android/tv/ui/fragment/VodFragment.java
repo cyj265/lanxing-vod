@@ -258,13 +258,11 @@ public class VodFragment extends BaseFragment implements ConfigCallback, SiteCal
 
     @Subscribe(threadMode = ThreadMode.MAIN)
     public void onStateEvent(StateEvent event) {
-        switch (event.type()) {
-            case EMPTY:
-                hideProgress();
-                break;
-            case PROGRESS:
-                showProgress();
-                break;
+        Object t = event.type();
+        if (t == StateEvent.Type.EMPTY) {
+            hideProgress();
+        } else if (t == StateEvent.Type.PROGRESS) {
+            showProgress();
         }
     }
 
