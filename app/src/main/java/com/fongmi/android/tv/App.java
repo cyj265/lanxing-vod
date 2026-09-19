@@ -5,6 +5,7 @@ import android.app.Application;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 
@@ -59,6 +60,7 @@ public class App extends Application implements Application.ActivityLifecycleCal
     public void onCreate() {
         super.onCreate();
         CrashReport.initCrashReport(getApplicationContext(), "69e90fd596", false);
+        CrashReport.setUserId(Build.BRAND + " " + Build.MODEL + " (Android " + Build.VERSION.RELEASE + ")");
         Notify.createChannel();
         registerActivityLifecycleCallbacks(this);
         executor.execute(this::clearApkCache);
