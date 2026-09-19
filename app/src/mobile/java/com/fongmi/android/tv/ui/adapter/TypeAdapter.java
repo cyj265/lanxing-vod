@@ -32,6 +32,13 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
 
     private Class home() {
         Class type = new Class();
+        type.setTypeName(ResUtil.getString(R.string.vod_discover));
+        type.setTypeId("discover");
+        return type;
+    }
+
+    private Class recommend() {
+        Class type = new Class();
         type.setTypeName(ResUtil.getString(R.string.vod_home));
         type.setTypeId("home");
         return type;
@@ -43,8 +50,9 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
     }
 
     public void addAll(Result result) {
+        mItems.add(home());
+        if (!result.getList().isEmpty()) mItems.add(recommend());
         mItems.addAll(result.getTypes());
-        if (!result.getList().isEmpty()) mItems.add(0, home());
         if (!mItems.isEmpty()) mItems.get(0).setActivated(true);
         notifyDataSetChanged();
     }

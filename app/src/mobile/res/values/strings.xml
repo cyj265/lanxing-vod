@@ -20,6 +20,7 @@
 
     <!-- Vod -->
     <string name="vod_home">Home</string>
+    <string name="vod_discover">Discover</string>
 
     <!-- Detail -->
     <string name="detail_flag">Flag</string>

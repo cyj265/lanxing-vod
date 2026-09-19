@@ -18,6 +18,7 @@
 
     <!-- Vod -->
     <string name="vod_home">推薦</string>
+    <string name="vod_discover">首頁</string>
 
     <!-- Detail -->
     <string name="detail_flag">線路</string>
