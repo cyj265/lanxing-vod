@@ -53,7 +53,22 @@ jobs:
           echo "keyPassword=${{ secrets.LANXING_KEY_PASSWORD }}" >> local.properties
 
       - name: 构建 release APK
-        run: ./gradlew :app:assembleMobileArm64_v8aRelease --no-daemon
+        run: |
+          set +e
+          ./gradlew :app:assembleMobileArm64_v8aRelease --no-daemon --console=plain > /tmp/gradle-build.log 2>&1
+          code=$?
+          if [ $code -ne 0 ]; then
+            python3 -c "
+import re
+lines=open('/tmp/gradle-build.log',encoding='utf-8',errors='ignore').read().splitlines()
+keys=[l for l in lines if re.search(r'(?i)(error|FAILED|what went wrong|Execution failed|Caused by|Cannot|Could not|No such|not found|> Task)',l)]
+body='\n'.join(keys[-80:]) if keys else '\n'.join(lines[-150:])
+body=body.replace('%','%25').replace('\r','').replace('\n','%0A').replace(':','%3A')
+print('::error title=GradleBuildFailed::'+body[:6000])
+"
+            exit $code
+          fi
+          echo "BUILD OK"
 
       - name: 上传 APK 产物
         uses: actions/upload-artifact@v4
@@ -65,7 +80,7 @@ jobs:
       - name: 读取版本号
         id: ver
         run: |
-          echo "name=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)" >> $GITHUB_OUTPUT
+          echo "name=$(grep -oP 'versionName \"\K[^\"]+' app/build.gradle)" >> $GITHUB_OUTPUT
 
       - name: 重命名 APK（文件名带版本号，防缓存串版本）
         run: |
