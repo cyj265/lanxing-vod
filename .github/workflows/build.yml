@@ -100,6 +100,7 @@ jobs:
             app/build/outputs/apk/mobileArm64_v8a/release/mapping_${{ steps.ver.outputs.name }}.txt
           generate_release_notes: false
           fail_on_unmatched_files: false
+          update_release: true
 
       - name: 清理旧 Release（只保留最新2个）
         run: |

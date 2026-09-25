@@ -111,6 +111,7 @@ android {
 }
 
 dependencies {
+    // DLNA 投屏：发送端基于 jupnp 3.0.5 重写（接收端职责由 PhairPlay 承担）
     implementation fileTree(dir: "libs", include: ["*.aar"])
     implementation project(':hook')
     implementation project(':forcetech')
