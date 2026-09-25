@@ -32,6 +32,7 @@
     <!-- Device -->
     <string name="device_select">选择装置</string>
     <string name="device_offline">装置已离线</string>
+    <string name="device_permission_denied">未授权投屏权限，无法发现投屏设备</string>
     <string name="device_scan">请扫描影视 QRCode 进行绑定</string>
 
     <!-- Control -->

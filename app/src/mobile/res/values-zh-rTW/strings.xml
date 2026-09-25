@@ -30,6 +30,7 @@
     <!-- Device -->
     <string name="device_select">選擇裝置</string>
     <string name="device_offline">裝置已離線</string>
+    <string name="device_permission_denied">未授權投屏權限，無法發現投屏裝置</string>
     <string name="device_scan">請掃描影視 QRCode 進行綁定</string>
 
     <!-- Control -->

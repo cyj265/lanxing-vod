@@ -122,7 +122,7 @@
             android:exported="false" />
 
         <service
-            android:name="com.android.cast.dlna.dmc.DLNACastService"
+            android:name="com.fongmi.android.tv.service.DLNACastService"
             android:exported="false" />
 
     </application>

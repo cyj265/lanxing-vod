@@ -32,6 +32,7 @@
     <!-- Device -->
     <string name="device_select">Select devices</string>
     <string name="device_offline">Device is offline</string>
+    <string name="device_permission_denied">Permission denied, cannot discover cast devices</string>
     <string name="device_scan">Please scan QR Code to bind</string>
 
     <!-- Control -->

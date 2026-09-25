@@ -18,6 +18,8 @@ import com.fongmi.android.tv.utils.UrlUtil;
 import com.fongmi.android.tv.utils.Util;
 import com.google.gson.annotations.SerializedName;
 
+import org.jupnp.model.meta.RemoteDevice;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
@@ -63,7 +65,7 @@ public class Device implements Diffable<Device>, Comparable<Device> {
         return device;
     }
 
-    public static Device get(org.fourthline.cling.model.meta.Device<?, ?, ?> item) {
+    public static Device get(RemoteDevice item) {
         Device device = new Device();
         device.setUuid(item.getIdentity().getUdn().getIdentifierString());
         device.setName(item.getDetails().getFriendlyName());

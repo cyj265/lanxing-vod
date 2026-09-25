@@ -10,11 +10,6 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewbinding.ViewBinding;
 
-import com.android.cast.dlna.dmc.DLNACastManager;
-import com.android.cast.dlna.dmc.OnDeviceRegistryListener;
-import com.android.cast.dlna.dmc.control.DeviceControl;
-import com.android.cast.dlna.dmc.control.OnDeviceControlListener;
-import com.android.cast.dlna.dmc.control.ServiceActionCallback;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.Constant;
 import com.cyj265.lanxingvod.R;
@@ -23,33 +18,32 @@ import com.fongmi.android.tv.bean.Config;
 import com.fongmi.android.tv.bean.Device;
 import com.fongmi.android.tv.bean.History;
 import com.cyj265.lanxingvod.databinding.DialogDeviceBinding;
+import com.fongmi.android.tv.dlna.DLNACast;
+import com.fongmi.android.tv.dlna.DLNACastManager;
 import com.fongmi.android.tv.event.ScanEvent;
 import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.ui.activity.ScanActivity;
 import com.fongmi.android.tv.ui.adapter.DeviceAdapter;
-import com.fongmi.android.tv.utils.DLNADevice;
 import com.fongmi.android.tv.utils.Notify;
+import com.fongmi.android.tv.utils.PermissionUtil;
 import com.fongmi.android.tv.utils.ScanTask;
 import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Path;
 import com.github.catvod.utils.Util;
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment;
 
-import org.fourthline.cling.support.lastchange.EventedValue;
-import org.fourthline.cling.support.model.TransportState;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.IOException;
 
-import kotlin.Unit;
 import okhttp3.Call;
 import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 
-public class CastDialog extends BaseDialog implements DeviceAdapter.OnClickListener, ScanTask.Listener, OnDeviceRegistryListener, OnDeviceControlListener, ServiceActionCallback<Unit>, okhttp3.Callback {
+public class CastDialog extends BaseDialog implements DeviceAdapter.OnClickListener, ScanTask.Listener, DLNACastManager.DeviceListener, okhttp3.Callback {
 
     private final FormBody.Builder body;
     private final OkHttpClient client;
@@ -57,7 +51,6 @@ public class CastDialog extends BaseDialog implements DeviceAdapter.OnClickListe
 
     private DialogDeviceBinding binding;
     private DeviceAdapter adapter;
-    private DeviceControl control;
     private Listener listener;
     private CastVideo video;
     private boolean fm;
@@ -95,7 +88,7 @@ public class CastDialog extends BaseDialog implements DeviceAdapter.OnClickListe
     }
 
     public void show(FragmentActivity activity) {
-        for (Fragment f : activity.getSupportFragmentManager().getFragments()) if (f instanceof BottomSheetDialogFragment) return;
+        for (Fragment f : activity.getSupportFragmentManager().getFragments()) if (f instanceof CastDialog) return;
         show(activity.getSupportFragmentManager(), null);
         this.listener = (Listener) activity;
     }
@@ -111,7 +104,21 @@ public class CastDialog extends BaseDialog implements DeviceAdapter.OnClickListe
         EventBus.getDefault().register(this);
         setRecyclerView();
         getDevice();
-        initDLNA();
+        initCast();
+    }
+
+    /**
+     * DLNA 搜索前必须先申请投屏发现权限（Android 13+ 附近设备 / 6~12 定位），
+     * 否则 SSDP 组播收不到投屏设备响应。
+     */
+    private void initCast() {
+        PermissionUtil.requestCast(requireActivity(), granted -> {
+            if (granted) initDLNA();
+            else {
+                initDLNA();
+                Notify.show(R.string.device_permission_denied);
+            }
+        });
     }
 
     @Override
@@ -127,13 +134,15 @@ public class CastDialog extends BaseDialog implements DeviceAdapter.OnClickListe
 
     private void getDevice() {
         adapter.setItems(Device.getAll(), () -> {
+            for (Device device : DLNACastManager.get().getRegistered()) adapter.sort(device);
             if (adapter.getItemCount() == 0) onRefresh();
+            else DLNACastManager.get().search();
         });
     }
 
     private void initDLNA() {
-        DLNACastManager.INSTANCE.bindCastService(App.get());
-        DLNACastManager.INSTANCE.registerDeviceListener(this);
+        DLNACastManager.get().init(requireActivity());
+        DLNACastManager.get().setDeviceListener(this);
     }
 
     private void onScan() {
@@ -144,8 +153,7 @@ public class CastDialog extends BaseDialog implements DeviceAdapter.OnClickListe
         adapter.clear(() -> {
             Device.delete();
             if (fm) scanTask.start();
-            DLNADevice.get().disconnect();
-            DLNACastManager.INSTANCE.search(null);
+            DLNACastManager.get().search();
         });
     }
 
@@ -165,35 +173,14 @@ public class CastDialog extends BaseDialog implements DeviceAdapter.OnClickListe
     }
 
     @Override
-    public void onDeviceAdded(@NonNull org.fourthline.cling.model.meta.Device<?, ?, ?> device) {
-        adapter.sort(DLNADevice.get().add(device));
+    public void onDeviceAdded(Device device) {
+        binding.recycler.setVisibility(View.VISIBLE);
+        adapter.sort(device);
     }
 
     @Override
-    public void onDeviceRemoved(@NonNull org.fourthline.cling.model.meta.Device<?, ?, ?> device) {
-        adapter.remove(DLNADevice.get().remove(device));
-    }
-
-    @Override
-    public void onConnected(@NonNull org.fourthline.cling.model.meta.Device<?, ?, ?> device) {
-        control.setAVTransportURI(video.getUrl(), video.getName(), this);
-    }
-
-    @Override
-    public void onDisconnected(@NonNull org.fourthline.cling.model.meta.Device<?, ?, ?> device) {
-        Notify.show(R.string.device_offline);
-    }
-
-    @Override
-    public void onSuccess(Unit unit) {
-        control.seek(video.getPosition(), null);
-        control.play("1", null);
-        onCasted();
-    }
-
-    @Override
-    public void onFailure(@NonNull String s) {
-        Notify.show(s);
+    public void onDeviceRemoved(Device device) {
+        adapter.remove(device);
     }
 
     @Override
@@ -209,39 +196,17 @@ public class CastDialog extends BaseDialog implements DeviceAdapter.OnClickListe
 
     @Override
     public void onItemClick(Device item) {
-        if (item.isDLNA()) control = DLNACastManager.INSTANCE.connectDevice(DLNADevice.get().find(item), this);
+        if (item.isDLNA()) new DLNACast(video, this::onCasted).cast(item);
         else OkHttp.newCall(client, item.getIp().concat("/action?do=cast"), body.build()).enqueue(this);
     }
 
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        DLNADevice.get().disconnect();
         EventBus.getDefault().unregister(this);
-        DLNACastManager.INSTANCE.unregisterListener(this);
-        DLNACastManager.INSTANCE.unbindCastService(App.get());
-    }
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
+        DLNACastManager.get().setDeviceListener(null);
+        DLNACastManager.get().release(requireActivity());
         scanTask.stop();
-    }
-
-    @Override
-    public void onAvTransportStateChanged(@NonNull TransportState state) {
-    }
-
-    @Override
-    public void onEventChanged(@NonNull EventedValue<?> event) {
-    }
-
-    @Override
-    public void onRendererVolumeChanged(int volume) {
-    }
-
-    @Override
-    public void onRendererVolumeMuteChanged(boolean mute) {
     }
 
     @Override
