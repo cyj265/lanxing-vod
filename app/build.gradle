@@ -32,7 +32,7 @@ android {
             dimension "mode"
         }
         mobile {
-            dimension "abi"
+            dimension "mode"
         }
         arm64_v8a {
             dimension "abi"
