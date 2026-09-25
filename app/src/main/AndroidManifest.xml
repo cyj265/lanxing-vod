@@ -14,55 +14,100 @@
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
-    <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
+    <!-- DLNA 投屏发现：Android 13+ 附近设备权限，Android 6~12 定位权限 -->
+    <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.OPEN_DOCUMENT" />
+            <data android:mimeType="*/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:mimeType="video/*" />
+        </intent>
+        <intent>
+            <action android:name="android.intent.action.SEND" />
+            <data android:mimeType="text/plain" />
+        </intent>
+    </queries>
 
     <application
         android:name="com.fongmi.android.tv.App"
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:appCategory="video"
+        android:enableOnBackInvokedCallback="true"
+        android:hardwareAccelerated="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:networkSecurityConfig="@xml/network_security_config"
+        android:largeHeap="true"
+        android:pageSizeCompat="enabled"
         android:requestLegacyExternalStorage="true"
         android:resizeableActivity="true"
         android:supportsRtl="true"
-        android:theme="@style/Theme.App">
-
-        <activity
-            android:name=".ui.activity.HomeActivity"
-            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboardHidden"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
-
-        <activity android:name=".ui.activity.CrashActivity" />
-        <activity android:name=".ui.activity.SettingActivity" />
-        <activity android:name=".ui.activity.CollectActivity" />
-        <activity android:name=".ui.activity.SearchActivity" />
-        <activity android:name=".ui.activity.DetailActivity" />
-        <activity android:name=".ui.activity.PlayerActivity" />
-        <activity android:name=".ui.activity.LiveActivity" />
-        <activity android:name=".ui.activity.WebActivity" />
-        <activity android:name=".ui.activity.PicActivity" />
-        <activity android:name=".ui.activity.CastActivity" />
-
-        <service
-            android:name=".server.DLNAService"
-            android:exported="true" />
+        android:theme="@style/Theme.App"
+        android:usesCleartextTraffic="true"
+        tools:replace="android:allowBackup">
 
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
             android:exported="false"
             android:grantUriPermissions="true">
+
             <meta-data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
+
         </provider>
+
+        <provider
+            android:name="androidx.startup.InitializationProvider"
+            android:authorities="${applicationId}.androidx-startup"
+            android:exported="false"
+            tools:node="merge">
+            <meta-data
+                android:name="com.fongmi.android.tv.Startup"
+                android:value="androidx.startup" />
+        </provider>
+
+        <activity
+            android:name="com.fongmi.android.tv.ui.activity.CrashActivity"
+            android:process=":error_activity"
+            android:theme="@style/Theme.Crash" />
+
+        <receiver
+            android:name="com.fongmi.android.tv.receiver.ActionReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="${applicationId}.stop" />
+                <action android:name="${applicationId}.prev" />
+                <action android:name="${applicationId}.next" />
+                <action android:name="${applicationId}.play" />
+                <action android:name="${applicationId}.pause" />
+                <action android:name="${applicationId}.audio" />
+            </intent-filter>
+        </receiver>
+
+        <receiver
+            android:name="androidx.media.session.MediaButtonReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </receiver>
+
+        <service
+            android:name="com.fongmi.android.tv.service.PlaybackService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </service>
+
     </application>
 </manifest>
