@@ -58,14 +58,14 @@ jobs:
           ./gradlew :app:assembleMobileArm64_v8aRelease --no-daemon --console=plain > /tmp/gradle-build.log 2>&1
           code=$?
           if [ $code -ne 0 ]; then
-            python3 -c "
-import re
-lines=open('/tmp/gradle-build.log',encoding='utf-8',errors='ignore').read().splitlines()
-keys=[l for l in lines if re.search(r'(?i)(error|FAILED|what went wrong|Execution failed|Caused by|Cannot|Could not|No such|not found|> Task)',l)]
-body='\n'.join(keys[-80:]) if keys else '\n'.join(lines[-150:])
-body=body.replace('%','%25').replace('\r','').replace('\n','%0A').replace(':','%3A')
-print('::error title=GradleBuildFailed::'+body[:6000])
-"
+            python3 -c '
+          import re
+          lines=open("/tmp/gradle-build.log",encoding="utf-8",errors="ignore").read().splitlines()
+          keys=[l for l in lines if re.search(r"(?i)(error|FAILED|what went wrong|Execution failed|Caused by|Cannot|Could not|No such|not found|> Task)",l)]
+          body="\n".join(keys[-80:]) if keys else "\n".join(lines[-150:])
+          body=body.replace("%","%25").replace("\r","").replace("\n","%0A").replace(":","%3A")
+          print("::error title=GradleBuildFailed::"+body[:6000])
+          '
             exit $code
           fi
           echo "BUILD OK"
@@ -80,7 +80,7 @@ print('::error title=GradleBuildFailed::'+body[:6000])
       - name: 读取版本号
         id: ver
         run: |
-          echo "name=$(grep -oP 'versionName \"\K[^\"]+' app/build.gradle)" >> $GITHUB_OUTPUT
+          echo "name=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)" >> $GITHUB_OUTPUT
 
       - name: 重命名 APK（文件名带版本号，防缓存串版本）
         run: |
