@@ -43,11 +43,13 @@ public class Updater {
     private static final int NOTIFICATION_ID = 1001;
 
     private static final String[] MIRROR_PREFIXES = {
-        "",
         "https://gh-proxy.com/",
-        "https://mirror.ghproxy.com/"
+        "https://mirror.ghproxy.com/",
+        "https://ghproxy.net/",
+        "https://github.moeyy.xyz/",
+        ""
     };
-    private static final String[] MIRROR_NAMES = {"直连", "加速", "备用"};
+    private static final String[] MIRROR_NAMES = {"加速1", "加速2", "加速3", "加速4", "直连"};
 
     private DialogUpdateBinding binding;
     private AlertDialog dialog;
@@ -226,8 +228,8 @@ public class Updater {
         String urlWithTs = urlStr + (urlStr.contains("?") ? "&" : "?") + "t=" + System.currentTimeMillis();
         URL url = new URL(urlWithTs);
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setConnectTimeout(15000);
-        conn.setReadTimeout(60000);
+        conn.setConnectTimeout(8000);
+        conn.setReadTimeout(30000);
         conn.setInstanceFollowRedirects(true);
         conn.setRequestProperty("User-Agent", "LanXingVod");
         int code = conn.getResponseCode();
@@ -248,6 +250,9 @@ public class Updater {
         int read;
         long done = 0;
         int lastPercent = -1;
+        long startTime = System.currentTimeMillis();
+        long lastCheckTime = startTime;
+        long lastCheckBytes = 0;
         while ((read = input.read(buf)) > 0 && !cancelled) {
             output.write(buf, 0, read);
             done += read;
@@ -257,6 +262,23 @@ public class Updater {
                     lastPercent = pct;
                     updateProgress(pct);
                 }
+            }
+            // 低速检测：每 5 秒检查一次，若速度 < 80KB/s 则放弃当前线路
+            long now = System.currentTimeMillis();
+            if (now - lastCheckTime >= 5000) {
+                long elapsed = now - lastCheckTime;
+                long bytesDelta = done - lastCheckBytes;
+                double speedKBs = (bytesDelta / 1024.0) / (elapsed / 1000.0);
+                if (speedKBs < 80 && done < total * 0.8) {
+                    output.flush();
+                    output.close();
+                    input.close();
+                    conn.disconnect();
+                    apk.delete();
+                    return null;
+                }
+                lastCheckTime = now;
+                lastCheckBytes = done;
             }
         }
         output.flush();
