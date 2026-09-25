@@ -64,6 +64,36 @@ public class App extends Application implements Application.ActivityLifecycleCal
         Notify.createChannel();
         registerActivityLifecycleCallbacks(this);
         executor.execute(this::clearApkCache);
+        installNativeCrashGuard();
+    }
+
+    /**
+     * 捕获 GoProxy 等 native so 加载失败（UnsatisfiedLinkError / bad ELF），
+     * 避免单个源的 so 损坏导致整个 APP 崩溃。
+     * 仅吞掉 GoProxy/wexproxy 相关错误，其他异常照常走原处理器。
+     */
+    private void installNativeCrashGuard() {
+        final Thread.UncaughtExceptionHandler original = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+            if (isGoProxyLinkError(throwable)) {
+                CrashReport.postCatchedException(throwable);
+                return;
+            }
+            if (original != null) original.uncaughtException(thread, throwable);
+        });
+    }
+
+    private boolean isGoProxyLinkError(Throwable t) {
+        if (t == null) return false;
+        if (t instanceof UnsatisfiedLinkError) {
+            String msg = t.getMessage();
+            if (msg != null && (msg.contains("GoProxy") || msg.contains("wexproxy") || msg.contains("bad ELF"))) return true;
+        }
+        for (StackTraceElement e : t.getStackTrace()) {
+            String cls = e.getClassName();
+            if (cls != null && cls.contains("GoProxy")) return true;
+        }
+        return t.getCause() != null && isGoProxyLinkError(t.getCause());
     }
 
     private void clearApkCache() {
