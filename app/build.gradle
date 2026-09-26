@@ -68,6 +68,21 @@ android {
         exclude group: 'com.android.support'
         resolutionStrategy {
             force libs.okhttp
+            eachDependency { details ->
+                if (details.requested.group == 'androidx.media3') {
+                    details.useVersion libs.versions.media3.get()
+                }
+            }
+        }
+    }
+
+    sourceSets {
+        main {
+            java {
+                exclude 'com/fongmi/android/tv/player/mpv/MpvPlayerEffect.java'
+                exclude 'com/fongmi/android/tv/player/effect/audio/MpvAudioEffectFilter.java'
+                exclude 'com/fongmi/android/tv/player/effect/video/MpvVideoEffectController.java'
+            }
         }
     }
 
@@ -93,6 +108,9 @@ dependencies {
     implementation libs.appcompat
     implementation libs.lifecycle.service
     implementation libs.media
+    implementation libs.bundles.media3
+    implementation libs.nextlib.media3ext
+    implementation libs.exoplayer.hdr.utils
     implementation libs.palette
     implementation libs.recyclerview
     implementation libs.room.runtime
