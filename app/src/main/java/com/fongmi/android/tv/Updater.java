@@ -13,7 +13,6 @@ import com.fongmi.android.tv.utils.Github;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Task;
-import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Path;
 
 import org.json.JSONObject;
@@ -22,11 +21,12 @@ import java.io.File;
 
 public class Updater implements Download.Callback, UpdateListener {
 
-    private final Download download;
+    private Download download;
     private UpdateDialog dialog;
+    private String apkUrl;
+    private boolean retried;
 
     private Updater() {
-        this.download = Download.create(getApk(), getFile());
     }
 
     public static Updater create() {
@@ -35,14 +35,6 @@ public class Updater implements Download.Callback, UpdateListener {
 
     private File getFile() {
         return Path.cache("update.apk");
-    }
-
-    private String getJson() {
-        return Github.getJson(BuildConfig.FLAVOR);
-    }
-
-    private String getApk() {
-        return Github.getApk(BuildConfig.FLAVOR + "-" + (android.os.Process.is64Bit() ? "arm64_v8a" : "armeabi_v7a"));
     }
 
     public Updater force() {
@@ -58,14 +50,40 @@ public class Updater implements Download.Callback, UpdateListener {
 
     private void doInBackground(FragmentActivity activity) {
         try {
-            JSONObject object = new JSONObject(OkHttp.string(getJson()));
+            JSONObject object = Github.getLatestRelease();
+            String tag = object.optString("tag_name");
             String name = object.optString("name");
-            String desc = object.optString("desc");
-            int code = object.optInt("code");
-            if (code <= BuildConfig.VERSION_CODE) return;
+            String desc = object.optString("body");
+            apkUrl = Github.getApkUrl(object);
+            if (apkUrl == null || !isNewer(tag)) return;
             App.post(() -> show(activity, name, desc));
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private boolean isNewer(String tag) {
+        String remote = tag.startsWith("v") ? tag.substring(1) : tag;
+        return compare(remote, BuildConfig.VERSION_NAME) > 0;
+    }
+
+    private int compare(String a, String b) {
+        String[] x = a.split("\\.");
+        String[] y = b.split("\\.");
+        int len = Math.max(x.length, y.length);
+        for (int i = 0; i < len; i++) {
+            int p = i < x.length ? parseInt(x[i]) : 0;
+            int q = i < y.length ? parseInt(y[i]) : 0;
+            if (p != q) return p - q;
+        }
+        return 0;
+    }
+
+    private int parseInt(String s) {
+        try {
+            return Integer.parseInt(s.trim());
+        } catch (Exception e) {
+            return 0;
         }
     }
 
@@ -77,13 +95,14 @@ public class Updater implements Download.Callback, UpdateListener {
     @Override
     public void onConfirm(View view) {
         view.setEnabled(false);
+        download = Download.create(apkUrl, getFile());
         download.start(this);
     }
 
     @Override
     public void onCancel(View view) {
         Setting.putUpdate(false);
-        download.cancel();
+        if (download != null) download.cancel();
         dismiss();
     }
 
@@ -101,6 +120,12 @@ public class Updater implements Download.Callback, UpdateListener {
 
     @Override
     public void error(String msg) {
+        if (!retried && apkUrl != null) {
+            retried = true;
+            download = Download.create(Github.getMirrorUrl(apkUrl), getFile());
+            download.start(this);
+            return;
+        }
         Notify.show(msg);
         dismiss();
     }
