@@ -4,13 +4,11 @@ import android.view.View;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 
-import androidx.annotation.Nullable;
 import androidx.media3.ui.danmaku.DanmakuConfig;
 
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.DialogDanmakuSettingBinding;
 import com.fongmi.android.tv.player.PlayerManager;
-import com.fongmi.android.tv.player.subtitle.ExternalFont;
 import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.utils.SliderUtil;
 import com.fongmi.android.tv.utils.Util;
@@ -30,13 +28,11 @@ final class DanmakuSettingPanel {
 
     private final DialogDanmakuSettingBinding binding;
     private final PlayerManager player;
-    private final ExternalFontSelector fontSelector;
     private int currentTab;
 
-    DanmakuSettingPanel(DialogDanmakuSettingBinding binding, PlayerManager player, ExternalFontSelector fontSelector) {
+    DanmakuSettingPanel(DialogDanmakuSettingBinding binding, PlayerManager player) {
         this.binding = binding;
         this.player = player;
-        this.fontSelector = fontSelector;
     }
 
     void bind() {
@@ -51,14 +47,11 @@ final class DanmakuSettingPanel {
         binding.tabGroup.check(binding.tabAppearance.getId());
     }
 
-    void onFontSelected(@Nullable ExternalFont.Item font) {
-        DanmakuSetting.putFont(font);
-        applyConfig();
+    void release() {
     }
 
     private void bindAppearance() {
         var appearance = binding.appearance;
-        bindFont();
         setupSwitch(appearance.textBoldSwitch, DanmakuSetting.isTextBold(), DanmakuSetting::putTextBold);
         setupFloat(appearance.textSizeSlider, appearance.textSizeValue, DanmakuSetting.getTextScale(), "%.1f", DanmakuSetting::putTextScale);
         setupFloat(appearance.alphaSlider, appearance.alphaValue, DanmakuSetting.getTransparency(), "%.2f", DanmakuSetting::putTransparency);
@@ -71,14 +64,6 @@ final class DanmakuSettingPanel {
         setupChip(appearance.colorChipGroup, DanmakuSetting.getColorMode(), this::colorChipForMode, this::colorModeForChip, this::onColorModeChanged);
         updateStyleSubSettings(DanmakuSetting.getStyleMode());
         updateColorOverrideHint(DanmakuSetting.getColorMode());
-    }
-
-    private void bindFont() {
-        fontSelector.bind(binding.appearance.fontGroup, DanmakuSetting.getFont());
-    }
-
-    private boolean isPlayerAvailable() {
-        return player != null && !player.isReleased();
     }
 
     private void bindTiming() {
@@ -220,7 +205,7 @@ final class DanmakuSettingPanel {
     }
 
     private void applyConfig() {
-        if (isPlayerAvailable()) player.setDanmakuConfig(DanmakuSetting.getConfig());
+        if (player != null) player.setDanmakuConfig(DanmakuSetting.getConfig());
     }
 
     private int styleChipForMode(int mode) {

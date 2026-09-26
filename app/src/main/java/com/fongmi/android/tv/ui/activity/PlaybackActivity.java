@@ -27,8 +27,6 @@ import androidx.media3.session.SessionToken;
 import androidx.media3.ui.PlayerSeekView;
 import androidx.media3.ui.PlayerView;
 import androidx.media3.ui.TimeBar;
-import androidx.media3.ui.danmaku.DanmakuConfig;
-import androidx.media3.ui.danmaku.DanmakuPlayerViewController;
 
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Result;
@@ -36,7 +34,6 @@ import com.fongmi.android.tv.playback.PlaybackIntent;
 import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.player.media.PlaySpec;
 import com.fongmi.android.tv.service.PlaybackService;
-import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.SubtitleSetting;
 import com.fongmi.android.tv.ui.base.BaseActivity;
@@ -51,7 +48,6 @@ import java.util.concurrent.TimeUnit;
 
 public abstract class PlaybackActivity extends BaseActivity implements MediaController.Listener, Player.Listener, ServiceConnection {
 
-    private final DanmakuPlayerViewController danmakuController = new DanmakuPlayerViewController();
     private final List<ServiceReadyObserver<?>> serviceReadyObservers = new ArrayList<>();
     private final List<Runnable> foreverObserverRemovers = new ArrayList<>();
     private ListenableFuture<MediaController> mControllerFuture;
@@ -411,9 +407,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
     private void syncPlayerView(Player player) {
         player().bindPlayerView(getPlayerView());
-        danmakuController.bind(getPlayerView());
         getPlayerView().setPlayer(player);
-        syncDanmakuSource();
         restoreDebugView();
     }
 
@@ -424,15 +418,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private void configurePlayerView() {
         PlayerView playerView = getPlayerView();
         playerView.setRender(PlayerSetting.getRender());
-        danmakuController.setOkHttpClient(OkHttp.player());
-        danmakuController.setEnabled(DanmakuSetting.isShow());
-        danmakuController.setConfig(DanmakuSetting.getConfig());
         SubtitleSetting.applyStyle(playerView.getSubtitleView());
-    }
-
-    private void syncDanmakuSource() {
-        if (mService == null || !isOwner()) return;
-        danmakuController.setDataSource(player().getSelectedDanmakuUri());
     }
 
     private void releasePlaybackService() {
@@ -525,26 +511,6 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         public void onPlayerRebuild(Player player) {
             if (isOwner()) syncPlayerView(player);
         }
-
-        @Override
-        public void onDanmakuSourceChanged(@Nullable Uri uri) {
-            if (isOwner()) danmakuController.setDataSource(uri);
-        }
-
-        @Override
-        public void onDanmakuConfigChanged(DanmakuConfig config) {
-            if (isOwner()) danmakuController.setConfig(config);
-        }
-
-        @Override
-        public void onDanmakuEnabledChanged(boolean enabled) {
-            if (isOwner()) danmakuController.setEnabled(enabled);
-        }
-
-        @Override
-        public void onDanmakuSent(String text) {
-            if (isOwner()) danmakuController.sendNow(text);
-        }
     };
 
     @Override
@@ -623,7 +589,6 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     protected void onDestroy() {
         clearObservers();
         detachPlayerView();
-        danmakuController.close();
         super.onDestroy();
         releasePlaybackService();
     }
