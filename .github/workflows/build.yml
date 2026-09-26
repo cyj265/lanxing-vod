@@ -131,7 +131,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: 发布 GitHub Release（main 分支为预发布，不影响 app 在线更新）
+      - name: 发布 GitHub Release（main 分支对外正式版，app 在线更新只认本系列）
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.name }}
@@ -145,9 +145,8 @@ jobs:
           generate_release_notes: false
           fail_on_unmatched_files: false
           overwrite: true
-          prerelease: true
 
-      - name: 清理旧 Release（只清理与本分支同系列，保留 dev 分支版本）
+      - name: 清理旧 Release（只清理与本分支同系列，保留 dev 分支测试版）
         run: |
           PREFIX="v${{ steps.ver.outputs.prefix }}"
           echo "本次系列: ${PREFIX}.x"
