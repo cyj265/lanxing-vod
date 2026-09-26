@@ -6,6 +6,12 @@ public class PlayerSetting {
 
     public static final int ENGINE_EXO = 0;
     public static final int ENGINE_MPV = 1;
+    // Compatibility aliases used by the bundled FongMi MPV player.
+    public static final int EXO = ENGINE_EXO;
+    public static final int MPV = ENGINE_MPV;
+    public static final int IJK = 2;
+    public static final int MPV_RENDER_OPENGL = 0;
+    public static final int MPV_RENDER_VULKAN = 1;
     public static final int RENDER_SURFACE = 0;
     public static final int RENDER_TEXTURE = 1;
     public static final int MIN_SCALE = 0;
@@ -118,4 +124,81 @@ public class PlayerSetting {
     public static void putBuffer(int buffer) {
         Prefers.put("buffer", Math.clamp(buffer, MIN_BUFFER, MAX_BUFFER));
     }
+    // ---- FongMi MPV compatibility API ----
+    public static int getPlayer() {
+        return getEngine();
+    }
+
+    public static int sanitizePlayer(int player) {
+        return player == MPV ? MPV : player == IJK ? IJK : EXO;
+    }
+
+    public static int getMpvRender() {
+        return isMpvVulkan() ? MPV_RENDER_VULKAN : MPV_RENDER_OPENGL;
+    }
+
+    public static void putMpvRender(int render) {
+        putMpvVulkan(render == MPV_RENDER_VULKAN);
+    }
+
+    public static int getBufferBytesOption() {
+        return 0;
+    }
+
+    public static int getBackBufferOption() {
+        return getBackBufferOption(getPlayer());
+    }
+
+    public static int getBackBufferOption(int kernel) {
+        return 0;
+    }
+
+    public static int getPlayCacheOption() {
+        return 0;
+    }
+
+    public static long getPlayCacheSize() {
+        return getPlayCacheSize(getPlayer());
+    }
+
+    public static long getPlayCacheSize(int kernel) {
+        return 128L * 1024L * 1024L;
+    }
+
+    public static boolean isCaption() {
+        return SubtitleSetting.isSystemStyle();
+    }
+
+    public static boolean isAudioPrefer() {
+        return DecodeSetting.isAudioPrefer();
+    }
+
+    public static boolean isAudioPrefer(int kernel) {
+        return isAudioPrefer();
+    }
+
+    public static boolean isAudioPassThrough() {
+        return DecodeSetting.isAudioPassThrough();
+    }
+
+    public static boolean isAudioPassThrough(int kernel) {
+        return isAudioPassThrough();
+    }
+
+    public static boolean isVideoPrefer() {
+        return DecodeSetting.isVideoPrefer();
+    }
+
+    public static boolean isVideoPrefer(int kernel) {
+        return isVideoPrefer();
+    }
+
+    public static boolean isPreferAAC() {
+        return DecodeSetting.isPreferAAC();
+    }
+
+    public static boolean isPreferAAC(int kernel) {
+        return isPreferAAC();
+    }
+
 }
