@@ -38,10 +38,11 @@ jobs:
           echo "ANDROID_SDK_ROOT=/usr/local/lib/android/sdk" >> $GITHUB_ENV
           echo "/usr/local/lib/android/sdk/cmdline-tools/latest/bin" >> $GITHUB_PATH
 
-      - name: 安装 platform-37 + build-tools
+      - name: 安装 Android SDK（platform-37 预览版 + build-tools）
         run: |
           yes | sdkmanager --licenses > /dev/null || true
-          sdkmanager "platforms;android-37" "build-tools;36.0.0" > /dev/null
+          yes | sdkmanager --channel=3 "platforms;android-37" || echo "platform-37 预装失败，将由 AGP 自动下载兜底"
+          yes | sdkmanager "build-tools;36.0.0" || echo "build-tools 预装失败，将由 AGP 自动下载兜底"
 
       - name: 写入签名配置（从 Secrets 读取）
         run: |
