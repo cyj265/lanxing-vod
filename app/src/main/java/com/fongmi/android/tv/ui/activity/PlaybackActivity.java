@@ -302,6 +302,9 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
             @Override
             public void onScrubStop(@NonNull TimeBar timeBar, long position, boolean canceled) {
+                if (!canceled && mController != null && mController.isCommandAvailable(Player.COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM)) {
+                    mController.seekTo(position);
+                }
                 PlaybackActivity.this.onScrubStop(canceled);
             }
         });
