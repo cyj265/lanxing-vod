@@ -674,6 +674,7 @@ public class Players implements Player.Listener, ParseCallback {
     @Override
     public void onPlaybackStateChanged(int state) {
         if (danPlayer != null) danPlayer.check(state);
+        if (state == Player.STATE_READY) initAudioGain();
         PlayerEvent.state(tag, state);
     }
 
@@ -681,11 +682,6 @@ public class Players implements Player.Listener, ParseCallback {
     public void onVideoSizeChanged(@NonNull VideoSize videoSize) {
         this.size = videoSize;
         PlayerEvent.size(tag);
-    }
-
-    @Override
-    public void onAudioSessionIdChanged(int audioSessionId) {
-        initAudioGain();
     }
 
     @Override
