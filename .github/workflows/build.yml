@@ -97,7 +97,11 @@ jobs:
             exit 0
           fi
           echo "下载 Bugly 符号表上传工具..."
-          curl -sL -o /tmp/bugly-symbol-tool.zip "https://bugly.qq.com/v2/sdk?id=d796e9d7-0423-422f-9eb9-63b6e16ef4f9" || { echo "下载失败，跳过"; exit 0; }
+          curl -sL \
+            -H "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+            -H "Referer: https://bugly.qq.com/v2/downloads" \
+            -o /tmp/bugly-symbol-tool.zip \
+            "https://bugly.qq.com/v2/sdk?id=d796e9d7-0423-422f-9eb9-63b6e16ef4f9" || { echo "下载失败，跳过"; exit 0; }
           ls -la /tmp/bugly-symbol-tool.zip
           unzip -q -o /tmp/bugly-symbol-tool.zip -d /tmp/bugly-symbol-tool/ || { echo "解压失败，跳过"; exit 0; }
           JAR=$(find /tmp/bugly-symbol-tool -name "buglyqq-upload-symbol.jar" | head -1)
@@ -110,10 +114,9 @@ jobs:
           java -jar "$JAR" \
             -appid 69e90fd596 \
             -appkey "$BUGLY_APP_KEY" \
-            -bundleid com.cyj265.lanxingvod \
             -version "${{ steps.ver.outputs.name }}" \
             -platform Android \
-            -mapping app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt 2>&1 | tail -10
+            -inputMapping app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt 2>&1 | tail -15
           echo "Bugly mapping 上传完成"
 
       - name: 删除旧 Release 资产（同名 tag 时覆盖旧 APK）
