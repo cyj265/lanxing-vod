@@ -81,6 +81,7 @@ jobs:
         run: |
           VERSION=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)
           echo "name=$VERSION" >> $GITHUB_OUTPUT
+          echo "prefix=$(echo "$VERSION" | sed 's/\.[0-9]*$//')" >> $GITHUB_OUTPUT
 
       - name: 上传 Bugly 符号表（mapping）
         continue-on-error: true
@@ -110,25 +111,32 @@ jobs:
             -inputMapping app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt 2>&1 | tail -15
           echo "Bugly mapping 上传完成"
 
-      - name: 发布 GitHub Release（app 内一键更新）
+      - name: 发布 GitHub Release（dev 分支为预发布测试版，不影响对外正式版）
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.name }}
           name: 揽星影视 v${{ steps.ver.outputs.name }}
           body: |
-            自动构建发布
+            测试版自动构建发布
             更新内容见仓库提交记录
           files: |
             ${{ env.APK_PATH }}
             app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt
           generate_release_notes: false
           fail_on_unmatched_files: false
+          overwrite: true
+          prerelease: true
 
-      - name: 清理旧 Release（只保留最新2个）
+      - name: 清理旧 Release（只清理与本分支同系列，保留 main 分支正式版）
         run: |
-          releases=$(gh release list --limit 100 --json tagName --jq '.[2:].[].tagName')
-          for tag in $releases; do
-            echo "删除旧 release: $tag"
+          PREFIX="v${{ steps.ver.outputs.prefix }}"
+          echo "本次系列: ${PREFIX}.x"
+          tags=$(gh release list --limit 100 --json tagName --jq '.[].tagName' | grep -E "^${PREFIX}\." | tail -n +3)
+          if [ -z "$tags" ]; then
+            echo "没有需要清理的同系列旧 release"
+          fi
+          for tag in $tags; do
+            echo "删除同系列旧 release: $tag"
             gh release delete "$tag" --yes --cleanup-tag
           done
         env:
