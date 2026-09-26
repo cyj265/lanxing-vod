@@ -24,7 +24,7 @@ public class PlayerSetting {
     private static final int MAX_BACKGROUND = 2;
 
     public static int getEngine() {
-        return Math.clamp(Prefers.getInt("player_engine", ENGINE_EXO), ENGINE_EXO, ENGINE_MPV);
+        return ENGINE_EXO;
     }
 
     public static void putEngine(int engine) {
