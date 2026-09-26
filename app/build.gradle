@@ -1,14 +1,16 @@
-import com.android.build.api.artifact.SingleArtifact
-import com.fongmi.gradle.AbiApkPackaging
-
 plugins {
     alias libs.plugins.android.application
 }
 
 def localProps = new Properties()
-rootProject.file('local.properties').withInputStream {
-    localProps.load(it)
+def localPropsFile = rootProject.file('local.properties')
+if (localPropsFile.exists()) {
+    localPropsFile.withInputStream {
+        localProps.load(it)
+    }
 }
+def hasReleaseSigning = localProps['storeFile'] && localProps['keyAlias'] && localProps['storePassword']
+def releaseKeyPassword = localProps['keyPassword'] ?: localProps['storePassword']
 
 android {
     namespace = 'com.fongmi.android.tv'
@@ -17,8 +19,8 @@ android {
 
     defaultConfig {
         applicationId "com.cyj265.lanxingvod"
-        minSdk 24
-        targetSdk 37
+        minSdk libs.versions.minSdk.get().toInteger()
+        targetSdk libs.versions.targetSdk.get().toInteger()
         versionCode 585
         versionName "5.6.3"
         javaCompileOptions {
@@ -28,14 +30,22 @@ android {
         }
     }
 
-    flavorDimensions = ["device"]
+    flavorDimensions = ["mode", "abi"]
 
     productFlavors {
         leanback {
-            dimension "device"
+            dimension "mode"
         }
         mobile {
-            dimension "device"
+            dimension "mode"
+        }
+        arm64_v8a {
+            dimension "abi"
+            ndk { abiFilters "arm64-v8a" }
+        }
+        armeabi_v7a {
+            dimension "abi"
+            ndk { abiFilters "armeabi-v7a" }
         }
     }
 
@@ -46,10 +56,12 @@ android {
 
     signingConfigs {
         release {
-            storeFile file(localProps['storeFile'])
-            keyAlias localProps['keyAlias']
-            keyPassword localProps['storePassword']
-            storePassword localProps['storePassword']
+            if (hasReleaseSigning) {
+                storeFile file(localProps['storeFile'])
+                keyAlias localProps['keyAlias']
+                keyPassword releaseKeyPassword
+                storePassword localProps['storePassword']
+            }
         }
     }
 
@@ -57,7 +69,7 @@ android {
         release {
             minifyEnabled = true
             shrinkResources = true
-            signingConfig = signingConfigs.release
+            signingConfig = hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'proguard-rules-media.pro'
         }
     }
@@ -71,7 +83,8 @@ android {
             force libs.okhttp
             eachDependency { details ->
                 if (details.requested.group == 'androidx.media3') {
-                    details.useVersion libs.versions.media3.get()
+                    details.useVersion(libs.versions.media3.get())
+                    details.because('Use the WebHTV-pinned FongMi Media3 fork')
                 }
             }
         }
@@ -80,6 +93,8 @@ android {
     sourceSets {
         main {
             java {
+                // Real bundled MPV is enabled. The three legacy effect wrappers below
+                // target the older private MPV API and stay excluded.
                 exclude 'com/fongmi/android/tv/player/mpv/MpvPlayerEffect.java'
                 exclude 'com/fongmi/android/tv/player/effect/audio/MpvAudioEffectFilter.java'
                 exclude 'com/fongmi/android/tv/player/effect/video/MpvVideoEffectController.java'
@@ -99,7 +114,16 @@ android {
     }
 }
 
-AbiApkPackaging.configure(project, SingleArtifact.APK.INSTANCE)
+androidComponents {
+    onVariants(selector().withBuildType('release')) { variant ->
+        def flavors = variant.productFlavors.collectEntries { [(it.first): it.second] }
+        def mode = flavors['mode'] ?: 'mode'
+        def abi = flavors['abi'] ?: 'abi'
+        variant.outputs.each { output ->
+            output.outputFileName.set("揽星影视-${mode}-${abi}.apk")
+        }
+    }
+}
 
 dependencies {
     implementation fileTree(dir: "libs", include: ["*.aar"])
@@ -110,8 +134,8 @@ dependencies {
     implementation libs.lifecycle.service
     implementation libs.media
     implementation libs.bundles.media3
-    implementation libs.nextlib.media3ext
     implementation libs.exoplayer.hdr.utils
+    implementation libs.nextlib.media3ext
     implementation libs.palette
     implementation libs.recyclerview
     implementation libs.room.runtime
@@ -124,7 +148,6 @@ dependencies {
     implementation libs.customactivityoncrash
     implementation libs.eventbus
     implementation libs.flexbox
-    implementation libs.rtmp.client
     implementation libs.lottie
     implementation libs.material
     implementation libs.materialdesigncolors
@@ -133,8 +156,6 @@ dependencies {
     implementation libs.permissionx
     implementation libs.simple.xml
     implementation libs.textdrawable
-    implementation 'com.tencent.bugly:crashreport:4.1.9.3'
-    implementation 'com.tencent.bugly:nativecrashreport:3.9.2'
     leanbackImplementation libs.leanback
     leanbackImplementation libs.androidautosize
     mobileImplementation libs.biometric
@@ -143,4 +164,6 @@ dependencies {
     annotationProcessor libs.eventbus.annotation.processor
     annotationProcessor libs.glide.compiler
     coreLibraryDesugaring libs.desugar
+    implementation 'com.tencent.bugly:crashreport:4.1.9.3'
+    implementation 'com.tencent.bugly:nativecrashreport:3.9.2'
 }

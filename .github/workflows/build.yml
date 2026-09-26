@@ -56,11 +56,12 @@ jobs:
         run: |
           chmod +x gradlew
           set +e
-          ./gradlew :app:assembleMobileRelease --no-daemon --console=plain > /tmp/gradle-build.log 2>&1
+          ./gradlew :app:assembleMobileArm64_v8aRelease --no-daemon --console=plain > /tmp/gradle-build.log 2>&1
           code=$?
-          APK="app/build/outputs/apk/mobile/release/mobile-arm64_v8a.apk"
-          if [ -f "$APK" ]; then
+          APK=$(find app/build/outputs/apk -name "*.apk" | head -1)
+          if [ -n "$APK" ] && [ -f "$APK" ]; then
             echo "BUILD OK"
+            echo "APK_PATH=$APK" >> $GITHUB_ENV
             ls -la "$APK"
           else
             echo "::error::构建失败(exit=$code)，APK未生成。最后200行日志："
@@ -72,7 +73,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: 揽星影视-release
-          path: app/build/outputs/apk/mobile/release/mobile-arm64_v8a.apk
+          path: ${{ env.APK_PATH }}
           if-no-files-found: error
 
       - name: 读取版本号
@@ -106,7 +107,7 @@ jobs:
             -appkey "${{ secrets.BUGLY_APP_KEY }}" \
             -version "${{ steps.ver.outputs.name }}" \
             -platform Android \
-            -inputMapping app/build/outputs/mapping/mobileRelease/mapping.txt 2>&1 | tail -15
+            -inputMapping app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt 2>&1 | tail -15
           echo "Bugly mapping 上传完成"
 
       - name: 发布 GitHub Release（app 内一键更新）
@@ -118,8 +119,8 @@ jobs:
             自动构建发布
             更新内容见仓库提交记录
           files: |
-            app/build/outputs/apk/mobile/release/mobile-arm64_v8a.apk
-            app/build/outputs/mapping/mobileRelease/mapping.txt
+            ${{ env.APK_PATH }}
+            app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt
           generate_release_notes: false
           fail_on_unmatched_files: false
 
