@@ -12,6 +12,7 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.AudioManager;
+import android.media.audiofx.LoudnessEnhancer;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.media.MediaMetadataCompat;
@@ -93,6 +94,7 @@ public class Players implements Player.Listener, ParseCallback {
     private MediaSessionCompat session;
     private List<Danmaku> danmakus;
     private ExoPlayer exoPlayer;
+    private LoudnessEnhancer loudnessEnhancer;
     private DanPlayer danPlayer;
     private ParseJob parseJob;
     private PlayerView view;
@@ -153,6 +155,32 @@ public class Players implements Player.Listener, ParseCallback {
         exoPlayer.addListener(this);
         view.setPlayer(exoPlayer);
         this.view = view;
+        initAudioGain();
+    }
+
+    private void initAudioGain() {
+        if (exoPlayer == null) return;
+        int sessionId = exoPlayer.getAudioSessionId();
+        if (sessionId == 0) return;
+        try {
+            releaseAudioGain();
+            loudnessEnhancer = new LoudnessEnhancer(sessionId);
+            loudnessEnhancer.setTargetGain(Setting.getAudioGain());
+            loudnessEnhancer.setEnabled(true);
+        } catch (Exception e) {
+            Logger.t(TAG).e("LoudnessEnhancer init failed: %s", e.getMessage());
+        }
+    }
+
+    private void releaseAudioGain() {
+        if (loudnessEnhancer != null) {
+            try {
+                loudnessEnhancer.setEnabled(false);
+                loudnessEnhancer.release();
+            } catch (Exception ignored) {
+            }
+            loudnessEnhancer = null;
+        }
     }
 
     public void setDanmakuView(DanmakuView view) {
@@ -411,6 +439,7 @@ public class Players implements Player.Listener, ParseCallback {
     }
 
     private void releasePlayer() {
+        releaseAudioGain();
         if (exoPlayer != null) exoPlayer.release();
         if (danPlayer != null) danPlayer.release();
         if (view != null) view.setPlayer(null);
@@ -652,6 +681,11 @@ public class Players implements Player.Listener, ParseCallback {
     public void onVideoSizeChanged(@NonNull VideoSize videoSize) {
         this.size = videoSize;
         PlayerEvent.size(tag);
+    }
+
+    @Override
+    public void onAudioSessionIdChanged(int audioSessionId) {
+        initAudioGain();
     }
 
     @Override
