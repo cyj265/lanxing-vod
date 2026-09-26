@@ -6,20 +6,12 @@ public class PreloadSetting {
 
     public static final int MIN_THREADS = 1;
     public static final int MAX_THREADS = 10;
-    public static final int DEFAULT_THREADS = 1;
     public static final int MIN_SIZE_MB = 128;
     public static final int MAX_SIZE_MB = 4096;
     public static final int STEP_SIZE_MB = 128;
     public static final int MIN_TIME_SECONDS = 20;
     public static final int MAX_TIME_SECONDS = 120;
-    public static final int DEFAULT_TIME_SECONDS = 20;
     public static final int STEP_TIME_SECONDS = 10;
-    public static final int WHOLE_MEDIA_AHEAD_SECONDS = 0;
-    public static final int DEFAULT_AHEAD_SECONDS = 300;
-    public static final int PAUSE_PRELOAD_LEGACY_OFF = 0;
-    public static final int PAUSE_PRELOAD_WIFI = 1;
-    public static final int PAUSE_PRELOAD_ALWAYS = 2;
-    public static final int DEFAULT_PAUSE_PRELOAD = PAUSE_PRELOAD_ALWAYS;
 
     public static boolean isEnabled() {
         return Prefers.getBoolean("preload");
@@ -70,65 +62,4 @@ public class PreloadSetting {
     public static long getDurationMs() {
         return getTimeSeconds() * 1000L;
     }
-    // ---- FongMi MPV compatibility API ----
-    public static boolean isPreload() {
-        return isEnabled();
-    }
-
-    public static boolean isPreload(int kernel) {
-        return isEnabled();
-    }
-
-    public static int getPreloadThreads() {
-        return getThreads();
-    }
-
-    public static int getPreloadThreads(int kernel) {
-        return getThreads();
-    }
-
-    public static int getPreloadSizeMb() {
-        return getSizeMb();
-    }
-
-    public static int getPreloadSizeMb(int kernel) {
-        return getSizeMb();
-    }
-
-    public static long getPreloadSizeBytes() {
-        return getSizeBytes();
-    }
-
-    public static long getPreloadSizeBytes(int kernel) {
-        return getSizeBytes();
-    }
-
-    public static int getPreloadTimeSeconds() {
-        return getTimeSeconds();
-    }
-
-    public static int getPreloadTimeSeconds(int kernel) {
-        return getTimeSeconds();
-    }
-
-    public static int getPreloadAheadSeconds() {
-        return WHOLE_MEDIA_AHEAD_SECONDS;
-    }
-
-    public static int getPreloadAheadSeconds(int kernel) {
-        return WHOLE_MEDIA_AHEAD_SECONDS;
-    }
-
-    public static int getPausePreloadPolicy() {
-        return PAUSE_PRELOAD_ALWAYS;
-    }
-
-    public static int getPausePreloadPolicy(int kernel) {
-        return PAUSE_PRELOAD_ALWAYS;
-    }
-
-    static int normalizePausePreloadPolicy(int policy) {
-        return policy == PAUSE_PRELOAD_ALWAYS ? PAUSE_PRELOAD_ALWAYS : PAUSE_PRELOAD_WIFI;
-    }
-
 }

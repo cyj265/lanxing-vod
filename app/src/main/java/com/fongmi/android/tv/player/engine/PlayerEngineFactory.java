@@ -22,6 +22,6 @@ public final class PlayerEngineFactory {
     }
 
     public static boolean matches(PlayerEngine engine, PlaySpec spec) {
-        return engine != null && engine.getType() == EXO;
+        return engine != null && engine.getType() == EXO && !engine.needsRebuild();
     }
 }

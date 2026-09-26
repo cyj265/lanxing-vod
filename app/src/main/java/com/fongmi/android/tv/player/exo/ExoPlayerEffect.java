@@ -42,14 +42,18 @@ public final class ExoPlayerEffect implements PlayerEffect {
 
     @Override
     public boolean supportsVideoEffect() {
-        // WebHTV-pinned Media3 1.11 fork supports setVideoEffects(),
-        // but no longer exposes the older getVideoEffectsSupport() helper.
-        return player != null;
+        return player.getVideoEffectsSupport() == ExoPlayer.VIDEO_EFFECTS_SUPPORTED;
     }
 
     @Override
     public int getVideoEffectError() {
-        return player == null ? R.string.error_video_effect_unsupported : 0;
+        return switch (player.getVideoEffectsSupport()) {
+            case ExoPlayer.VIDEO_EFFECTS_SUPPORTED -> 0;
+            case ExoPlayer.VIDEO_EFFECTS_UNSUPPORTED_DRM -> R.string.error_video_effect_drm;
+            case ExoPlayer.VIDEO_EFFECTS_UNSUPPORTED_RENDERER -> R.string.error_video_effect_decode;
+            case ExoPlayer.VIDEO_EFFECTS_UNSUPPORTED_TUNNELING -> R.string.error_video_effect_tunnel;
+            default -> R.string.error_video_effect_unsupported;
+        };
     }
 
     @Override
@@ -67,7 +71,7 @@ public final class ExoPlayerEffect implements PlayerEffect {
 
     @Override
     public boolean supportsAudioEffect() {
-        return !audioEffectFailed;
+        return player.getAudioProcessingSupport() == ExoPlayer.AUDIO_PROCESSING_SUPPORTED && !audioEffectFailed;
     }
 
     @Override
@@ -77,12 +81,18 @@ public final class ExoPlayerEffect implements PlayerEffect {
 
     @Override
     public int getAudioEffectError() {
-        return audioEffectFailed ? R.string.error_audio_effect_apply : 0;
+        return switch (player.getAudioProcessingSupport()) {
+            case ExoPlayer.AUDIO_PROCESSING_SUPPORTED -> audioEffectFailed ? R.string.error_audio_effect_apply : 0;
+            case ExoPlayer.AUDIO_PROCESSING_UNSUPPORTED_PASSTHROUGH -> R.string.error_audio_effect_passthrough;
+            default -> R.string.error_audio_effect_unsupported;
+        };
     }
 
     @Override
     public void applyAudioEffect() {
-        applyAudioConfig(getAudioChannelCount());
+        boolean support = player.getAudioProcessingSupport() == ExoPlayer.AUDIO_PROCESSING_SUPPORTED;
+        if (support) applyAudioConfig(getAudioChannelCount());
+        else clearAudioEffect();
     }
 
     public void clearAudioEffect() {
@@ -99,7 +109,7 @@ public final class ExoPlayerEffect implements PlayerEffect {
 
     @Override
     public boolean supportsSkipSilence() {
-        return true;
+        return player.isSkipSilenceSupported();
     }
 
     @Override
