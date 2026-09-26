@@ -88,6 +88,7 @@ jobs:
           cp app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt app/build/outputs/apk/mobileArm64_v8a/release/mapping_${{ steps.ver.outputs.name }}.txt 2>/dev/null || echo "mapping not found"
 
       - name: 上传 mapping 到 Bugly（崩溃堆栈自动还原）
+        continue-on-error: true
         env:
           BUGLY_APP_KEY: ${{ secrets.BUGLY_APP_KEY }}
         run: |
@@ -96,9 +97,15 @@ jobs:
             exit 0
           fi
           echo "下载 Bugly 符号表上传工具..."
-          curl -sL -o /tmp/bugly-symbol-tool.zip "https://bugly.qq.com/v2/sdk?id=d796e9d7-0423-422f-9eb9-63b6e16ef4f9"
-          unzip -q -o /tmp/bugly-symbol-tool.zip -d /tmp/bugly-symbol-tool/
+          curl -sL -o /tmp/bugly-symbol-tool.zip "https://bugly.qq.com/v2/sdk?id=d796e9d7-0423-422f-9eb9-63b6e16ef4f9" || { echo "下载失败，跳过"; exit 0; }
+          ls -la /tmp/bugly-symbol-tool.zip
+          unzip -q -o /tmp/bugly-symbol-tool.zip -d /tmp/bugly-symbol-tool/ || { echo "解压失败，跳过"; exit 0; }
           JAR=$(find /tmp/bugly-symbol-tool -name "buglyqq-upload-symbol.jar" | head -1)
+          if [ -z "$JAR" ]; then
+            echo "未找到 buglyqq-upload-symbol.jar，跳过"
+            find /tmp/bugly-symbol-tool -name "*.jar"
+            exit 0
+          fi
           echo "上传 mapping v${{ steps.ver.outputs.name }} 到 Bugly..."
           java -jar "$JAR" \
             -appid 69e90fd596 \
@@ -106,7 +113,7 @@ jobs:
             -bundleid com.cyj265.lanxingvod \
             -version "${{ steps.ver.outputs.name }}" \
             -platform Android \
-            -mapping app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt 2>&1 | tail -5
+            -mapping app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt 2>&1 | tail -10
           echo "Bugly mapping 上传完成"
 
       - name: 删除旧 Release 资产（同名 tag 时覆盖旧 APK）

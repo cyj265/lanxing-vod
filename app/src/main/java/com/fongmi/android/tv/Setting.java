@@ -282,14 +282,6 @@ public class Setting {
         Prefers.put("subtitle_position", value);
     }
 
-    public static int getAudioGain() {
-        return Prefers.getInt("audio_gain", 500);
-    }
-
-    public static void putAudioGain(int gain) {
-        Prefers.put("audio_gain", gain);
-    }
-
     public static boolean isBackgroundOff() {
         return getBackground() == 0;
     }
