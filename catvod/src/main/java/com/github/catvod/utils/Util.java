@@ -51,6 +51,15 @@ public class Util {
         return bytes;
     }
 
+    // Compatibility for the standalone FongMi MPV player layer.
+    public static String md5(String src) {
+        return Crypto.md5(src);
+    }
+
+    public static String md5(java.io.File file) {
+        return Crypto.md5(file);
+    }
+
     public static boolean containOrMatch(String text, String regex) {
         try {
             return text.contains(regex) || text.matches(regex);
