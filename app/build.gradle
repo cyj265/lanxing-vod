@@ -18,6 +18,7 @@ android {
         targetSdk 30
         versionCode 584
         versionName "5.4.44"
+        // 5.4.44: 修复投屏崩溃 #3007（PermissionX嵌套Fragment事务），DLNA迁移jupnp
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
