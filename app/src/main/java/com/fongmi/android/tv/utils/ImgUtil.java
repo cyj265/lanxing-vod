@@ -33,11 +33,9 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.net.HttpHeaders;
 
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 import jahirfiquitiva.libs.textdrawable.TextDrawable;
@@ -46,8 +44,10 @@ public class ImgUtil {
 
     private static final int MAX_CACHE_SIZE = 16 * 1024 * 1024;
     private static final int MAX_DATA_URI_LENGTH = 8 * 1024 * 1024;
+    private static final long FAILED_RETRY_MS = 5 * 60 * 1000L;
     private static final Pattern IMAGE_MIME = Pattern.compile("image/[a-z0-9.+-]+");
-    private static final Set<String> failed = Collections.synchronizedSet(new HashSet<>());
+    // 失败 URL -> 失败时间戳；超时后允许重试，避免弱网/临时故障导致海报永久不显示
+    private static final Map<String, Long> failed = new ConcurrentHashMap<>();
     private static final Cache<String, Image> CACHE = CacheBuilder.newBuilder().maximumWeight(MAX_CACHE_SIZE).weigher((String key, Image value) -> value.data().length).build();
 
     public static void logo(ImageView view) {
@@ -81,7 +81,7 @@ public class ImgUtil {
     public static void load(String text, String url, ImageView view, boolean vod) {
         view.setScaleType(vod ? CENTER_CROP : FIT_CENTER);
         if (!vod) view.setVisibility(TextUtils.isEmpty(url) ? View.GONE : View.VISIBLE);
-        if (TextUtils.isEmpty(url) || failed.contains(url)) view.setImageDrawable(getTextDrawable(text, vod));
+        if (TextUtils.isEmpty(url) || isFailed(url)) view.setImageDrawable(getTextDrawable(text, vod));
         else try {
             RequestBuilder<Drawable> builder = Glide.with(view).load(getUrl(url)).listener(getListener(text, url, view, vod));
             if (vod) builder.centerCrop().into(view);
@@ -152,12 +152,22 @@ public class ImgUtil {
         return builder.buildRoundRect(text, ColorGenerator.get400(text), ResUtil.dp2px(4));
     }
 
+    private static boolean isFailed(String url) {
+        Long time = failed.get(url);
+        if (time == null) return false;
+        if (System.currentTimeMillis() - time > FAILED_RETRY_MS) {
+            failed.remove(url);
+            return false;
+        }
+        return true;
+    }
+
     private static RequestListener<Drawable> getListener(String text, String url, ImageView view, boolean vod) {
         return new RequestListener<>() {
             @Override
             public boolean onLoadFailed(@Nullable GlideException e, Object model, @NonNull Target<Drawable> target, boolean isFirstResource) {
                 view.setImageDrawable(getTextDrawable(text, vod));
-                failed.add(url);
+                failed.put(url, System.currentTimeMillis());
                 return true;
             }
 
