@@ -1,7 +1,6 @@
 package com.fongmi.android.tv.player.engine;
 
 import androidx.annotation.Nullable;
-import androidx.media3.common.C;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.TrackSelectionOverride;
@@ -15,8 +14,8 @@ import java.util.List;
 
 public interface PlayerEngine {
 
-    int SOFT = C.DECODE_SOFTWARE;
-    int HARD = C.DECODE_HARDWARE;
+    int SOFT = 0;
+    int HARD = 1;
 
     Type getType();
 
@@ -74,8 +73,7 @@ public interface PlayerEngine {
     }
 
     enum Type {
-        EXO,
-        MPV
+        EXO
     }
 
     record SecondarySubtitleState(@Nullable TrackSelectionOverride primarySelection, @Nullable TrackSelectionOverride explicitSelection, List<TrackSelectionOverride> secondaryCandidates, boolean secondaryPromotedToPrimary) {
