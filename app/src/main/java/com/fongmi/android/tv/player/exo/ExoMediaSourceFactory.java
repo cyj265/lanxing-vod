@@ -13,7 +13,6 @@ import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor;
 import androidx.media3.datasource.cache.SimpleCache;
 import androidx.media3.datasource.okhttp.OkHttpDataSource;
 import androidx.media3.exoplayer.drm.DrmSessionManagerProvider;
-import androidx.media3.exoplayer.libass.LibassPlaybackSession;
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
 import androidx.media3.exoplayer.source.MediaSource;
 import androidx.media3.exoplayer.source.preload.MediaSourceFactorySupplier;
@@ -24,6 +23,7 @@ import androidx.media3.extractor.ts.TsExtractor;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.setting.PreloadSetting;
+import com.fongmi.android.tv.utils.FileUtil;
 import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Path;
 
@@ -38,17 +38,15 @@ public class ExoMediaSourceFactory implements MediaSource.Factory {
     private static Cache cache;
 
     private final DefaultMediaSourceFactory defaultMediaSourceFactory;
-    private final LibassPlaybackSession libassPlaybackSession;
-
     private HttpDataSource.Factory httpDataSourceFactory;
     private DataSource.Factory dataSourceFactory;
+    private ExtractorsFactory extractorsFactory;
 
-    private ExoMediaSourceFactory(LibassPlaybackSession libassPlaybackSession) {
-        this.libassPlaybackSession = libassPlaybackSession;
-        this.defaultMediaSourceFactory = new DefaultMediaSourceFactory(getDataSourceFactory(), createDefaultExtractorsFactory());
+    public ExoMediaSourceFactory() {
+        defaultMediaSourceFactory = new DefaultMediaSourceFactory(getDataSourceFactory(), getExtractorsFactory());
     }
 
-    static MediaSourceFactorySupplier supplier(LibassPlaybackSession libassPlaybackSession) {
+    static MediaSourceFactorySupplier supplier() {
         return new MediaSourceFactorySupplier() {
             @NonNull
             @Override
@@ -64,7 +62,7 @@ public class ExoMediaSourceFactory implements MediaSource.Factory {
 
             @Override
             public MediaSource.Factory get() {
-                return new ExoMediaSourceFactory(libassPlaybackSession);
+                return new ExoMediaSourceFactory();
             }
         };
     }
@@ -87,8 +85,8 @@ public class ExoMediaSourceFactory implements MediaSource.Factory {
     }
 
     private static long getMaxCacheSize(File dir) {
-        long usedBytes = Path.size(dir);
-        long availableBytes = Math.max(0, Path.available(dir));
+        long usedBytes = FileUtil.getDirectorySize(dir);
+        long availableBytes = Math.max(0, FileUtil.getAvailableStorageSpace(dir));
         long storageBudget = (usedBytes + availableBytes) * CACHE_SPACE_PERCENT / 100;
         return Math.min(PreloadSetting.getSizeBytes(), storageBudget);
     }
@@ -115,13 +113,12 @@ public class ExoMediaSourceFactory implements MediaSource.Factory {
     @Override
     public MediaSource createMediaSource(@NonNull MediaItem mediaItem) {
         getHttpDataSourceFactory().setDefaultRequestProperties(ExoUtil.extractHeaders(mediaItem));
-        if (!libassPlaybackSession.isAvailable()) return defaultMediaSourceFactory.createMediaSource(mediaItem);
-        LibassPlaybackSession.MediaComponents components = libassPlaybackSession.createMediaComponents(mediaItem, createDefaultExtractorsFactory());
-        return new DefaultMediaSourceFactory(getDataSourceFactory(), components.extractorsFactory).setSubtitleParserFactory(components.subtitleParserFactory).createMediaSource(mediaItem);
+        return defaultMediaSourceFactory.createMediaSource(mediaItem);
     }
 
-    private static ExtractorsFactory createDefaultExtractorsFactory() {
-        return new DefaultExtractorsFactory().setTsExtractorTimestampSearchBytes(TsExtractor.DEFAULT_TIMESTAMP_SEARCH_BYTES * 10);
+    private ExtractorsFactory getExtractorsFactory() {
+        if (extractorsFactory == null) extractorsFactory = new DefaultExtractorsFactory().setTsExtractorTimestampSearchBytes(TsExtractor.DEFAULT_TIMESTAMP_SEARCH_BYTES * 10);
+        return extractorsFactory;
     }
 
     private DataSource.Factory getDataSourceFactory() {
