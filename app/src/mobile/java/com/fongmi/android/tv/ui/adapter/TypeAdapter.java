@@ -6,11 +6,9 @@ import android.view.ViewGroup;
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Class;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.databinding.AdapterTypeBinding;
-import com.fongmi.android.tv.utils.ResUtil;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,9 +28,16 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
         void onItemClick(int position, Class item);
     }
 
+    private Class discover() {
+        Class type = new Class();
+        type.setTypeName("首页");
+        type.setTypeId("discover");
+        return type;
+    }
+
     private Class home() {
         Class type = new Class();
-        type.setTypeName(ResUtil.getString(R.string.vod_home));
+        type.setTypeName("推荐");
         type.setTypeId("home");
         return type;
     }
@@ -43,15 +48,16 @@ public class TypeAdapter extends RecyclerView.Adapter<TypeAdapter.ViewHolder> {
     }
 
     public void addAll(Result result) {
+        mItems.add(discover());
+        if (!result.getList().isEmpty()) mItems.add(home());
         mItems.addAll(result.getTypes());
-        if (!result.getList().isEmpty()) mItems.add(0, home());
         if (!mItems.isEmpty()) mItems.get(0).setSelected(true);
         notifyDataSetChanged();
     }
 
     public void setSelected(int position) {
         for (Class item : mItems) item.setSelected(false);
-        mItems.get(position).setSelected(true);
+        if (position >= 0 && position < mItems.size()) mItems.get(position).setSelected(true);
         notifyItemRangeChanged(0, mItems.size());
     }
 

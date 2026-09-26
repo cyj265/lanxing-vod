@@ -80,3 +80,13 @@
 -keep class com.google.zxing.qrcode.QRCodeReader { *; }
 -keep class com.google.zxing.qrcode.QRCodeWriter { *; }
 -keep class com.google.zxing.qrcode.decoder.ErrorCorrectionLevel { *; }
+
+# Lanxing 内置首页
+-keep class com.fongmi.android.tv.ui.fragment.DiscoverFragment { *; }
+-keep class com.fongmi.android.tv.ui.fragment.HomeFragment { *; }
+-keep class com.fongmi.android.tv.ui.adapter.RecommendRowAdapter { *; }
+-keep class com.fongmi.android.tv.ui.adapter.RecommendVodAdapter { *; }
+-keep class com.fongmi.android.tv.ui.adapter.ContinueAdapter { *; }
+-keep class com.fongmi.android.tv.ui.adapter.CategoryListAdapter { *; }
+-keep class com.fongmi.android.tv.ui.activity.CategoryListActivity { *; }
+-keep class com.fongmi.android.tv.utils.Douban { *; }

@@ -143,11 +143,20 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
             mBinding.top.setVisibility(View.INVISIBLE);
             mBinding.link.setVisibility(View.VISIBLE);
             mBinding.filter.setVisibility(View.GONE);
-        } else if (!mAdapter.get(position).getFilters().isEmpty()) {
+            return;
+        }
+        Class item = mAdapter.get(position);
+        if ("discover".equals(item.getTypeId()) || "home".equals(item.getTypeId())) {
+            mBinding.top.setVisibility(View.INVISIBLE);
+            mBinding.link.setVisibility(View.VISIBLE);
+            mBinding.filter.setVisibility(View.GONE);
+            return;
+        }
+        if (!item.getFilters().isEmpty()) {
             mBinding.top.setVisibility(View.INVISIBLE);
             mBinding.link.setVisibility(View.GONE);
             mBinding.filter.show();
-        } else if (position == 0 || mAdapter.get(position).getFilters().isEmpty()) {
+        } else {
             mBinding.top.setVisibility(View.INVISIBLE);
             mBinding.filter.setVisibility(View.GONE);
             mBinding.link.show();
@@ -161,7 +170,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     }
 
     private void onTop(View view) {
-        getFragment().scrollToTop();
+        if (mBinding.pager.getCurrentItem() > 0) getFragment().scrollToTop();
         mBinding.top.setVisibility(View.INVISIBLE);
         if (mBinding.filter.getVisibility() == View.INVISIBLE) mBinding.filter.show();
         else if (mBinding.link.getVisibility() == View.INVISIBLE) mBinding.link.show();
@@ -241,7 +250,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
                 homeContent();
                 break;
             case CATEGORY:
-                getFragment().onRefresh();
+                if (mBinding.pager.getCurrentItem() > 0) getFragment().onRefresh();
                 break;
         }
     }
@@ -302,6 +311,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     @Override
     public boolean canBack() {
         if (mBinding.pager.getAdapter() == null || mBinding.pager.getAdapter().getCount() == 0) return true;
+        if (mBinding.pager.getCurrentItem() == 0) return true;
         if (!getFragment().canBack()) return true;
         getFragment().goBack();
         return false;
@@ -322,6 +332,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         @NonNull
         @Override
         public Fragment getItem(int position) {
+            if (position == 0) return DiscoverFragment.newInstance();
             Class type = mAdapter.get(position);
             return FolderFragment.newInstance(getHome().getKey(), type, 4);
         }
