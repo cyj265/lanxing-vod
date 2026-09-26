@@ -40,6 +40,7 @@
 }
 
 # CatVod
+
 -keep class com.github.catvod.Proxy { *; }
 -keep class com.github.catvod.crawler.** { *; }
 -keep class * extends com.github.catvod.crawler.Spider
