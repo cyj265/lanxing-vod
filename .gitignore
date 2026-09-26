@@ -1,0 +1,10 @@
+.idea
+.vscode
+.gradle
+.settings
+*build
+*.jks
+*.properties
+lib-*.aar
+/Release
+/docs

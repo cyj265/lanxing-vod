@@ -1,0 +1,40 @@
+<resources>
+
+    <style name="Vod">
+        <item name="cornerFamily">rounded</item>
+    </style>
+
+    <style name="Vod.Grid">
+        <item name="cornerSizeTopLeft">8dp</item>
+        <item name="cornerSizeTopRight">8dp</item>
+    </style>
+
+    <style name="Vod.Grid.Large">
+        <item name="cornerSize">8dp</item>
+    </style>
+
+    <style name="Vod.Circle">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">50%</item>
+    </style>
+
+    <style name="Vod.List">
+        <item name="cornerSizeTopLeft">8dp</item>
+        <item name="cornerSizeBottomLeft">8dp</item>
+    </style>
+
+    <style name="Player">
+        <item name="resize_mode">fit</item>
+        <item name="use_artwork">true</item>
+        <item name="use_controller">false</item>
+    </style>
+
+    <style name="Player.Vod">
+        <item name="keep_content_on_player_reset">false</item>
+    </style>
+
+    <style name="Player.Live">
+        <item name="keep_content_on_player_reset">true</item>
+    </style>
+
+</resources>
