@@ -87,6 +87,17 @@ jobs:
           cp app/build/outputs/apk/mobileArm64_v8a/release/mobile-arm64_v8a.apk app/build/outputs/apk/mobileArm64_v8a/release/mobile-arm64_v8a_${{ steps.ver.outputs.name }}.apk
           cp app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt app/build/outputs/apk/mobileArm64_v8a/release/mapping_${{ steps.ver.outputs.name }}.txt 2>/dev/null || echo "mapping not found"
 
+      - name: 删除旧 Release 资产（同名 tag 时覆盖旧 APK）
+        run: |
+          tag="v${{ steps.ver.outputs.name }}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            echo "Release $tag 已存在，删除旧资产后重新上传"
+            gh release delete-asset "$tag" "mobile-arm64_v8a_${{ steps.ver.outputs.name }}.apk" -y 2>/dev/null || true
+            gh release delete-asset "$tag" "mapping_${{ steps.ver.outputs.name }}.txt" -y 2>/dev/null || true
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: 发布 GitHub Release（app 内一键更新）
         uses: softprops/action-gh-release@v2
         with:
@@ -100,7 +111,6 @@ jobs:
             app/build/outputs/apk/mobileArm64_v8a/release/mapping_${{ steps.ver.outputs.name }}.txt
           generate_release_notes: false
           fail_on_unmatched_files: false
-          update_release: true
 
       - name: 清理旧 Release（只保留最新2个）
         run: |
