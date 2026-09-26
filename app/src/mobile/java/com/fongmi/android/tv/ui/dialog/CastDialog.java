@@ -25,7 +25,6 @@ import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.ui.activity.ScanActivity;
 import com.fongmi.android.tv.ui.adapter.DeviceAdapter;
 import com.fongmi.android.tv.utils.Notify;
-import com.fongmi.android.tv.utils.PermissionUtil;
 import com.fongmi.android.tv.utils.ScanTask;
 import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Path;
@@ -104,21 +103,7 @@ public class CastDialog extends BaseDialog implements DeviceAdapter.OnClickListe
         EventBus.getDefault().register(this);
         setRecyclerView();
         getDevice();
-        initCast();
-    }
-
-    /**
-     * DLNA 搜索前必须先申请投屏发现权限（Android 13+ 附近设备 / 6~12 定位），
-     * 否则 SSDP 组播收不到投屏设备响应。
-     */
-    private void initCast() {
-        PermissionUtil.requestCast(requireActivity(), granted -> {
-            if (granted) initDLNA();
-            else {
-                initDLNA();
-                Notify.show(R.string.device_permission_denied);
-            }
-        });
+        initDLNA();
     }
 
     @Override
