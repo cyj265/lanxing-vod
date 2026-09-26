@@ -56,7 +56,7 @@ jobs:
         run: |
           chmod +x gradlew
           set +e
-          ./gradlew :app:assembleMobileArm64_v8aRelease --no-daemon --console=plain > /tmp/gradle-build.log 2>&1
+          ./gradlew :app:assembleMobileRelease --no-daemon --console=plain > /tmp/gradle-build.log 2>&1
           code=$?
           APK="app/build/outputs/apk/mobile/release/mobile-arm64_v8a.apk"
           if [ -f "$APK" ]; then
@@ -106,7 +106,7 @@ jobs:
             -appkey "${{ secrets.BUGLY_APP_KEY }}" \
             -version "${{ steps.ver.outputs.name }}" \
             -platform Android \
-            -inputMapping app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt 2>&1 | tail -15
+            -inputMapping app/build/outputs/mapping/mobileRelease/mapping.txt 2>&1 | tail -15
           echo "Bugly mapping 上传完成"
 
       - name: 发布 GitHub Release（app 内一键更新）
@@ -119,7 +119,7 @@ jobs:
             更新内容见仓库提交记录
           files: |
             app/build/outputs/apk/mobile/release/mobile-arm64_v8a.apk
-            app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt
+            app/build/outputs/mapping/mobileRelease/mapping.txt
           generate_release_notes: false
           fail_on_unmatched_files: false
 
