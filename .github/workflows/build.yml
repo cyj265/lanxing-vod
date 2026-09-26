@@ -81,6 +81,7 @@ jobs:
         id: ver
         run: |
           echo "name=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)" >> $GITHUB_OUTPUT
+          echo "prefix=$(grep -oP 'versionName "\K[^"]+' app/build.gradle | sed 's/\.[0-9]*$//')" >> $GITHUB_OUTPUT
 
       - name: 重命名 APK（文件名带版本号，防缓存串版本）
         run: |
@@ -130,7 +131,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
 
-      - name: 发布 GitHub Release（app 内一键更新）
+      - name: 发布 GitHub Release（main 分支为预发布，不影响 app 在线更新）
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.name }}
@@ -143,12 +144,19 @@ jobs:
             app/build/outputs/apk/mobileArm64_v8a/release/mapping_${{ steps.ver.outputs.name }}.txt
           generate_release_notes: false
           fail_on_unmatched_files: false
+          overwrite: true
+          prerelease: true
 
-      - name: 清理旧 Release（只保留最新2个）
+      - name: 清理旧 Release（只清理与本分支同系列，保留 dev 分支版本）
         run: |
-          releases=$(gh release list --limit 100 --json tagName --jq '.[2:].[].tagName')
-          for tag in $releases; do
-            echo "删除旧 release: $tag"
+          PREFIX="v${{ steps.ver.outputs.prefix }}"
+          echo "本次系列: ${PREFIX}.x"
+          tags=$(gh release list --limit 100 --json tagName --jq '.[].tagName' | grep -E "^${PREFIX}\." | tail -n +3)
+          if [ -z "$tags" ]; then
+            echo "没有需要清理的同系列旧 release"
+          fi
+          for tag in $tags; do
+            echo "删除同系列旧 release: $tag"
             gh release delete "$tag" --yes --cleanup-tag
           done
         env:
