@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.OpenableColumns;
+import android.os.StatFs;
 import android.text.TextUtils;
 
 import androidx.core.content.FileProvider;
@@ -33,6 +34,15 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class FileUtil {
+
+    // Compatibility helpers used by the newer FongMi player/UI layer.
+    public static File getWall(int index) {
+        return Path.files("wallpaper_" + index);
+    }
+
+    public static File getWallCache() {
+        return Path.files("wallpaper_cache");
+    }
 
     private static final int COPY_BUFFER_SIZE = 64 * 1024;
 
@@ -239,4 +249,41 @@ public class FileUtil {
         int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
         return new DecimalFormat("#,##0.#").format(size / Math.pow(1024, digitGroups)) + " " + units[digitGroups];
     }
+    public static long getDirectorySize(File dir) {
+        if (dir == null || !dir.exists()) return 0L;
+        if (dir.isFile()) return dir.length();
+        File[] files = dir.listFiles();
+        if (files == null) return 0L;
+        long total = 0L;
+        for (File file : files) total += getDirectorySize(file);
+        return total;
+    }
+
+    public static long getAvailableStorageSpace(File file) {
+        return getStorageSpace(file).availableBytes();
+    }
+
+    public static StorageSpace getStorageSpace(File file) {
+        try {
+            File target = file;
+            while (target != null && !target.exists()) target = target.getParentFile();
+            if (target == null) return StorageSpace.unavailable();
+            StatFs stat = new StatFs(target.getAbsolutePath());
+            return StorageSpace.of(stat.getAvailableBytes(), stat.getTotalBytes());
+        } catch (Throwable e) {
+            return StorageSpace.unavailable();
+        }
+    }
+
+    public record StorageSpace(boolean available, long availableBytes, long totalBytes) {
+        public static StorageSpace of(long availableBytes, long totalBytes) {
+            boolean valid = availableBytes >= 0L && totalBytes > 0L;
+            return valid ? new StorageSpace(true, availableBytes, totalBytes) : unavailable();
+        }
+
+        public static StorageSpace unavailable() {
+            return new StorageSpace(false, 0L, 0L);
+        }
+    }
+
 }

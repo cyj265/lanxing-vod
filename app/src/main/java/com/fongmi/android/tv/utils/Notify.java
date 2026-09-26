@@ -52,7 +52,14 @@ public class Notify {
     }
 
     public static void show(String text) {
-        if (!TextUtils.isEmpty(text)) get().makeText(text);
+        if (TextUtils.isEmpty(text) || isIgnorableConfigHint(text)) return;
+        get().makeText(text);
+    }
+
+    private static boolean isIgnorableConfigHint(String text) {
+        String value = text.replace(" ", "").toUpperCase();
+        return value.contains("配置信息初始化失败")
+                && (value.contains("重启APP") || value.contains("重新启动APP"));
     }
 
     public static void progress(Context context) {

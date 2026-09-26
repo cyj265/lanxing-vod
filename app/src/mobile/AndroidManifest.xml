@@ -105,10 +105,6 @@
             android:configChanges="screenSize|smallestScreenSize|screenLayout" />
 
         <activity
-            android:name=".ui.activity.CategoryListActivity"
-            android:configChanges="screenSize|smallestScreenSize|screenLayout" />
-
-        <activity
             android:name=".ui.activity.KeepActivity"
             android:configChanges="screenSize|smallestScreenSize|screenLayout" />
 

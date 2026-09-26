@@ -81,6 +81,26 @@ public final class FileChooser {
         return packageName != null && !packageName.contains("frameworkpackagestubs");
     }
 
+    /**
+     * Compatibility API for older FM call sites. Resolves a content/file Uri to a
+     * readable local file path, materializing it into chooser cache when needed.
+     */
+    @Nullable
+    public static String getPathFromUri(@Nullable Uri uri) {
+        if (!isFileSource(uri)) return null;
+        try {
+            Uri fileUri = resolveFileUri(uri);
+            return fileUri == null ? null : fileUri.getPath();
+        } catch (IOException | SecurityException e) {
+            return null;
+        }
+    }
+
+    /** Compatibility API retained for older FM activity/dialog code. */
+    public static boolean isValid(Context context, @Nullable Uri uri) {
+        return isFileSource(uri);
+    }
+
     public static void getUri(ActivityResult result, Consumer<Uri> callback) {
         if (result.getResultCode() == Activity.RESULT_OK) getUri(result.getData(), callback);
     }

@@ -26,14 +26,10 @@ public class Sub {
     @SerializedName("flag")
     private int flag;
 
-    public static Sub from(String url) {
-        return from(UrlUtil.path(url), url);
-    }
-
-    public static Sub from(String name, String url) {
+    public static Sub from(String path) {
         Sub sub = new Sub();
-        sub.url = url;
-        sub.name = name;
+        sub.url = path;
+        sub.name = UrlUtil.path(path);
         sub.flag = C.SELECTION_FLAG_FORCED;
         sub.format = TrackUtil.getSubtitleMimeType(sub.name);
         return sub;
@@ -81,7 +77,7 @@ public class Sub {
     }
 
     public boolean isEmpty() {
-        return url == null || url.isEmpty();
+        return getUrl().isEmpty();
     }
 
     public Uri getUri() {

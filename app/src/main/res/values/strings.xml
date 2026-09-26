@@ -160,6 +160,7 @@
     <string name="subtitle_size">Size</string>
     <string name="subtitle_position">Position</string>
     <string name="subtitle_style">Style</string>
+    <string name="subtitle_style_source">Style source</string>
     <string name="playback_font">Font</string>
     <string name="playback_font_default">System default</string>
     <string name="playback_font_import">Import font</string>
@@ -369,9 +370,6 @@
     <string name="update_version">New version <xliff:g name="name">%s</xliff:g></string>
     <string name="update_check">Checking for updates…</string>
     <string name="update_confirm">Update</string>
-    <string name="update_download_failed">Update download failed</string>
-    <string name="update_install_hint">Installing update…</string>
-    <string name="update_install_failed">Install failed, please install manually</string>
 
     <!-- Crash -->
     <string name="crash_info">An unexpected error occurred.\nSorry for the inconvenience.</string>
@@ -441,4 +439,5 @@
         <item>Select subtitle track</item>
     </string-array>
 
+    <string name="vod_home">Home</string>
 </resources>

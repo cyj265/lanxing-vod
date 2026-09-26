@@ -36,4 +36,3 @@
         android:layout_height="match_parent" />
 
 </androidx.appcompat.widget.LinearLayoutCompat>
-

@@ -1,0 +1,129 @@
+openapi: 3.1.0
+info:
+  title: 康廉销售管理系统 ChatGPT Plus 回填接口
+  description: 读取康廉系统现有客户商品目录，并保存一份必须人工确认的票据识别草稿。此接口不能直接开单或扣库存。
+  version: 1.0.0
+servers:
+  - url: https://ng3978.cc.cd
+paths:
+  /api/chatgpt/action/catalog:
+    get:
+      operationId: getKangLianCatalog
+      summary: 获取现有客户和商品目录
+      description: 每次识别票据前必须先调用。只能使用返回目录中的客户和商品编号；不确定时留空，不得编造。
+      responses:
+        "200":
+          description: 客户商品目录
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [ok, instructions, products, customers]
+                properties:
+                  ok: {type: boolean}
+                  instructions: {type: string}
+                  products:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: false
+                      required: [id, sku, name, category, unit, reference_sale_price]
+                      properties:
+                        id: {type: string}
+                        sku: {type: string}
+                        name: {type: string}
+                        category: {type: string}
+                        unit: {type: string}
+                        reference_sale_price: {type: number}
+                  customers:
+                    type: array
+                    items:
+                      type: object
+                      additionalProperties: false
+                      required: [id, name]
+                      properties:
+                        id: {type: string}
+                        name: {type: string}
+  /api/chatgpt/action/drafts:
+    post:
+      operationId: createKangLianScanDraft
+      summary: 把票据识别结果送到康廉系统待确认区
+      description: 只有用户明确确认发送后才能调用。只保存草稿，不开单、不收款、不扣库存。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScanDraft"
+      responses:
+        "201":
+          description: 草稿保存成功
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [ok, draft_id, expires_at, message]
+                properties:
+                  ok: {type: boolean}
+                  draft_id: {type: string}
+                  expires_at: {type: string, format: date-time}
+                  message: {type: string}
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+  schemas:
+    ScanDraft:
+      type: object
+      additionalProperties: false
+      required: [customer, items, transcription, warnings]
+      properties:
+        customer:
+          type: object
+          additionalProperties: false
+          required: [id, name, raw_text, confidence]
+          properties:
+            id: {type: string, description: 只能使用目录中的客户编号；不确定时为空字符串}
+            name: {type: string}
+            raw_text: {type: string}
+            confidence: {type: number, minimum: 0, maximum: 1}
+        order_date:
+          type: string
+          description: YYYY-MM-DD；票面没有日期时为空字符串
+        items:
+          type: array
+          minItems: 1
+          maxItems: 30
+          items:
+            type: object
+            additionalProperties: false
+            required: [product_id, product_name, raw_product_text, package_mode, package_count, quantity, unit_price, handwritten_total, confidence, source_text]
+            properties:
+              product_id: {type: string, description: 只能使用目录中的商品编号；不确定时为空字符串}
+              product_name: {type: string}
+              raw_product_text: {type: string}
+              package_mode: {type: string, enum: [bulk, package]}
+              package_count: {type: number, minimum: 0}
+              quantity: {type: number, minimum: 0, description: 斤数}
+              unit_price: {type: number, minimum: 0, description: 每斤单价}
+              handwritten_total:
+                oneOf:
+                  - {type: number, minimum: 0}
+                  - {type: "null"}
+                description: 该行票面手写金额；看不清时为 null
+              confidence: {type: number, minimum: 0, maximum: 1}
+              source_text: {type: string, description: 该行逐字识别原文}
+        grand_total:
+          oneOf:
+            - {type: number, minimum: 0}
+            - {type: "null"}
+        transcription: {type: string, description: 尽可能保持行结构的逐字原文}
+        warnings:
+          type: array
+          maxItems: 20
+          items: {type: string}
+security:
+  - bearerAuth: []

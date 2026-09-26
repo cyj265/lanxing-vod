@@ -1,7 +1,7 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- App -->
-    <string name="app_name">影視</string>
+    <string name="app_name">OK影视</string>
 
     <!-- Live -->
     <string name="live_pass">密碼</string>
@@ -160,6 +160,7 @@
     <string name="subtitle_size">大小</string>
     <string name="subtitle_position">位置</string>
     <string name="subtitle_style">樣式</string>
+    <string name="subtitle_style_source">樣式來源</string>
     <string name="playback_font">字型</string>
     <string name="playback_font_default">系統預設</string>
     <string name="playback_font_import">匯入字型</string>
@@ -428,4 +429,5 @@
         <item>選擇字幕</item>
     </string-array>
 
+    <string name="vod_home">首頁</string>
 </resources>

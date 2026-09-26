@@ -171,11 +171,11 @@ public class Util {
     }
 
     public static boolean isLeanback() {
-        return "leanback".equals(BuildConfig.FLAVOR);
+        return "leanback".equals(BuildConfig.FLAVOR_mode);
     }
 
     public static boolean isMobile() {
-        return "mobile".equals(BuildConfig.FLAVOR);
+        return "mobile".equals(BuildConfig.FLAVOR_mode);
     }
 
     public static boolean isFullscreen(Activity activity) {

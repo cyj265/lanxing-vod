@@ -8,14 +8,13 @@ import com.fongmi.android.tv.api.SiteApi;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.exception.ExtractException;
 import com.fongmi.android.tv.playback.PlaybackResult;
-import com.fongmi.android.tv.playback.vod.VodDataSource;
 import com.fongmi.android.tv.playback.vod.VodDetailResult;
 import com.fongmi.android.tv.playback.vod.VodPlayRequest;
 import com.fongmi.android.tv.playback.vod.VodPlaybackController;
 import com.fongmi.android.tv.playback.vod.VodPlaybackHost;
 import com.fongmi.android.tv.playback.vod.VodPlaybackState;
 
-public class VideoViewModel extends SiteViewModel implements VodDataSource {
+public class VideoViewModel extends SiteViewModel {
 
     private final MutableLiveData<VodDetailResult> detail;
     private final MutableLiveData<PlaybackResult<VodPlayRequest>> preload;
@@ -44,7 +43,7 @@ public class VideoViewModel extends SiteViewModel implements VodDataSource {
     }
 
     public VodPlaybackController createPlaybackController(VodPlaybackHost host) {
-        return new VodPlaybackController(host, this, playbackState);
+        return new VodPlaybackController(host, playbackState);
     }
 
     @Override
@@ -57,12 +56,10 @@ public class VideoViewModel extends SiteViewModel implements VodDataSource {
                 error -> detail.postValue(new VodDetailResult(key, id, handleError(error))));
     }
 
-    @Override
     public void playerContent(VodPlayRequest request) {
         loadPlayback(request, TaskType.PLAYBACK, playback);
     }
 
-    @Override
     public void preloadContent(VodPlayRequest request) {
         loadPlayback(request, TaskType.PRELOAD, preload);
     }

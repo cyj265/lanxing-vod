@@ -13,6 +13,7 @@ import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.impl.Callback;
+import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.github.catvod.bean.Doh;
 import com.github.catvod.bean.Header;
@@ -91,6 +92,33 @@ public class VodConfig extends BaseConfig {
         BaseLoader.get().clear();
         RuleConfig.get().invalidate();
         return this;
+    }
+
+
+    /**
+     * 多 Config 搜索专用同步加载。
+     *
+     * 不能只手工解析 sites + spider：部分 CSP/JS/PY 会依赖当前 VodConfig 的
+     * headers/proxy/rules/home/site 状态，导致“配置初始化失败”或搜索结果为空。
+     * 这里完整走与正常 VodConfig 相同的 checkJson -> parseConfig 链，
+     * 但不发 ConfigEvent、不更新时间，搜索结束再恢复原 Config。
+     */
+    public synchronized void loadForSearch(Config config, String tag) throws Throwable {
+        ads = null;
+        doh = null;
+        home = null;
+        wall = null;
+        parse = null;
+        sites = null;
+        flags = null;
+        rules = null;
+        parses = null;
+        BaseLoader.get().clearSync();
+        RuleConfig.get().invalidate();
+        this.config = config;
+        Server.get().start();
+        String json = Decoder.getJson(UrlUtil.convert(config.getUrl()), tag);
+        checkJson(config, Json.parse(json).getAsJsonObject());
     }
 
     @Override

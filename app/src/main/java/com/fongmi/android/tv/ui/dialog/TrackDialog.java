@@ -1,7 +1,7 @@
 package com.fongmi.android.tv.ui.dialog;
 
+import android.app.Activity;
 import android.content.Intent;
-import android.net.Uri;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,10 +31,10 @@ import com.fongmi.android.tv.player.track.TrackUtil;
 import com.fongmi.android.tv.ui.adapter.TrackAdapter;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 import com.fongmi.android.tv.utils.FileChooser;
-import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.ResUtil;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public final class TrackDialog extends BaseBottomSheetDialog implements TrackAdapter.OnClickListener {
@@ -165,15 +165,13 @@ public final class TrackDialog extends BaseBottomSheetDialog implements TrackAda
 
     @Override
     public void onItemClick(Track item) {
-        player.setTrack(item.key(player.getKey()).save());
+        player.setTrack(Arrays.asList(item.key(player.getKey()).save()));
         dismiss();
     }
 
-    private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> FileChooser.getUri(result, this::setSubtitle));
-
-    private void setSubtitle(Uri uri) {
-        if (!isAdded()) return;
-        player.setSub(Sub.from(FileUtil.getDisplayName(uri), uri.toString()));
+    private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
+        if (result.getResultCode() != Activity.RESULT_OK || result.getData() == null || result.getData().getData() == null) return;
+        player.setSub(Sub.from(FileChooser.getPathFromUri(result.getData().getData())));
         dismiss();
-    }
+    });
 }

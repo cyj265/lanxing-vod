@@ -139,23 +139,6 @@ public class SiteApi {
         }
     }
 
-    public static Result detailContentBatch(@NonNull String key, @NonNull String ids) throws Exception {
-        SpiderDebug.log("detailBatch", "key=%s,ids=%s", key, ids);
-        Site site = VodConfig.get().getSite(key);
-        if (isSpider(site)) {
-            String detailContent = site.recent().spider().detailContent(Arrays.asList(ids.split(",")));
-            SpiderDebug.log("detailBatch", detailContent);
-            return Result.fromJson(detailContent);
-        } else {
-            ArrayMap<String, String> params = new ArrayMap<>();
-            params.put("ac", "detail");
-            params.put("ids", ids);
-            String detailContent = call(site, params);
-            SpiderDebug.log("detailBatch", detailContent);
-            return Result.fromType(site.getType(), detailContent);
-        }
-    }
-
     @NonNull
     public static Result playerContent(@NonNull String key, @NonNull String flag, @NonNull String id) throws Exception {
         SpiderDebug.log("player", "key=%s,flag=%s,id=%s", key, flag, id);

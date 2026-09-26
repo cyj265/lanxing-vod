@@ -1,96 +1,48 @@
 package com.fongmi.android.tv;
 
-import com.fongmi.android.tv.R;
-import com.fongmi.android.tv.BuildConfig;
-
-import android.app.Activity;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.net.Uri;
-import android.os.Build;
-import android.view.LayoutInflater;
 import android.view.View;
 
-import androidx.appcompat.app.AlertDialog;
-import androidx.core.app.NotificationCompat;
+import androidx.fragment.app.FragmentActivity;
 
-import com.fongmi.android.tv.databinding.DialogUpdateBinding;
+import com.fongmi.android.tv.impl.UpdateListener;
+import com.fongmi.android.tv.setting.Setting;
+import com.fongmi.android.tv.ui.dialog.UpdateDialog;
+import com.fongmi.android.tv.utils.Download;
+import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.Github;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Task;
 import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Path;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.File;
-import java.io.FileOutputStream;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Locale;
 
-public class Updater {
+public class Updater implements Download.Callback, UpdateListener {
 
-    private static final String CHANNEL_ID = "lanxing_update";
-    private static final int NOTIFICATION_ID = 1001;
+    private final Download download;
+    private UpdateDialog dialog;
 
-    private static final String[] MIRROR_PREFIXES = {
-        "https://gh-proxy.com/",
-        "https://mirror.ghproxy.com/",
-        "https://ghproxy.net/",
-        "https://github.moeyy.xyz/",
-        ""
-    };
-    private static final String[] MIRROR_NAMES = {"加速1", "加速2", "加速3", "加速4", "直连"};
-
-    private DialogUpdateBinding binding;
-    private AlertDialog dialog;
-    private String apkUrl;
-    private String versionName;
-    private int mirrorIndex;
-    private boolean cancelled;
-    private NotificationManager notificationManager;
-    private NotificationCompat.Builder notificationBuilder;
-
-    private File getFile() {
-        File dir = new File(Path.cache(), "apk");
-        if (!dir.exists()) dir.mkdirs();
-        return new File(dir, "update.apk");
-    }
-
-    private String getApk(JSONObject object) {
-        JSONArray assets = object.optJSONArray("assets");
-        if (assets == null) return null;
-        for (int i = 0; i < assets.length(); i++) {
-            JSONObject asset = assets.optJSONObject(i);
-            String name = asset == null ? "" : asset.optString("name");
-            if (name.contains("arm64") && name.endsWith(".apk")) return asset.optString("browser_download_url");
-        }
-        return null;
-    }
-
-    private int getCode(String version) {
-        try {
-            String[] parts = version.replace("v", "").split("\\.");
-            int code = 0;
-            for (String part : parts) code = code * 10 + Integer.parseInt(part);
-            return code;
-        } catch (Exception e) {
-            return 0;
-        }
+    private Updater() {
+        this.download = Download.create(getApk(), getFile());
     }
 
     public static Updater create() {
         return new Updater();
+    }
+
+    private File getFile() {
+        return Path.cache("update.apk");
+    }
+
+    private String getJson() {
+        return Github.getJson(BuildConfig.FLAVOR);
+    }
+
+    private String getApk() {
+        return Github.getApk(BuildConfig.FLAVOR + "-" + (android.os.Process.is64Bit() ? "arm64_v8a" : "armeabi_v7a"));
     }
 
     public Updater force() {
@@ -99,253 +51,40 @@ public class Updater {
         return this;
     }
 
-    private Updater check() {
-        dismiss();
-        return this;
-    }
-
-    public void start(Activity activity) {
+    public void start(FragmentActivity activity) {
         if (!Setting.getUpdate()) return;
         Task.execute(() -> doInBackground(activity));
     }
 
-    private void doInBackground(Activity activity) {
-        JSONObject object = null;
+    private void doInBackground(FragmentActivity activity) {
         try {
-            object = new JSONObject(OkHttp.string(Github.RELEASE));
-        } catch (Exception e) {
-            try {
-                object = new JSONObject(OkHttp.string(Github.RELEASE_MIRROR));
-            } catch (Exception e2) {
-                e2.printStackTrace();
-                return;
-            }
-        }
-        try {
-            String name = object.optString("tag_name");
-            String desc = object.optString("body");
-            String apk = getApk(object);
-            int code = getCode(name);
-            if (code > BuildConfig.VERSION_CODE && apk != null) {
-                App.post(() -> show(activity, name, desc, apk));
-            }
+            JSONObject object = new JSONObject(OkHttp.string(getJson()));
+            String name = object.optString("name");
+            String desc = object.optString("desc");
+            int code = object.optInt("code");
+            if (code <= BuildConfig.VERSION_CODE) return;
+            App.post(() -> show(activity, name, desc));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private void show(Activity activity, String version, String desc, String apk) {
-        File oldFile = getFile();
-        if (oldFile.exists()) oldFile.delete();
-        this.apkUrl = apk;
-        this.versionName = version;
-        this.mirrorIndex = 0;
-        this.cancelled = false;
-        binding = DialogUpdateBinding.inflate(LayoutInflater.from(activity));
-        check().create(activity, ResUtil.getString(R.string.update_version, version)).show();
-        dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(this::confirm);
-        dialog.getButton(DialogInterface.BUTTON_NEGATIVE).setOnClickListener(this::cancel);
-        binding.desc.setText(desc);
-        initNotification(activity);
-    }
-
-    private void initNotification(Activity activity) {
-        notificationManager = (NotificationManager) activity.getSystemService(Activity.NOTIFICATION_SERVICE);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(CHANNEL_ID, "应用更新", NotificationManager.IMPORTANCE_LOW);
-            channel.setDescription("下载应用更新");
-            channel.setSound(null, null);
-            notificationManager.createNotificationChannel(channel);
-        }
-        notificationBuilder = new NotificationCompat.Builder(activity, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_logo)
-            .setContentTitle("揽星影视 " + versionName)
-            .setContentText("准备下载...")
-            .setProgress(100, 0, false)
-            .setOngoing(true)
-            .setAutoCancel(false);
-        notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
-    }
-
-    private AlertDialog create(Activity activity, String title) {
-        return dialog = new MaterialAlertDialogBuilder(activity).setTitle(title).setView(binding.getRoot()).setPositiveButton(R.string.update_confirm, null).setNegativeButton(R.string.dialog_negative, null).setCancelable(false).create();
-    }
-
-    private void cancel(View view) {
-        cancelled = true;
-        Setting.putUpdate(false);
-        cancelNotification();
+    private void show(FragmentActivity activity, String version, String desc) {
         dismiss();
+        dialog = UpdateDialog.create().title(ResUtil.getString(R.string.update_version, version)).desc(desc).listener(this).show(activity);
     }
 
-    private void confirm(View view) {
+    @Override
+    public void onConfirm(View view) {
         view.setEnabled(false);
-        Task.execute(this::downloadLoop);
+        download.start(this);
     }
 
-    private void downloadLoop() {
-        while (mirrorIndex < MIRROR_PREFIXES.length && !cancelled) {
-            String urlName = MIRROR_NAMES[mirrorIndex];
-            try {
-                updateStatus("正在" + urlName + "下载...");
-                File apk = downloadFile(MIRROR_PREFIXES[mirrorIndex] + apkUrl);
-                if (apk == null) {
-                    mirrorIndex++;
-                    if (mirrorIndex < MIRROR_PREFIXES.length) {
-                        updateStatus(urlName + "失败，切换" + MIRROR_NAMES[mirrorIndex] + "...");
-                        Thread.sleep(500);
-                    }
-                    continue;
-                }
-                if (!verifyApk(apk)) {
-                    apk.delete();
-                    mirrorIndex++;
-                    if (mirrorIndex < MIRROR_PREFIXES.length) {
-                        updateStatus(urlName + "版本异常，切换" + MIRROR_NAMES[mirrorIndex] + "...");
-                        Thread.sleep(500);
-                    }
-                    continue;
-                }
-                App.post(() -> installApk(apk));
-                return;
-            } catch (Exception e) {
-                mirrorIndex++;
-                if (mirrorIndex < MIRROR_PREFIXES.length) {
-                    updateStatus(urlName + "失败，切换" + MIRROR_NAMES[mirrorIndex] + "...");
-                    try { Thread.sleep(500); } catch (InterruptedException ignored) {}
-                }
-            }
-        }
-        if (!cancelled) {
-            App.post(() -> {
-                Notify.show(R.string.update_download_failed);
-                cancelNotification();
-                dismiss();
-            });
-        }
-    }
-
-    private File downloadFile(String urlStr) throws Exception {
-        String urlWithTs = urlStr + (urlStr.contains("?") ? "&" : "?") + "t=" + System.currentTimeMillis();
-        URL url = new URL(urlWithTs);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setConnectTimeout(8000);
-        conn.setReadTimeout(30000);
-        conn.setInstanceFollowRedirects(true);
-        conn.setRequestProperty("User-Agent", "LanXingVod");
-        int code = conn.getResponseCode();
-        if (code < 200 || code >= 400) {
-            conn.disconnect();
-            return null;
-        }
-        long total = conn.getContentLengthLong();
-        if (total < 5 * 1024 * 1024) {
-            conn.disconnect();
-            return null;
-        }
-        File apk = getFile();
-        if (apk.exists()) apk.delete();
-        InputStream input = conn.getInputStream();
-        FileOutputStream output = new FileOutputStream(apk);
-        byte[] buf = new byte[64 * 1024];
-        int read;
-        long done = 0;
-        int lastPercent = -1;
-        long startTime = System.currentTimeMillis();
-        long lastCheckTime = startTime;
-        long lastCheckBytes = 0;
-        while ((read = input.read(buf)) > 0 && !cancelled) {
-            output.write(buf, 0, read);
-            done += read;
-            if (total > 0) {
-                int pct = (int) (done * 100 / total);
-                if (pct != lastPercent) {
-                    lastPercent = pct;
-                    updateProgress(pct);
-                }
-            }
-            // 低速检测：每 5 秒检查一次，若速度 < 80KB/s 则放弃当前线路
-            long now = System.currentTimeMillis();
-            if (now - lastCheckTime >= 5000) {
-                long elapsed = now - lastCheckTime;
-                long bytesDelta = done - lastCheckBytes;
-                double speedKBs = (bytesDelta / 1024.0) / (elapsed / 1000.0);
-                if (speedKBs < 80 && done < total * 0.8) {
-                    output.flush();
-                    output.close();
-                    input.close();
-                    conn.disconnect();
-                    apk.delete();
-                    return null;
-                }
-                lastCheckTime = now;
-                lastCheckBytes = done;
-            }
-        }
-        output.flush();
-        output.close();
-        input.close();
-        conn.disconnect();
-        if (cancelled) {
-            apk.delete();
-            return null;
-        }
-        return apk;
-    }
-
-    private boolean verifyApk(File apk) {
-        try {
-            PackageManager pm = App.get().getPackageManager();
-            PackageInfo info = pm.getPackageArchiveInfo(apk.getAbsolutePath(), 0);
-            return info != null && info.versionCode > BuildConfig.VERSION_CODE;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    private void installApk(File apk) {
-        try {
-            if (notificationBuilder != null && notificationManager != null) {
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                Uri apkUri = com.fongmi.android.tv.utils.FileUtil.getShareUri(apk);
-                intent.setDataAndType(apkUri, "application/vnd.android.package-archive");
-                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_GRANT_READ_URI_PERMISSION);
-                PendingIntent pi = PendingIntent.getActivity(App.get(), 0, intent, PendingIntent.FLAG_IMMUTABLE);
-                notificationBuilder.setContentText("下载完成，点击安装")
-                    .setProgress(0, 0, false)
-                    .setOngoing(false)
-                    .setAutoCancel(true)
-                    .setContentIntent(pi);
-                notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
-            }
-            com.fongmi.android.tv.utils.FileUtil.openFile(apk);
-            Notify.show(R.string.update_install_hint);
-        } catch (Exception e) {
-            Notify.show(R.string.update_install_failed);
-        }
+    @Override
+    public void onCancel(View view) {
+        Setting.putUpdate(false);
+        download.cancel();
         dismiss();
-    }
-
-    private void updateProgress(int progress) {
-        App.post(() -> {
-            if (dialog != null) {
-                dialog.getButton(DialogInterface.BUTTON_POSITIVE).setText(String.format(Locale.getDefault(), "%1$d%%", progress));
-            }
-            if (notificationBuilder != null && notificationManager != null) {
-                notificationBuilder.setProgress(100, progress, false);
-                notificationBuilder.setContentText("下载中 " + progress + "%");
-                notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
-            }
-        });
-    }
-
-    private void updateStatus(String text) {
-        App.post(() -> {
-            if (notificationBuilder != null && notificationManager != null) {
-                notificationBuilder.setContentText(text);
-                notificationManager.notify(NOTIFICATION_ID, notificationBuilder.build());
-            }
-        });
     }
 
     private void dismiss() {
@@ -355,10 +94,20 @@ public class Updater {
         }
     }
 
-    private void cancelNotification() {
-        try {
-            if (notificationManager != null) notificationManager.cancel(NOTIFICATION_ID);
-        } catch (Exception ignored) {
-        }
+    @Override
+    public void progress(int progress) {
+        if (dialog != null) dialog.setProgress(progress);
+    }
+
+    @Override
+    public void error(String msg) {
+        Notify.show(msg);
+        dismiss();
+    }
+
+    @Override
+    public void success(File file) {
+        FileUtil.openFile(file);
+        dismiss();
     }
 }

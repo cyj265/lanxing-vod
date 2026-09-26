@@ -92,7 +92,15 @@ public class Config {
 
     public static Config vod() {
         Config item = AppDatabase.get().getConfigDao().findOne(0);
-        return item == null ? create(0) : item;
+
+        // OK影视内置多线路入口：chenlong.jpg 实际为 urls[] depot。
+        if (item == null) {
+            return create(0, BuiltinDepot.URL, BuiltinDepot.NAME);
+        }
+
+        // 覆盖安装时保留数据库，同时补齐 depot 中的关联 Config 与 yyy 聚合配置。
+        BuiltinDepot.ensure();
+        return item;
     }
 
     public static Config live() {

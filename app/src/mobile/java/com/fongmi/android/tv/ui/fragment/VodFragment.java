@@ -173,10 +173,12 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     }
 
     private void onLogo(View view) {
+        // 图标：顶层 Config / 总线路列表。
         HistoryDialog.create().vod().readOnly().show(this);
     }
 
     private void onSite(View view) {
+        // 标题文字：当前 Config 里面的真实 Site / 直线路列表，可直接选择。
         SiteDialog.create().change().show(this);
     }
 
@@ -320,7 +322,6 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         @NonNull
         @Override
         public Fragment getItem(int position) {
-            if (position == 0) return DiscoverFragment.newInstance();
             Class type = mAdapter.get(position);
             return FolderFragment.newInstance(getHome().getKey(), type, 4);
         }

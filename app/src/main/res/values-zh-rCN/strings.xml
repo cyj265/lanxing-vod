@@ -1,7 +1,7 @@
 <resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
 
     <!-- App -->
-    <string name="app_name">揽星影视</string>
+    <string name="app_name">OK影视</string>
 
     <!-- Live -->
     <string name="live_pass">密码</string>
@@ -160,6 +160,7 @@
     <string name="subtitle_size">大小</string>
     <string name="subtitle_position">位置</string>
     <string name="subtitle_style">样式</string>
+    <string name="subtitle_style_source">样式来源</string>
     <string name="playback_font">字体</string>
     <string name="playback_font_default">系统默认</string>
     <string name="playback_font_import">导入字体</string>
@@ -369,9 +370,6 @@
     <string name="update_version">发现新版本 <xliff:g name="name">%s</xliff:g></string>
     <string name="update_check">正在检测更新…</string>
     <string name="update_confirm">更新</string>
-    <string name="update_download_failed">更新下载失败</string>
-    <string name="update_install_hint">正在安装更新…</string>
-    <string name="update_install_failed">安装失败，请手动安装</string>
 
     <!-- Crash -->
     <string name="crash_info">发生意外错误\n抱歉给您带来不便</string>
@@ -431,4 +429,5 @@
         <item>选择字幕</item>
     </string-array>
 
+    <string name="vod_home">首页</string>
 </resources>

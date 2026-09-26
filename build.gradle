@@ -7,3 +7,32 @@ plugins {
 tasks.register('clean', Delete) {
     delete rootProject.layout.buildDirectory
 }
+
+project(':app').tasks.matching { it.name ==~ /assemble.+Release/ }.configureEach {
+    doLast {
+        copy {
+            from fileTree("$rootDir/app/build/outputs/apk") { include '**/release/*.apk' }
+            into "$rootDir/Release/apk"
+            eachFile { it.path = it.name }
+            includeEmptyDirs = false
+        }
+    }
+}
+
+tasks.register("verifyLocalFongMiRepo") {
+    doLast {
+        def root = file("$rootDir/third_party/maven")
+        def checks = [
+            "androidx/media3/media3-common/1.11.0-alpha01-fongmi/media3-common-1.11.0-alpha01-fongmi.aar",
+            "androidx/media3/media3-exoplayer/1.11.0-alpha01-fongmi/media3-exoplayer-1.11.0-alpha01-fongmi.aar",
+            "androidx/media3/media3-ui/1.11.0-alpha01-fongmi/media3-ui-1.11.0-alpha01-fongmi.aar",
+            "io/github/anilbeesetti/nextlib-media3ext/1.10.0-0.12.1-fongmi-softload-av3a-r1/nextlib-media3ext-1.10.0-0.12.1-fongmi-softload-av3a-r1.aar"
+        ]
+        checks.each { rel ->
+            def f = new File(root, rel)
+            println((f.exists() ? "FOUND " : "MISSING ") + f)
+            if (!f.exists()) throw new GradleException("Missing local dependency: " + f)
+        }
+        println("LOCAL FONGMI REPOSITORY OK")
+    }
+}

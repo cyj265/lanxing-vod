@@ -27,6 +27,7 @@ import androidx.media3.session.SessionToken;
 import androidx.media3.ui.PlayerSeekView;
 import androidx.media3.ui.PlayerView;
 import androidx.media3.ui.TimeBar;
+import androidx.media3.ui.danmaku.DanmakuConfig;
 
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Result;
@@ -34,6 +35,7 @@ import com.fongmi.android.tv.playback.PlaybackIntent;
 import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.player.media.PlaySpec;
 import com.fongmi.android.tv.service.PlaybackService;
+import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.SubtitleSetting;
 import com.fongmi.android.tv.ui.base.BaseActivity;
@@ -147,8 +149,8 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     }
 
     public void toggleDebugView() {
-        getPlayerView().toggleDebugView();
-        PlayerSetting.putDebug(getPlayerView().isDebugViewVisible());
+        // The pinned media3-ui keeps FM render/danmaku APIs but not the old debug overlay.
+        PlayerSetting.putDebug(false);
     }
 
     public void onChoose() {
@@ -406,19 +408,22 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     }
 
     private void syncPlayerView(Player player) {
-        player().bindPlayerView(getPlayerView());
         getPlayerView().setPlayer(player);
-        restoreDebugView();
-    }
-
-    private void restoreDebugView() {
-        if (PlayerSetting.isDebug() && !getPlayerView().isDebugViewVisible()) getPlayerView().toggleDebugView();
+        syncDanmakuSource();
     }
 
     private void configurePlayerView() {
         PlayerView playerView = getPlayerView();
         playerView.setRender(PlayerSetting.getRender());
-        SubtitleSetting.applyStyle(playerView.getSubtitleView());
+        playerView.setDanmakuOkHttpClient(OkHttp.player());
+        playerView.setDanmakuEnabled(DanmakuSetting.isShow());
+        playerView.setDanmakuConfig(DanmakuSetting.getConfig());
+        SubtitleSetting.applyStyle(this, playerView.getSubtitleView());
+    }
+
+    private void syncDanmakuSource() {
+        if (mService == null || !isOwner()) return;
+        getPlayerView().setDanmakuSource(player().getSelectedDanmakuUri());
     }
 
     private void releasePlaybackService() {
@@ -489,7 +494,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         @Override
         public void onTracksChanged() {
             if (isOwner()) PlaybackActivity.this.onTracksChanged();
-            restoreDebugView();
+            // Old Media3 debug overlay is not present in the WebHTV-pinned fork.
         }
 
         @Override
@@ -510,6 +515,26 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         @Override
         public void onPlayerRebuild(Player player) {
             if (isOwner()) syncPlayerView(player);
+        }
+
+        @Override
+        public void onDanmakuSourceChanged(Uri uri) {
+            if (isOwner()) getPlayerView().setDanmakuSource(uri);
+        }
+
+        @Override
+        public void onDanmakuConfigChanged(DanmakuConfig config) {
+            if (isOwner()) getPlayerView().setDanmakuConfig(config);
+        }
+
+        @Override
+        public void onDanmakuEnabledChanged(boolean enabled) {
+            if (isOwner()) getPlayerView().setDanmakuEnabled(enabled);
+        }
+
+        @Override
+        public void onDanmakuSent(String text) {
+            if (isOwner()) getPlayerView().sendDanmaku(text);
         }
     };
 

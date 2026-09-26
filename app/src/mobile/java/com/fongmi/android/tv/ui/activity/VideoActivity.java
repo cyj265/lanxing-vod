@@ -112,6 +112,7 @@ import com.fongmi.android.tv.utils.Util;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.io.File;
 import java.util.List;
 import java.util.Objects;
 
@@ -140,10 +141,17 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     public static void push(FragmentActivity activity, String text) {
         Uri uri = UrlUtil.uri(text);
-        if (FileChooser.isFileSource(uri)) FileChooser.getFileUri(uri, fileUri -> file(activity, fileUri));
+        if (FileChooser.isValid(activity, uri)) file(activity, FileChooser.getPathFromUri(uri));
         else start(activity, Sniffer.getUrl(text));
     }
 
+    public static void file(FragmentActivity activity, String path) {
+        if (TextUtils.isEmpty(path)) return;
+        String name = new File(path).getName();
+        start(activity, SiteApi.PUSH, "file://" + path, name);
+    }
+
+    /** Compatibility overload for dialogs/callers that still pass a Uri. */
     public static void file(FragmentActivity activity, Uri fileUri) {
         if (fileUri == null || activity.isFinishing() || activity.isDestroyed()) return;
         start(activity, SiteApi.PUSH, fileUri.toString(), FileUtil.getDisplayName(fileUri));
@@ -178,16 +186,10 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         intent.putExtra("collect", collect);
         intent.putExtra("mark", mark);
         intent.putExtra("name", name);
+        intent.putExtra("pic", pic);
         intent.putExtra("key", key);
         intent.putExtra("id", id);
-        putPic(intent, pic);
         activity.startActivity(intent);
-    }
-
-    private static void putPic(Intent intent, String pic) {
-        intent.removeExtra("pic");
-        pic = ImgUtil.cache(pic);
-        if (!TextUtils.isEmpty(pic)) intent.putExtra("pic", pic);
     }
 
     private String getName() {
@@ -527,17 +529,34 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     @Override
-    public void onPlaybackRequested() {
+    public void requestDetail(String key, String id) {
+        mViewModel.detailContent(key, id);
+    }
+
+    @Override
+    public void requestPlayer(VodPlayRequest request) {
+        mViewModel.playerContent(request);
         showProgress();
+    }
+
+    @Override
+    public void requestPreload(VodPlayRequest request) {
+        mViewModel.preloadContent(request);
+    }
+
+    @Override
+    public void requestSearch(List<Site> sites, String keyword) {
+        mQuickAdapter.clear();
+        mViewModel.searchContent(sites, keyword, true);
     }
 
     @Override
     public void prepareSource(Vod item) {
         getIntent().putExtra("key", item.getSiteKey());
+        getIntent().putExtra("pic", item.getPic());
         getIntent().putExtra("id", item.getId());
         mBinding.swipeLayout.setRefreshing(true);
         mBinding.swipeLayout.setEnabled(false);
-        putPic(getIntent(), item.getPic());
         mBinding.scroll.scrollTo(0, 0);
         mClock.setCallback(null);
         updateNavigationKey();
@@ -714,7 +733,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     public void onSearchStarted(String keyword) {
-        mQuickAdapter.clear();
     }
 
     @Override

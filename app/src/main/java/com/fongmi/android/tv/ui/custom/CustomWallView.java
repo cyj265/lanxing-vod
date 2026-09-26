@@ -25,7 +25,7 @@ import com.fongmi.android.tv.databinding.ViewWallBinding;
 import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.setting.Setting;
-import com.github.catvod.utils.Path;
+import com.fongmi.android.tv.utils.FileUtil;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -92,8 +92,8 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
         int wall = Setting.getWall();
         int type = Setting.getWallType();
         if (isBuiltIn(wall, type)) loadRes(WALL_PAPERS[wall]);
-        else if (type == TYPE_VIDEO) loadVideo(Path.wall(wall));
-        else if (type == TYPE_GIF) loadGif(Path.wall(wall));
+        else if (type == TYPE_VIDEO) loadVideo(FileUtil.getWall(wall));
+        else if (type == TYPE_GIF) loadGif(FileUtil.getWall(wall));
         else loadImage();
     }
 
@@ -132,7 +132,7 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
     }
 
     private Drawable cache() {
-        File file = Path.wallCache();
+        File file = FileUtil.getWallCache();
         return file.exists() ? Drawable.createFromPath(file.getAbsolutePath()) : null;
     }
 
@@ -166,7 +166,7 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
         int wall = Setting.getWall();
         int type = Setting.getWallType();
         if (isBuiltIn(wall, type)) return WALL_COLORS[wall];
-        File file = Path.wallCache();
+        File file = FileUtil.getWallCache();
         return file.exists() ? paletteColor(file) : WALL_COLORS[1];
     }
 

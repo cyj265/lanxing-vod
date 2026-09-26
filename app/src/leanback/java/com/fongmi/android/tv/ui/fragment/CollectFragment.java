@@ -1,6 +1,5 @@
 package com.fongmi.android.tv.ui.fragment;
 
-import android.app.Activity;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
@@ -10,18 +9,14 @@ import androidx.annotation.Nullable;
 import androidx.leanback.widget.ArrayObjectAdapter;
 import androidx.leanback.widget.ItemBridgeAdapter;
 import androidx.leanback.widget.ListRow;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.Product;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Collect;
-import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.FragmentTypeBinding;
-import com.fongmi.android.tv.model.SiteViewModel;
-import com.fongmi.android.tv.ui.activity.VideoActivity;
-import com.fongmi.android.tv.ui.activity.VodActivity;
+import com.fongmi.android.tv.ui.activity.CollectActivity;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.custom.CustomRowPresenter;
 import com.fongmi.android.tv.ui.custom.CustomScroller;
@@ -38,26 +33,15 @@ public class CollectFragment extends BaseFragment implements CustomScroller.Call
     private FragmentTypeBinding mBinding;
     private ArrayObjectAdapter mAdapter;
     private ArrayObjectAdapter mLast;
-    private CustomScroller mScroller;
-    private SiteViewModel mViewModel;
     private Collect mCollect;
-    private String mKeyword;
 
     public static CollectFragment newInstance(String keyword, Collect collect) {
+        CollectFragment fragment = new CollectFragment();
+        fragment.mCollect = collect;
         Bundle args = new Bundle();
         args.putString("keyword", keyword);
-        CollectFragment fragment = new CollectFragment().setCollect(collect);
         fragment.setArguments(args);
         return fragment;
-    }
-
-    private String getKeyword() {
-        return mKeyword = mKeyword == null ? getArguments().getString("keyword") : mKeyword;
-    }
-
-    private CollectFragment setCollect(Collect collect) {
-        this.mCollect = collect;
-        return this;
     }
 
     @Override
@@ -68,29 +52,24 @@ public class CollectFragment extends BaseFragment implements CustomScroller.Call
     @Override
     protected void initView() {
         setRecyclerView();
-        setViewModel();
-        addVideo(mCollect);
+        addVideo(mCollect == null ? null : mCollect.getList());
     }
 
     private void setRecyclerView() {
         CustomSelector selector = new CustomSelector();
         selector.addPresenter(ListRow.class, new CustomRowPresenter(16), VodPresenter.class);
         mBinding.recycler.setAdapter(new ItemBridgeAdapter(mAdapter = new ArrayObjectAdapter(selector)));
-        mBinding.recycler.addOnScrollListener(mScroller = new CustomScroller(this));
+        mBinding.recycler.addOnScrollListener(new CustomScroller(this));
         mBinding.recycler.setHeader(getActivity(), R.id.result, R.id.recycler);
         mBinding.recycler.setVerticalSpacing(ResUtil.dp2px(16));
     }
 
-    private void setViewModel() {
-        mViewModel = new ViewModelProvider(this).get(SiteViewModel.class);
-        mViewModel.getResult().observe(this, result -> {
-            mScroller.endLoading(result);
-            addVideo(result.getList());
-        });
+    public boolean isReady() {
+        return mBinding != null && mAdapter != null;
     }
 
     private boolean checkLastSize(List<Vod> items) {
-        if (mLast == null || items.isEmpty()) return false;
+        if (mLast == null || items == null || items.isEmpty()) return false;
         int size = Product.getColumn() - mLast.size();
         if (size == 0) return false;
         size = Math.min(size, items.size());
@@ -99,27 +78,34 @@ public class CollectFragment extends BaseFragment implements CustomScroller.Call
         return true;
     }
 
-    private void addVideo(Collect collect) {
-        if (collect != null) addVideo(collect.getList());
+    public void replaceVideo(List<Vod> items) {
+        if (!isReady()) return;
+        mAdapter.clear();
+        mLast = null;
+        addVideo(items);
     }
 
     public void addVideo(List<Vod> items) {
+        if (!isReady() || items == null || items.isEmpty()) return;
         if (checkLastSize(items) || getActivity() == null || getActivity().isFinishing()) return;
+
         List<ListRow> rows = new ArrayList<>();
         VodPresenter presenter = new VodPresenter(this);
+
         for (List<Vod> part : Lists.partition(items, Product.getColumn())) {
             mLast = new ArrayObjectAdapter(presenter);
             mLast.addAll(0, part);
             rows.add(new ListRow(mLast));
         }
+
         mAdapter.addAll(mAdapter.size(), rows);
     }
 
     @Override
     public void onItemClick(Vod item) {
-        requireActivity().setResult(Activity.RESULT_OK);
-        if (item.isFolder()) VodActivity.start(requireActivity(), item.getSiteKey(), Result.folder(item));
-        else VideoActivity.collect(requireActivity(), item.getSiteKey(), item.getId(), item.getName(), item.getPic());
+        if (getActivity() instanceof CollectActivity activity) {
+            activity.openVideo(item);
+        }
     }
 
     @Override
@@ -129,14 +115,7 @@ public class CollectFragment extends BaseFragment implements CustomScroller.Call
 
     @Override
     public boolean onLoadMore(String page) {
-        if (mCollect == null || "all".equals(mCollect.getSite().getKey())) return false;
-        mViewModel.searchContent(mCollect.getSite(), getKeyword(), false, page);
-        return true;
-    }
-
-    @Override
-    public void setUserVisibleHint(boolean isVisibleToUser) {
-        super.setUserVisibleHint(isVisibleToUser);
-        if (mBinding != null && !isVisibleToUser) mBinding.recycler.moveToTop();
+        // 顶层是 Config 聚合搜索，翻页先关闭，避免一个 page 错映射到多个 site。
+        return false;
     }
 }

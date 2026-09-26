@@ -30,7 +30,7 @@ public interface LivePlaybackHost {
 
     ZoneId getZoneId();
 
-    void onCatchupRequested();
+    void requestUrl(LivePlayRequest request);
 
     void stopPlaybackForRefresh();
 

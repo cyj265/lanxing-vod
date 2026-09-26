@@ -21,7 +21,6 @@ public class SiteViewModel extends ViewModel {
     private final MutableLiveData<Result> result;
     private final MutableLiveData<Result> search;
     private final MutableLiveData<Result> action;
-    private final MutableLiveData<Result> detailList;
 
     private final ViewModelTaskRunner<TaskType> tasks;
     private final ViewModelSearchRunner searches;
@@ -30,7 +29,6 @@ public class SiteViewModel extends ViewModel {
         result = new MutableLiveData<>();
         search = new MutableLiveData<>();
         action = new MutableLiveData<>();
-        detailList = new MutableLiveData<>();
         tasks = new ViewModelTaskRunner<>(TaskType.class);
         searches = new ViewModelSearchRunner();
     }
@@ -45,10 +43,6 @@ public class SiteViewModel extends ViewModel {
 
     public LiveData<Result> getAction() {
         return action;
-    }
-
-    public LiveData<Result> getDetailList() {
-        return detailList;
     }
 
     public SiteViewModel init() {
@@ -72,10 +66,6 @@ public class SiteViewModel extends ViewModel {
 
     public void detailContent(String key, String id) {
         execute(TaskType.RESULT, result, () -> SiteApi.detailContent(key, id));
-    }
-
-    public void detailContentBatch(String key, String ids) {
-        execute(TaskType.RESULT, detailList, () -> SiteApi.detailContentBatch(key, ids));
     }
 
     public void searchContent(Site site, String keyword, boolean quick, String page) {

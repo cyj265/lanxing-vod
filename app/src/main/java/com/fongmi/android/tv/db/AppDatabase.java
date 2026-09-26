@@ -36,6 +36,11 @@ public abstract class AppDatabase extends RoomDatabase {
         return instance;
     }
 
+    /** Compatibility shim for newer HomeActivity call sites. */
+    public static void backup() {
+        BackupManager.backup();
+    }
+
     private static AppDatabase create(Context context) {
         return Room.databaseBuilder(context, AppDatabase.class, NAME)
                 .addMigrations(Migrations.MIGRATION_30_31)

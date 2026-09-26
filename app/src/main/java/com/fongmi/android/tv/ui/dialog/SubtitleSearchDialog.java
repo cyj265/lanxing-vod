@@ -167,7 +167,7 @@ public final class SubtitleSearchDialog extends BaseBottomSheetDialog implements
     }
 
     private void applySub(SubtitleSearchItem item) {
-        if (item.isRemote()) downloadSub(item);
+        if (item.isZip()) downloadSub(item);
         else applySub(item.toSub());
     }
 
@@ -180,7 +180,7 @@ public final class SubtitleSearchDialog extends BaseBottomSheetDialog implements
         showProgress();
         updateBackCallback();
         scroller.endLoading(hasMore());
-        SubtitleApi.loadSubtitle(item, this::showDownloaded, this::onError);
+        SubtitleApi.loadArchive(item, this::showArchive, this::onError);
     }
 
     private boolean loadMore() {
@@ -222,7 +222,7 @@ public final class SubtitleSearchDialog extends BaseBottomSheetDialog implements
         recycler.post(() -> scroller.checkMore(recycler));
     }
 
-    private void showDownloaded(List<SubtitleSearchItem> items) {
+    private void showArchive(List<SubtitleSearchItem> items) {
         if (items.isEmpty()) onEmpty();
         else if (items.size() == 1) applySub(items.get(0));
         else showItems(items);
