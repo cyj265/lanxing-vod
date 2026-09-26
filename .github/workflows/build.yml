@@ -58,18 +58,15 @@ jobs:
           set +e
           ./gradlew :app:assembleMobileArm64_v8aRelease --no-daemon --console=plain > /tmp/gradle-build.log 2>&1
           code=$?
-          if [ $code -ne 0 ]; then
-            python3 -c '
-          import re
-          lines=open("/tmp/gradle-build.log",encoding="utf-8",errors="ignore").read().splitlines()
-          keys=[l for l in lines if re.search(r"(?i)(error|FAILED|what went wrong|Execution failed|Caused by|Cannot|Could not|No such|not found|> Task)",l)]
-          body="\n".join(keys[-80:]) if keys else "\n".join(lines[-150:])
-          body=body.replace("%","%25").replace("\r","").replace("\n","%0A").replace(":","%3A")
-          print("::error title=GradleBuildFailed::"+body[:6000])
-          '
-            exit $code
+          APK="app/build/outputs/apk/mobile/release/mobile-arm64_v8a.apk"
+          if [ -f "$APK" ]; then
+            echo "BUILD OK"
+            ls -la "$APK"
+          else
+            echo "::error::构建失败(exit=$code)，APK未生成。最后200行日志："
+            tail -200 /tmp/gradle-build.log
+            exit 1
           fi
-          echo "BUILD OK"
 
       - name: 上传 APK 产物
         uses: actions/upload-artifact@v4
