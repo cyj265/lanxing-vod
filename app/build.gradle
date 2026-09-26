@@ -66,6 +66,7 @@ android {
         exclude group: 'stax', module: 'stax-api'
         exclude group: 'xpp3', module: 'xpp3'
         exclude group: 'com.android.support'
+        exclude group: 'io.antmedia', module: 'rtmp-client'
         resolutionStrategy {
             force libs.okhttp
             eachDependency { details ->
