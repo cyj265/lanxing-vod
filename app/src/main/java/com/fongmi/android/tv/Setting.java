@@ -1,5 +1,6 @@
 package com.fongmi.android.tv;
 
+// 5.4.44: 测试Bugly mapping自动上传修复（下载加请求头，参数改为-inputMapping）
 
 import android.content.Intent;
 import android.net.Uri;
