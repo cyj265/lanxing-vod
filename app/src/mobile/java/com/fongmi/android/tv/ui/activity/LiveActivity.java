@@ -175,6 +175,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         setViewModel();
         checkLive();
         applyPanelLayout();
+        mBinding.video.post(this::applyPanelLayout);
     }
 
     @Override
@@ -333,18 +334,40 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     }
 
     /**
-     * 直播半屏：竖屏时底部常驻半屏频道列表(分组/频道/节目单三栏)，
-     * 视频保持上半屏；横屏/旋转后恢复右侧弹出式频道栏。
+     * 直播半屏：竖屏时视频占上半屏(55%)、底部半屏频道列表(45%)，
+     * 两者互不重叠；横屏/旋转后恢复全屏视频 + 右侧弹出式频道栏。
      */
     private boolean isHalfPanel() {
         return !ResUtil.isLand(this);
     }
 
     private void applyPanelLayout() {
-        if (isHalfPanel()) {
-            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    (int) (ResUtil.getScreenHeight() * 0.45f));
+        boolean land = ResUtil.isLand(this);
+        FrameLayout.LayoutParams vp = (FrameLayout.LayoutParams) mBinding.video.getLayoutParams();
+        FrameLayout.LayoutParams lp = (FrameLayout.LayoutParams) mBinding.recycler.getLayoutParams();
+
+        if (land) {
+            // 全屏视频，右侧弹出式频道栏
+            vp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            vp.height = ViewGroup.LayoutParams.MATCH_PARENT;
+            vp.gravity = Gravity.TOP;
+            mBinding.video.setLayoutParams(vp);
+
+            lp.width = ViewGroup.LayoutParams.WRAP_CONTENT;
+            lp.height = ViewGroup.LayoutParams.MATCH_PARENT;
+            lp.gravity = Gravity.LEFT;
+            mBinding.recycler.setLayoutParams(lp);
+            mBinding.recycler.setVisibility(View.GONE);
+        } else {
+            // 半屏：视频上半屏、频道列表下半屏，不重叠
+            int screenH = ResUtil.getScreenHeight();
+            vp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            vp.height = (int) (screenH * 0.55f);
+            vp.gravity = Gravity.TOP;
+            mBinding.video.setLayoutParams(vp);
+
+            lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
+            lp.height = (int) (screenH * 0.45f);
             lp.gravity = Gravity.BOTTOM;
             mBinding.recycler.setLayoutParams(lp);
             mBinding.recycler.setVisibility(View.VISIBLE);
@@ -353,13 +376,6 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
             mBinding.epgData.setVisibility(View.VISIBLE);
             setPanelWidth();
             setPosition();
-        } else {
-            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT);
-            lp.gravity = Gravity.LEFT;
-            mBinding.recycler.setLayoutParams(lp);
-            mBinding.recycler.setVisibility(View.GONE);
         }
     }
 
