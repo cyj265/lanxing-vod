@@ -20,6 +20,7 @@ public class PlayerSeekView extends FrameLayout {
     private final DefaultTimeBar timeBar;
     private final Handler handler = new Handler(Looper.getMainLooper());
     private @Nullable Player player;
+    private boolean scrubbing;
 
     private final Runnable updater = new Runnable() {
         @Override
@@ -41,6 +42,27 @@ public class PlayerSeekView extends FrameLayout {
         super(context, attrs, defStyleAttr);
         timeBar = new DefaultTimeBar(context, attrs);
         timeBar.setId(R.id.exo_progress);
+        timeBar.addListener(new TimeBar.OnScrubListener() {
+            @Override
+            public void onScrubStart(TimeBar timeBar, long position) {
+                scrubbing = true;
+            }
+
+            @Override
+            public void onScrubMove(TimeBar timeBar, long position) {
+                // 拖动中只预览位置，不打断播放
+            }
+
+            @Override
+            public void onScrubStop(TimeBar timeBar, long position, boolean canceled) {
+                scrubbing = false;
+                Player p = player;
+                if (p != null && !canceled && position >= 0) {
+                    p.seekTo(position);
+                }
+                updateProgress();
+            }
+        });
         addView(timeBar, new LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT));
@@ -65,6 +87,8 @@ public class PlayerSeekView extends FrameLayout {
             timeBar.setBufferedPosition(0);
             return;
         }
+        // 拖动中不要用定时刷新覆盖用户正在拖动的位置
+        if (scrubbing) return;
         long duration = p.getDuration();
         if (duration == C.TIME_UNSET || duration < 0) duration = 0;
         timeBar.setDuration(duration);
