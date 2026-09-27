@@ -15,8 +15,10 @@ public record CastVideo(String name, String url, long position, Map<String, Stri
     }
 
     public CastVideo {
-        headers = new LinkedHashMap<>(headers);
-        if (url.startsWith("file")) url = Server.get().getAddress() + "/" + url.replace(Path.rootPath(), "").replace("://", "");
-        if (url.contains("127.0.0.1")) url = url.replace("127.0.0.1", Util.getIp());
+        headers = headers == null ? new LinkedHashMap<>() : new LinkedHashMap<>(headers);
+        if (url != null) {
+            if (url.startsWith("file")) url = Server.get().getAddress() + "/" + url.replace(Path.rootPath(), "").replace("://", "");
+            if (url.contains("127.0.0.1")) url = url.replace("127.0.0.1", Util.getIp());
+        }
     }
 }

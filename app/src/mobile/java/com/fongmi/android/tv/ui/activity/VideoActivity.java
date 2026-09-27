@@ -330,7 +330,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.director.setOnClickListener(view -> onDirector());
         mBinding.quickBtn.setOnClickListener(view -> onName());
         mBinding.playerBtn.setOnClickListener(view -> onPlayer());
-        mBinding.castBtn.setOnClickListener(view -> onCast());
         mBinding.settingBtn.setOnClickListener(view -> onSetting());
         mBinding.name.setOnLongClickListener(view -> onChange());
         mBinding.content.setOnLongClickListener(view -> onCopy());
@@ -920,6 +919,10 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void onCast() {
+        if (TextUtils.isEmpty(player().getUrl())) {
+            Notify.show(R.string.error_play_url);
+            return;
+        }
         CastDialog.create(player()).history(mHistory).show(this);
     }
 
