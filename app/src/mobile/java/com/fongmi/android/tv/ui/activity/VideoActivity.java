@@ -323,7 +323,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     protected void initEvent() {
         mBinding.name.setOnClickListener(view -> onName());
         mBinding.more.setOnClickListener(view -> onMore());
-        mBinding.keep.setOnClickListener(view -> onKeep());
+        mBinding.keepBtn.setOnClickListener(view -> onKeep());
         mBinding.actor.setOnClickListener(view -> onActor());
         mBinding.content.setOnClickListener(view -> onContent());
         mBinding.reverse.setOnClickListener(view -> onReverse());
@@ -1285,8 +1285,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private void checkKeepImg() {
         boolean kept = Keep.find(getHistoryKey()) != null;
         mBinding.control.keep.setImageResource(kept ? R.drawable.ic_control_keep_on : R.drawable.ic_control_keep_off);
-        mBinding.keep.setText(kept ? R.string.keep_done_btn : R.string.keep_add_btn);
-        mBinding.keep.setSelected(kept);
+        mBinding.keepBtn.setText(kept ? R.string.keep_done_btn : R.string.keep_add_btn);
+        mBinding.keepBtn.setSelected(kept);
     }
 
     private void checkLockImg() {
