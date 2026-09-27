@@ -406,6 +406,16 @@
         <item>Off</item>
     </string-array>
 
+    <string-array name="select_engine">
+        <item>EXO</item>
+        <item>MPV</item>
+    </string-array>
+
+    <string-array name="select_render">
+        <item>Surface</item>
+        <item>Texture</item>
+    </string-array>
+
     <string-array name="select_size">
         <item>Small</item>
         <item>Medium</item>
