@@ -139,8 +139,24 @@ public class Updater implements Download.Callback, UpdateListener {
             dismiss();
             return;
         }
+        if (isInstalledAbnormal()) {
+            Path.clear(file);
+            Notify.show("检测到本地安装版本异常（版本号高于线上），请卸载后重新安装");
+            dismiss();
+            return;
+        }
         FileUtil.openFile(file);
         dismiss();
+    }
+
+    /** 检测本地已安装包版本号是否异常高于当前版本（常见于装过非正规构建），此时安装任何低版本都会失败 */
+    private boolean isInstalledAbnormal() {
+        try {
+            PackageInfo installed = App.get().getPackageManager().getPackageInfo(BuildConfig.APPLICATION_ID, 0);
+            return installed != null && installed.versionCode > BuildConfig.VERSION_CODE;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     /** 下载完成后校验安装包：包名一致且版本号不低于当前版本，避免误装旧包/错包 */
