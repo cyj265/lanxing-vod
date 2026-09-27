@@ -1,24 +1,16 @@
-import java.util.regex.Matcher
-import java.util.regex.Pattern
+plugins {
+    alias libs.plugins.android.application
+}
 
-// ============ release signing ============
-// 若本机存在 local.properties 中的签名配置且满足以下条件，则使用 release 签名：
-//   storeFile / keyAlias / storePassword / keyPassword
-// 否则退化为 debug 签名（仅用于本地调试，不可发布）。
-
-def hasReleaseSigning = false
-def releaseKeyPassword = ''
 def localProps = new Properties()
-if (project.rootProject.file('local.properties').exists()) {
-    project.rootProject.file('local.properties').withInputStream { localProps.load(it) }
-    if (localProps['storeFile'] != null && localProps['keyAlias'] != null && localProps['storePassword'] != null && localProps['keyPassword'] != null) {
-        def store = file(localProps['storeFile'])
-        if (store.exists()) {
-            hasReleaseSigning = true
-            releaseKeyPassword = localProps['keyPassword']
-        }
+def localPropsFile = rootProject.file('local.properties')
+if (localPropsFile.exists()) {
+    localPropsFile.withInputStream {
+        localProps.load(it)
     }
 }
+def hasReleaseSigning = localProps['storeFile'] && localProps['keyAlias'] && localProps['storePassword']
+def releaseKeyPassword = localProps['keyPassword'] ?: localProps['storePassword']
 
 android {
     namespace = 'com.fongmi.android.tv'
