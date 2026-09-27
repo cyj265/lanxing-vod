@@ -6,9 +6,11 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -172,6 +174,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         setVideoView();
         setViewModel();
         checkLive();
+        applyPanelLayout();
     }
 
     @Override
@@ -292,6 +295,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     }
 
     private void setWidth(Live live) {
+        if (isHalfPanel()) return;
         int padding = ResUtil.dp2px(48);
         if (live.getWidth() == 0) for (Group item : live.getGroups()) live.setWidth(Math.max(live.getWidth(), ResUtil.getTextWidth(item.getName(), 14)));
         int width = live.getWidth() == 0 ? 0 : Math.min(live.getWidth() + padding, ResUtil.getScreenWidth() / 4);
@@ -300,6 +304,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
     @Override
     public void setWidth(Group group) {
+        if (isHalfPanel()) return;
         int logo = ResUtil.dp2px(56);
         int padding = ResUtil.dp2px(60);
         if (group.isKeep()) group.setWidth(0);
@@ -309,6 +314,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     }
 
     private void setWidth(Epg epg) {
+        if (isHalfPanel()) return;
         int padding = ResUtil.dp2px(48);
         if (epg.getList().isEmpty()) return;
         int minWidth = ResUtil.getTextWidth(epg.getList().get(0).getTime(), 12);
@@ -324,6 +330,44 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         if (params.width == width) return;
         params.width = width;
         view.setLayoutParams(params);
+    }
+
+    /**
+     * 直播半屏：竖屏时底部常驻半屏频道列表(分组/频道/节目单三栏)，
+     * 视频保持上半屏；横屏/旋转后恢复右侧弹出式频道栏。
+     */
+    private boolean isHalfPanel() {
+        return !ResUtil.isLand(this);
+    }
+
+    private void applyPanelLayout() {
+        if (isHalfPanel()) {
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    (int) (ResUtil.getScreenHeight() * 0.45f));
+            lp.gravity = Gravity.BOTTOM;
+            mBinding.recycler.setLayoutParams(lp);
+            mBinding.recycler.setVisibility(View.VISIBLE);
+            mBinding.group.setVisibility(View.VISIBLE);
+            mBinding.channel.setVisibility(View.VISIBLE);
+            mBinding.epgData.setVisibility(View.VISIBLE);
+            setPanelWidth();
+            setPosition();
+        } else {
+            FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                    ViewGroup.LayoutParams.MATCH_PARENT);
+            lp.gravity = Gravity.LEFT;
+            mBinding.recycler.setLayoutParams(lp);
+            mBinding.recycler.setVisibility(View.GONE);
+        }
+    }
+
+    private void setPanelWidth() {
+        int width = ResUtil.getScreenWidth();
+        setWidth(mBinding.group, (int) (width * 0.18f));
+        setWidth(mBinding.channel, (int) (width * 0.37f));
+        setWidth(mBinding.epgData, (int) (width * 0.45f));
     }
 
     private void setPosition(int[] position) {
@@ -456,12 +500,20 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     }
 
     private void hideUI() {
+        if (isHalfPanel()) {
+            setPosition();
+            return;
+        }
         if (isGone(mBinding.recycler)) return;
         mBinding.recycler.setVisibility(View.GONE);
         setPosition();
     }
 
     private void showUI() {
+        if (isHalfPanel()) {
+            setPosition();
+            return;
+        }
         if (isVisible(mBinding.recycler) || mGroupAdapter.getItemCount() == 0) return;
         mBinding.recycler.setVisibility(View.VISIBLE);
         mBinding.channel.requestFocus();
@@ -470,6 +522,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     }
 
     private void showEpg(Channel item) {
+        if (isHalfPanel()) return;
         if (mChannel == null || mChannel.getData(mViewModel.getZoneId()).getList().isEmpty() || mEpgDataAdapter.getItemCount() == 0 || !mChannel.equals(item) || !mChannel.getGroup().equals(mGroup)) return;
         scrollToPosition(mBinding.epgData, item.getData(mViewModel.getZoneId()).getSelected());
         mBinding.epgData.setVisibility(View.VISIBLE);
@@ -556,6 +609,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
     private void onToggle() {
         if (isVisible(mBinding.control.getRoot())) hideControl();
+        else if (isHalfPanel()) showControl();
         else if (isVisible(mBinding.recycler)) hideUI();
         else showUI();
         hideInfo();
@@ -979,6 +1033,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
             setPadding(mBinding.recycler, true);
             setPadding(mBinding.control.getRoot());
         }
+        applyPanelLayout();
     }
 
     private void scrollToPosition(RecyclerView view, int position) {
@@ -1093,6 +1148,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     public void onConfigurationChanged(@NonNull Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
         Util.hideSystemUI(this);
+        applyPanelLayout();
     }
 
     @Override
@@ -1120,7 +1176,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
             hideControl();
         } else if (isVisible(mBinding.widget.info)) {
             hideInfo();
-        } else if (isVisible(mBinding.recycler)) {
+        } else if (isVisible(mBinding.recycler) && !isHalfPanel()) {
             hideUI();
         } else if (!isLock()) {
             if (isTaskRoot()) startActivity(new Intent(this, HomeActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
