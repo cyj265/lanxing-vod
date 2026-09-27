@@ -33,7 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 public class CategoryListActivity extends BaseActivity {
 
-    private static final int MAX_FETCH = 12;
+    private static final int MAX_FETCH = 30;
     private static final int SPIDER_TIMEOUT = 5;
     private static final int CONCURRENCY = 3;
 
@@ -49,20 +49,23 @@ public class CategoryListActivity extends BaseActivity {
     private ExecutorService mSpiderExecutor;
     private String mTypeId;
     private List<Vod> mCurrentList;
+    // 榜单更多页：vodId 是豆瓣 id，直接用豆瓣 detail 补简介，跳过源 detailContent
+    private boolean mFromDiscover;
 
     public static void start(Activity activity, String typeId, String typeName) {
-        Intent intent = new Intent(activity, CategoryListActivity.class);
-        intent.putExtra("typeId", typeId);
-        intent.putExtra("typeName", typeName);
-        activity.startActivity(intent);
-        activity.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
+        start(activity, typeId, typeName, null, false);
     }
 
     public static void start(Activity activity, String typeId, String typeName, ArrayList<Vod> initialList) {
+        start(activity, typeId, typeName, initialList, false);
+    }
+
+    public static void start(Activity activity, String typeId, String typeName, ArrayList<Vod> initialList, boolean fromDiscover) {
         Intent intent = new Intent(activity, CategoryListActivity.class);
         intent.putExtra("typeId", typeId);
         intent.putExtra("typeName", typeName);
-        intent.putParcelableArrayListExtra("initialList", initialList);
+        intent.putExtra("fromDiscover", fromDiscover);
+        if (initialList != null) intent.putParcelableArrayListExtra("initialList", initialList);
         activity.startActivity(intent);
         activity.overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out);
     }
@@ -76,6 +79,7 @@ public class CategoryListActivity extends BaseActivity {
     protected void initView(Bundle savedInstanceState) {
         String typeName = getIntent().getStringExtra("typeName");
         mTypeId = getIntent().getStringExtra("typeId");
+        mFromDiscover = getIntent().getBooleanExtra("fromDiscover", false);
         mBinding.toolbar.setTitle(typeName);
         mBinding.toolbar.setNavigationOnClickListener(v -> finish());
 
@@ -132,12 +136,21 @@ public class CategoryListActivity extends BaseActivity {
             return;
         }
         String content = "";
-        // 源 detailContent 已标记不可用则跳过，直接豆瓣
-        if (!sSpiderBroken.contains(site.getKey())) {
-            content = site.getType() == 3 ? fetchSourceContent(site, vod) : fetchApiContent(site, vod);
-        }
-        if (TextUtils.isEmpty(content)) {
-            content = Douban.getIntro(vod.getName());
+        if (mFromDiscover) {
+            // 榜单页：vodId 是豆瓣 id，直接凭 id 拿简介，快且命中率高
+            content = Douban.getIntroById(vod.getId());
+            if (TextUtils.isEmpty(content)) content = Douban.getIntro(vod.getName());
+        } else {
+            // 源分类页：先查源 detailContent（已标记不可用则跳过）
+            if (!sSpiderBroken.contains(site.getKey())) {
+                content = site.getType() == 3 ? fetchSourceContent(site, vod) : fetchApiContent(site, vod);
+            }
+            if (TextUtils.isEmpty(content)) {
+                content = Douban.getIntroById(vod.getId());
+            }
+            if (TextUtils.isEmpty(content)) {
+                content = Douban.getIntro(vod.getName());
+            }
         }
         if (!TextUtils.isEmpty(content)) {
             sIntroCache.put(vod.getName(), content);

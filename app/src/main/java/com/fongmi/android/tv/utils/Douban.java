@@ -50,6 +50,21 @@ public class Douban {
             if (arr.length() == 0) return "";
             String id = arr.getJSONObject(0).optString("id");
             if (TextUtils.isEmpty(id)) return "";
+            return getIntroById(id);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * 榜单条目直接凭豆瓣 id 取简介（跳过 suggest 搜索，快且命中率高）
+     */
+    public static String getIntroById(String id) {
+        if (TextUtils.isEmpty(id)) return "";
+        try {
+            Map<String, String> headers = new HashMap<>();
+            headers.put("User-Agent", UA);
+            headers.put("Referer", REFERER);
             throttle();
             String detail = OkHttp.string(String.format(DETAIL, id), headers);
             JSONObject obj = new JSONObject(detail);

@@ -93,7 +93,7 @@ public class DiscoverFragment extends Fragment {
                     String title = RANKS.get(categoryIndex)[0];
                     List<Vod> list = mRecommendAdapter.getListByCategoryIndex(categoryIndex);
                     if (list != null && !list.isEmpty()) {
-                        CategoryListActivity.start(requireActivity(), "", title, new ArrayList<>(list));
+                        CategoryListActivity.start(requireActivity(), "", title, new ArrayList<>(list), true);
                     }
                 }
             }
@@ -108,56 +108,32 @@ public class DiscoverFragment extends Fragment {
         List<History> items = History.get();
         if (items == null || items.isEmpty()) {
             mBinding.continueLayout.setVisibility(View.GONE);
-            return;
+        } else {
+            mBinding.continueLayout.setVisibility(View.VISIBLE);
         }
-        mBinding.continueLayout.setVisibility(View.VISIBLE);
-        int count = Math.min(items.size(), 10);
-        List<History> list = items.subList(0, count);
-        mBinding.continueRecycler.setAdapter(new ContinueAdapter(list, item ->
-                VideoActivity.start(requireActivity(), item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic())
-        ));
     }
 
-    private synchronized void loadRanks() {
+    private void loadRanks() {
         if (mLoading) return;
         mLoading = true;
-        mRecommendAdapter.clear();
-        mBinding.loading.setVisibility(View.VISIBLE);
-        mBinding.emptyText.setVisibility(View.GONE);
-        mExecutor = Executors.newFixedThreadPool(3);
-        final AtomicInteger done = new AtomicInteger(0);
-        final CountDownLatch latch = new CountDownLatch(RANKS.size());
+        mExecutor = Executors.newFixedThreadPool(RANKS.size());
         for (int i = 0; i < RANKS.size(); i++) {
             final int index = i;
-            final String title = RANKS.get(i)[0];
             final String collectionId = RANKS.get(i)[1];
             mExecutor.submit(() -> {
                 try {
                     List<Vod> list = Douban.getRank(collectionId, 12);
                     if (list != null && !list.isEmpty()) {
-                        App.post(() -> mRecommendAdapter.addRow(title, list, index));
+                        App.post(() -> {
+                            if (mBinding == null || mRecommendAdapter == null) return;
+                            mRecommendAdapter.addRow(RANKS.get(index)[0], new ArrayList<>(list), index);
+                        });
                     }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    done.incrementAndGet();
-                    latch.countDown();
+                } catch (Exception ignored) {
                 }
             });
         }
-        mExecutor.submit(() -> {
-            try {
-                latch.await(20, TimeUnit.SECONDS);
-            } catch (InterruptedException ignored) {}
-            App.post(() -> {
-                if (mBinding == null || mRecommendAdapter == null) return;
-                mLoading = false;
-                mBinding.loading.setVisibility(View.GONE);
-                if (mRecommendAdapter.getItemCount() == 0) {
-                    mBinding.emptyText.setVisibility(View.VISIBLE);
-                }
-            });
-        });
+        mExecutor.shutdown();
     }
 
     @Override
