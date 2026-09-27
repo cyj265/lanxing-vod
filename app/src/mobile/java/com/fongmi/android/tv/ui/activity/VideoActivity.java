@@ -135,6 +135,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private Runnable mR3;
     private Runnable mR4;
     private History mHistory;
+    private String mPlayTitle = "";
     private boolean fullscreen;
     private boolean useParse;
     private boolean rotate;
@@ -716,8 +717,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     @Override
     public void renderPlaybackMetadata(MediaMetadata metadata) {
         if (service() != null && isOwner()) player().setMetadata(metadata);
-        mBinding.control.title.setText(metadata.displayTitle);
-        mBinding.control.title.setSelected(true);
+        mPlayTitle = metadata.displayTitle == null ? "" : metadata.displayTitle.toString();
+        updateTitle(null);
     }
 
     @Override
@@ -959,8 +960,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void onRotate() {
         setR1Callback();
-        setRotate(!isRotate());
-        setRequestedOrientation(PlaybackOrientation.getRotateOrientation(this));
+        if (isFullscreen()) exitFullscreen();
+        else enterFullscreen();
+        checkFullscreenImg();
     }
 
     private void onTrack(View view) {
@@ -1168,6 +1170,10 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         player().setDanmakuEnabled(DanmakuSetting.isShow());
     }
 
+    private void checkFullscreenImg() {
+        mBinding.control.right.rotate.setImageResource(isFullscreen() ? R.drawable.ic_control_fullscreen_exit : R.drawable.ic_control_fullscreen);
+    }
+
     private void hideDanmaku() {
         player().setDanmakuEnabled(false);
     }
@@ -1176,7 +1182,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         if (service() == null || isInPictureInPictureMode()) return;
         mBinding.control.danmaku.setVisibility(isLock() || !player().haveDanmaku() ? View.GONE : View.VISIBLE);
         mBinding.control.setting.setVisibility(mHistory == null || isFullscreen() ? View.GONE : View.VISIBLE);
-        mBinding.control.right.rotate.setVisibility(isFullscreen() && !isLock() ? View.VISIBLE : View.GONE);
+        mBinding.control.right.rotate.setVisibility(isLock() ? View.GONE : View.VISIBLE);
+        checkFullscreenImg();
         mBinding.control.keep.setVisibility(mHistory == null || isFullscreen() ? View.GONE : View.VISIBLE);
         mBinding.control.action.getRoot().setVisibility(isFullscreen() ? View.VISIBLE : View.GONE);
         mBinding.control.right.lock.setVisibility(isFullscreen() ? View.VISIBLE : View.GONE);
@@ -1188,11 +1195,23 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.back.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.top.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.getRoot().setVisibility(View.VISIBLE);
+        mBinding.control.getRoot().animate().cancel();
+        mBinding.control.getRoot().setAlpha(0f);
+        mBinding.control.getRoot().animate().alpha(1f).setDuration(200).start();
         setR1Callback();
     }
 
     private void hideControl() {
-        mBinding.control.getRoot().setVisibility(View.GONE);
+        View root = mBinding.control.getRoot();
+        if (root.getVisibility() == View.GONE) {
+            App.removeCallbacks(mR1);
+            return;
+        }
+        root.animate().cancel();
+        root.animate().alpha(0f).setDuration(180).withEndAction(() -> {
+            if (root.getParent() != null) root.setVisibility(View.GONE);
+            root.setAlpha(1f);
+        }).start();
         App.removeCallbacks(mR1);
     }
 
@@ -1385,6 +1404,16 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     protected void onSizeChanged(VideoSize size) {
         changeHeight();
         checkOrientation();
+        updateTitle(size);
+    }
+
+    private void updateTitle(VideoSize size) {
+        String title = mPlayTitle;
+        if (size != null && size.width > 0 && size.height > 0) {
+            title = title + "  [" + size.width + "x" + size.height + "]";
+        }
+        mBinding.control.title.setText(title);
+        mBinding.control.title.setSelected(true);
     }
 
     @Override
