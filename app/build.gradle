@@ -1,22 +1,22 @@
 import java.util.regex.Matcher
 import java.util.regex.Pattern
 
-plugins {
-    id 'com.android.application'
-}
+// ============ release signing ============
+// 若本机存在 local.properties 中的签名配置且满足以下条件，则使用 release 签名：
+//   storeFile / keyAlias / storePassword / keyPassword
+// 否则退化为 debug 签名（仅用于本地调试，不可发布）。
 
-apply plugin: 'com.android.application'
-
-static def getGitVersion() {
-    try {
-        def stdout = new ByteArrayOutputStream()
-        exec {
-            commandLine 'git', 'describe', '--tags', '--always'
-            standardOutput = stdout
+def hasReleaseSigning = false
+def releaseKeyPassword = ''
+def localProps = new Properties()
+if (project.rootProject.file('local.properties').exists()) {
+    project.rootProject.file('local.properties').withInputStream { localProps.load(it) }
+    if (localProps['storeFile'] != null && localProps['keyAlias'] != null && localProps['storePassword'] != null && localProps['keyPassword'] != null) {
+        def store = file(localProps['storeFile'])
+        if (store.exists()) {
+            hasReleaseSigning = true
+            releaseKeyPassword = localProps['keyPassword']
         }
-        return stdout.toString().trim()
-    } catch (Exception e) {
-        return 'unknown'
     }
 }
 
@@ -64,59 +64,114 @@ android {
 
     signingConfigs {
         release {
-            storeFile = rootProject.file('lanxing-release.keystore')
-            storePassword = System.getenv('LANXING_STORE_PASSWORD') ?: 'lanxing'
-            keyAlias = System.getenv('LANXING_KEY_ALIAS') ?: 'lanxing'
-            keyPassword = System.getenv('LANXING_KEY_PASSWORD') ?: 'lanxing'
+            if (hasReleaseSigning) {
+                storeFile file(localProps['storeFile'])
+                keyAlias localProps['keyAlias']
+                keyPassword releaseKeyPassword
+                storePassword localProps['storePassword']
+            }
         }
     }
 
     buildTypes {
         release {
-            minifyEnabled true
-            shrinkResources true
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            signingConfig signingConfigs.release
+            minifyEnabled = true
+            shrinkResources = true
+            signingConfig = hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro', 'proguard-rules-media.pro'
         }
     }
 
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
+    configurations.configureEach {
+        exclude group: 'stax', module: 'stax-api'
+        exclude group: 'xpp3', module: 'xpp3'
+        exclude group: 'com.android.support'
+        exclude group: 'io.antmedia', module: 'rtmp-client'
+        resolutionStrategy {
+            force libs.okhttp
+            eachDependency { details ->
+                if (details.requested.group == 'androidx.media3') {
+                    details.useVersion(libs.versions.media3.get())
+                    details.because('Use the WebHTV-pinned FongMi Media3 fork')
+                }
+            }
+        }
+    }
+
+    sourceSets {
+        main {
+            java {
+                // Real bundled MPV is enabled. The three legacy effect wrappers below
+                // target the older private MPV API and stay excluded.
+                exclude 'com/fongmi/android/tv/player/mpv/MpvPlayerEffect.java'
+                exclude 'com/fongmi/android/tv/player/effect/audio/MpvAudioEffectFilter.java'
+                exclude 'com/fongmi/android/tv/player/effect/video/MpvVideoEffectController.java'
+            }
+        }
     }
 
     lint {
-        abortOnError false
-        checkReleaseBuilds false
+        disable 'UnsafeOptInUsageError'
+        disable 'ExpiredTargetSdkVersion'
     }
 
-    packaging {
-        resources {
-            excludes += ['META-INF/*']
+    compileOptions {
+        coreLibraryDesugaringEnabled = true
+        sourceCompatibility JavaVersion.VERSION_21
+        targetCompatibility JavaVersion.VERSION_21
+    }
+}
+
+androidComponents {
+    onVariants(selector().withBuildType('release')) { variant ->
+        def flavors = variant.productFlavors.collectEntries { [(it.first): it.second] }
+        def mode = flavors['mode'] ?: 'mode'
+        def abi = flavors['abi'] ?: 'abi'
+        variant.outputs.each { output ->
+            output.outputFileName.set("揽星影视-${mode}-${abi}.apk")
         }
     }
 }
 
 dependencies {
-    implementation libs.androidx.appcompat
-    implementation libs.androidx.activity
-    implementation libs.androidx.constraintlayout
-    implementation libs.androidx.recyclerview
-    implementation libs.androidx.viewpager
-    implementation libs.androidx.work
-    implementation libs.androidx.room
-    implementation libs.androidx.lifecycle
-    implementation libs.google.material
-    implementation libs.google.exoplayer
-    implementation libs.google.gson
-    implementation libs.github.glide
-    implementation libs.github.okhttp
-    implementation libs.github.jsoup
-    implementation libs.jiayu.thunder
-    implementation libs.tencent.bugly
-    implementation libs.tencent.buglynative
+    implementation fileTree(dir: "libs", include: ["*.aar"])
     implementation project(':catvod')
     implementation project(':chaquo')
     implementation project(':quickjs')
-    implementation project(':ijkplayer')
+    implementation libs.appcompat
+    implementation libs.lifecycle.service
+    implementation libs.media
+    implementation libs.bundles.media3
+    implementation libs.exoplayer.hdr.utils
+    implementation libs.nextlib.media3ext
+    implementation libs.palette
+    implementation libs.recyclerview
+    implementation libs.room.runtime
+    implementation libs.splashscreen
+    implementation libs.swiperefreshlayout
+    implementation libs.viewpager2
+    implementation libs.android.gif.drawable
+    implementation libs.bundles.glide
+    implementation libs.bundles.jupnp
+    implementation libs.customactivityoncrash
+    implementation libs.eventbus
+    implementation libs.flexbox
+    implementation libs.lottie
+    implementation libs.material
+    implementation libs.materialdesigncolors
+    implementation libs.nanohttpd
+    implementation libs.newpipeextractor
+    implementation libs.permissionx
+    implementation libs.simple.xml
+    implementation libs.textdrawable
+    leanbackImplementation libs.leanback
+    leanbackImplementation libs.androidautosize
+    mobileImplementation libs.biometric
+    mobileImplementation libs.zxing.android.embedded
+    annotationProcessor libs.room.compiler
+    annotationProcessor libs.eventbus.annotation.processor
+    annotationProcessor libs.glide.compiler
+    coreLibraryDesugaring libs.desugar
+    implementation 'com.tencent.bugly:crashreport:4.1.9.3'
+    implementation 'com.tencent.bugly:nativecrashreport:3.9.2'
 }
