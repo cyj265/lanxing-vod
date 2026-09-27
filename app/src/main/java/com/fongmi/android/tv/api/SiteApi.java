@@ -118,7 +118,7 @@ public class SiteApi {
             vod.setName(id);
             vod.setPlayUrl(id);
             vod.setPlayFrom(ResUtil.getString(R.string.push));
-            vod.setPic(ResUtil.getString(R.string.push_image));
+            vod.setPic("");
             Source.get().parse(vod.setFlags());
             return Result.vod(vod);
         } else if (isSpider(site)) {
