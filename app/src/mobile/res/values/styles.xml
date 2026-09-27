@@ -1,9 +1,16 @@
 <resources>
 
-    <style name="Theme.Base" parent="Theme.Material3.DynamicColors.DayNight.NoActionBar">
+    <style name="Theme.Base" parent="Theme.Material3.Dark.NoActionBar">
         <item name="android:statusBarColor">@color/transparent</item>
         <item name="android:navigationBarColor">@color/transparent</item>
         <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="colorPrimary">@color/primary</item>
+        <item name="colorOnPrimary">@color/black</item>
+        <item name="colorSurface">@color/bg</item>
+        <item name="colorSurfaceVariant">@color/bg</item>
+        <item name="colorOnSurface">@color/white</item>
+        <item name="android:textColorPrimary">@color/white</item>
     </style>
 
     <style name="Theme.Splash" parent="Theme.SplashScreen">
@@ -15,7 +22,7 @@
 
     <style name="Theme.Crash" parent="Theme.Base">
         <item name="android:windowDisablePreview">true</item>
-        <item name="android:windowBackground">@color/grey_700</item>
+        <item name="android:windowBackground">@color/bg_deep</item>
     </style>
 
     <style name="Control">

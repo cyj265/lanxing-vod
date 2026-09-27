@@ -28,4 +28,7 @@
 
     <color name="primary">#FFC93E</color>
 
+    <color name="bg">#121212</color>
+    <color name="bg_deep">#0F0F0F</color>
+
 </resources>
