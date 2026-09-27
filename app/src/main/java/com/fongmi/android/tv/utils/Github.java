@@ -12,7 +12,8 @@ public class Github {
     public static final String MIRROR = "https://gh-proxy.com/";
 
     /**
-     * 返回与当前版本同系列（如 v5.6.x）的最新 release，包含预发布；无匹配返回 null。
+     * 返回与当前版本同系列（如 v5.6.x）的最新 release，包含预发布；
+     * 只认版本号高于当前安装版本的，避免把相同版本当更新推送；无匹配返回 null。
      * 这样 5.6.x 测试版只认本系列更新，不会与 5.4.x 正式版互相干扰。
      */
     public static JSONObject getLatestRelease() throws Exception {
@@ -24,11 +25,12 @@ public class Github {
         }
         JSONArray releases = new JSONArray(body);
         String prefix = getPrefix();
+        String current = "v" + BuildConfig.VERSION_NAME;
         JSONObject target = null;
         for (int i = 0; i < releases.length(); i++) {
             JSONObject release = releases.optJSONObject(i);
             String tag = release == null ? "" : release.optString("tag_name", "");
-            if (tag.startsWith("v" + prefix) && getApkUrl(release) != null) {
+            if (tag.startsWith("v" + prefix) && getApkUrl(release) != null && compare(tag, current) > 0) {
                 if (target == null || compare(tag, target.optString("tag_name")) > 0) target = release;
             }
         }
