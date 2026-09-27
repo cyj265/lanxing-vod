@@ -1,5 +1,6 @@
 package com.fongmi.android.tv;
 
+import android.content.pm.PackageInfo;
 import android.view.View;
 
 import androidx.fragment.app.FragmentActivity;
@@ -132,7 +133,26 @@ public class Updater implements Download.Callback, UpdateListener {
 
     @Override
     public void success(File file) {
+        if (!isValidApk(file)) {
+            Path.clear(file);
+            Notify.show("安装包校验失败，已清理，请重试");
+            dismiss();
+            return;
+        }
         FileUtil.openFile(file);
         dismiss();
+    }
+
+    /** 下载完成后校验安装包：包名一致且版本号不低于当前版本，避免误装旧包/错包 */
+    private boolean isValidApk(File file) {
+        try {
+            PackageInfo info = App.get().getPackageManager().getPackageArchiveInfo(file.getAbsolutePath(), 0);
+            if (info == null) return false;
+            if (info.versionCode < BuildConfig.VERSION_CODE) return false;
+            return info.packageName == null || info.packageName.equals(BuildConfig.APPLICATION_ID);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 }
