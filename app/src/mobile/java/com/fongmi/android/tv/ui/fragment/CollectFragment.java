@@ -16,13 +16,13 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.api.config.VodConfig;
-import com.fongmi.android.tv.bean.BuiltinDepot;
 import com.fongmi.android.tv.bean.Collect;
 import com.fongmi.android.tv.bean.Config;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.FragmentCollectBinding;
+import com.fongmi.android.tv.db.AppDatabase;
 import com.fongmi.android.tv.impl.Callback;
 import com.fongmi.android.tv.search.MultiConfigSearchEngine;
 import com.fongmi.android.tv.setting.SearchBlockManager;
@@ -133,8 +133,14 @@ public class CollectFragment extends BaseFragment implements
 
     private void loadLines() {
         mLines.clear();
-        // 左侧显示顺序保持原样。
-        mLines.addAll(BuiltinDepot.getConfigs());
+        // 搜索线路 = 用户添加的全部点播配置(type=0)，不再依赖内置宸龙 depot。
+        // 当前正在用的配置由 getSearchOrder() 置顶。
+        mLines.addAll(AppDatabase.get().getConfigDao().findByType(0));
+        // 兜底：数据库为空(新装未添加)时用当前加载的配置，避免搜索页无线路。
+        if (mLines.isEmpty()) {
+            Config current = VodConfig.get().getConfig();
+            if (current != null) mLines.add(current);
+        }
     }
 
     private List<Config> getSearchOrder() {
