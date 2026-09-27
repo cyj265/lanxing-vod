@@ -243,11 +243,11 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
     }
 
     private void onPlayer(View view) {
-        getRoot().change(2);
+        getRoot().change(3);
     }
 
     private void onDanmaku(View view) {
-        getRoot().change(3);
+        getRoot().change(4);
     }
 
     private void onThemeColor(View view) {

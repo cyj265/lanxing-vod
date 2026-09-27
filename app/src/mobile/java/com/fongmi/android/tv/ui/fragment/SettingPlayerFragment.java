@@ -142,11 +142,11 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
     }
 
     private void onPreload(View view) {
-        ((HomeActivity) requireActivity()).change(4);
+        ((HomeActivity) requireActivity()).change(5);
     }
 
     private void onDecode(View view) {
-        ((HomeActivity) requireActivity()).change(5);
+        ((HomeActivity) requireActivity()).change(6);
     }
 
     private void onUa(View view) {
