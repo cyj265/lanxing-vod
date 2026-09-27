@@ -2,11 +2,12 @@
 
     <!-- App -->
     <string name="app_keep">我的收藏</string>
-    <string name="app_history">最近觀看</string>
+    <string name="app_history">觀看歷史</string>
 
     <!-- Nav -->
-    <string name="nav_vod">點播</string>
+    <string name="nav_vod">影視</string>
     <string name="nav_live">直播</string>
+    <string name="nav_history">歷史</string>
     <string name="nav_setting">設定</string>
 
     <!-- Menu -->
