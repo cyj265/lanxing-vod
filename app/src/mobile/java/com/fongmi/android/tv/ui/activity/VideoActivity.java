@@ -323,10 +323,15 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     protected void initEvent() {
         mBinding.name.setOnClickListener(view -> onName());
         mBinding.more.setOnClickListener(view -> onMore());
+        mBinding.keep.setOnClickListener(view -> onKeep());
         mBinding.actor.setOnClickListener(view -> onActor());
         mBinding.content.setOnClickListener(view -> onContent());
         mBinding.reverse.setOnClickListener(view -> onReverse());
         mBinding.director.setOnClickListener(view -> onDirector());
+        mBinding.quickBtn.setOnClickListener(view -> onName());
+        mBinding.playerBtn.setOnClickListener(view -> onPlayer());
+        mBinding.castBtn.setOnClickListener(view -> onCast());
+        mBinding.settingBtn.setOnClickListener(view -> onSetting());
         mBinding.name.setOnLongClickListener(view -> onChange());
         mBinding.content.setOnLongClickListener(view -> onCopy());
         mBinding.control.back.setOnClickListener(view -> onBack());
@@ -391,6 +396,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void setVideoView() {
         PlayerEngineDialog.setText(mBinding.control.action.player);
+        PlayerEngineDialog.setText(mBinding.playerBtn);
         mBinding.control.action.danmaku.setVisibility(DanmakuSetting.isLoad() ? View.VISIBLE : View.GONE);
         mBinding.video.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> mPiP.update(this, view));
     }
@@ -613,6 +619,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.name.setText(item.getName());
         App.removeCallbacks(mR4);
         setArtwork(item.getPic());
+        ImgUtil.load(item.getName(), item.getPic(), mBinding.poster);
         checkKeepImg();
         setText(item);
         updateKeep();
@@ -628,7 +635,10 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private void renderVodMetadata(String name, String pic) {
         if (name.isEmpty() && pic.isEmpty()) return;
         if (!name.isEmpty()) mBinding.name.setText(name);
-        if (!pic.isEmpty()) setArtwork();
+        if (!pic.isEmpty()) {
+            setArtwork();
+            ImgUtil.load(name, pic, mBinding.poster);
+        }
         updateKeep();
     }
 
@@ -878,7 +888,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void onActor() {
-        mBinding.actor.setMaxLines(mBinding.actor.getMaxLines() == 1 ? Integer.MAX_VALUE : 1);
+        mBinding.actor.setMaxLines(mBinding.actor.getMaxLines() == 2 ? Integer.MAX_VALUE : 2);
     }
 
     private void onDirector() {
@@ -1085,6 +1095,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void onPlayer() {
         PlayerEngineDialog.show(this, mBinding.control.action.player, player());
+        PlayerEngineDialog.setText(mBinding.playerBtn, player());
         hideControl();
     }
 
@@ -1272,7 +1283,10 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void checkKeepImg() {
-        mBinding.control.keep.setImageResource(Keep.find(getHistoryKey()) == null ? R.drawable.ic_control_keep_off : R.drawable.ic_control_keep_on);
+        boolean kept = Keep.find(getHistoryKey()) != null;
+        mBinding.control.keep.setImageResource(kept ? R.drawable.ic_control_keep_on : R.drawable.ic_control_keep_off);
+        mBinding.keep.setText(kept ? R.string.keep_done_btn : R.string.keep_add_btn);
+        mBinding.keep.setSelected(kept);
     }
 
     private void checkLockImg() {
