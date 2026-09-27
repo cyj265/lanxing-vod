@@ -61,8 +61,11 @@ jobs:
           APK=$(find app/build/outputs/apk -name "*.apk" | head -1)
           if [ -n "$APK" ] && [ -f "$APK" ]; then
             echo "BUILD OK"
-            echo "APK_PATH=$APK" >> $GITHUB_ENV
-            ls -la "$APK"
+            # asset 名带版本号保持唯一（中文名还会被 action-gh-release 剥离），避免同名 asset 在 CDN 缓存串流
+            VERSION=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)
+            cp "$APK" "/tmp/lanxing-${VERSION}-mobile-arm64_v8a.apk"
+            echo "APK_PATH=/tmp/lanxing-${VERSION}-mobile-arm64_v8a.apk" >> $GITHUB_ENV
+            ls -la "/tmp/lanxing-${VERSION}-mobile-arm64_v8a.apk"
           else
             echo "::error::构建失败(exit=$code)，APK未生成。最后200行日志："
             tail -200 /tmp/gradle-build.log

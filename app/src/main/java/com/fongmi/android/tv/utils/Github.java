@@ -9,7 +9,7 @@ import org.json.JSONObject;
 public class Github {
 
     public static final String RELEASES = "https://api.github.com/repos/cyj265/lanxing-vod/releases?per_page=100";
-    public static final String MIRROR = "https://gh-proxy.com/";
+    private static final String[] MIRRORS = {"https://gh-proxy.com/", "https://ghfast.top/", "https://ghproxy.net/"};
 
     /**
      * 返回与当前版本同系列（如 v5.6.x）的最新 release，包含预发布；
@@ -17,12 +17,7 @@ public class Github {
      * 这样 5.6.x 测试版只认本系列更新，不会与 5.4.x 正式版互相干扰。
      */
     public static JSONObject getLatestRelease() throws Exception {
-        String body;
-        try {
-            body = OkHttp.string(RELEASES);
-        } catch (Exception e) {
-            body = OkHttp.string(MIRROR + RELEASES);
-        }
+        String body = fetch(RELEASES);
         JSONArray releases = new JSONArray(body);
         String prefix = getPrefix();
         String current = "v" + BuildConfig.VERSION_NAME;
@@ -35,6 +30,24 @@ public class Github {
             }
         }
         return target;
+    }
+
+    /** 依次尝试直连与多个镜像，任一成功即返回 */
+    private static String fetch(String url) throws Exception {
+        Exception last = null;
+        try {
+            return OkHttp.string(url);
+        } catch (Exception e) {
+            last = e;
+        }
+        for (String mirror : MIRRORS) {
+            try {
+                return OkHttp.string(mirror + url);
+            } catch (Exception e) {
+                last = e;
+            }
+        }
+        throw last == null ? new Exception("all fetch failed") : last;
     }
 
     /** 当前版本系列前缀，如 5.6.4 -> "5.6." */
@@ -79,7 +92,8 @@ public class Github {
         return null;
     }
 
+    /** 依次尝试各镜像的下载加速地址 */
     public static String getMirrorUrl(String url) {
-        return MIRROR + url;
+        return MIRRORS[0] + url;
     }
 }
