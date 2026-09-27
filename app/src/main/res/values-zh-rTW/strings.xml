@@ -20,6 +20,8 @@
     <string name="detail_desc">簡介</string>
 
     <!-- Keep -->
+    <string name="keep_add_btn">加入收藏</string>
+    <string name="keep_done_btn">已收藏</string>
     <string name="keep">收藏</string>
     <string name="keep_add">已加入收藏</string>
     <string name="keep_del">已取消收藏</string>
@@ -286,6 +288,10 @@
     <string name="backup_fail">備份失敗</string>
 
     <!-- Player -->
+    <string name="video_quick">快搜</string>
+    <string name="video_player">播放器</string>
+    <string name="video_cast">投屏</string>
+    <string name="video_setting_btn">設定</string>
     <string name="player">播放核心</string>
     <string name="player_engine">播放引擎</string>
     <string name="player_debug">偵錯</string>
