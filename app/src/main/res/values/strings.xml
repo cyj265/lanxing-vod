@@ -1,0 +1,472 @@
+<resources xmlns:xliff="http://schemas.android.com/apk/res-auto">
+
+    <string name="app_name">揽星影视</string>
+
+    <!-- Live -->
+    <string name="live_pass">Password</string>
+    <string name="live_refresh">Refresh</string>
+    <string name="live_line">Line <xliff:g name="name">%s</xliff:g></string>
+
+    <!-- Detail -->
+    <string name="detail_title"><xliff:g name="name">%s</xliff:g>: <xliff:g name="name">%s</xliff:g></string>
+    <string name="detail_site">Site: <xliff:g name="name">%s</xliff:g></string>
+    <string name="detail_year">Year: <xliff:g name="name">%s</xliff:g></string>
+    <string name="detail_area">Area: <xliff:g name="name">%s</xliff:g></string>
+    <string name="detail_type">Type: <xliff:g name="name">%s</xliff:g></string>
+    <string name="detail_director">Director: <xliff:g name="name">%s</xliff:g></string>
+    <string name="detail_actor">Actor: <xliff:g name="name">%s</xliff:g></string>
+    <string name="detail_content">Desc: <xliff:g name="name">%s</xliff:g></string>
+    <string name="detail_desc">Description</string>
+
+    <!-- Keep -->
+    <string name="keep_add_btn">Add</string>
+    <string name="keep_done_btn">Added</string>
+    <string name="keep">Keep</string>
+    <string name="keep_add">Added to keep</string>
+    <string name="keep_del">Removed from keep</string>
+
+    <!-- Play -->
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="play_op">Opening</string>
+    <string name="play_ed">Ending</string>
+    <string name="play_exo">EXO</string>
+    <string name="play_mpv">MPV</string>
+    <string name="play_other">Other</string>
+    <string name="play_next">Next</string>
+    <string name="play_prev">Prev</string>
+    <string name="play_stop">Stop</string>
+    <string name="play_repeat">Repeat</string>
+    <string name="play_forward">→</string>
+    <string name="play_backward">←</string>
+    <string name="play_speed">Speed</string>
+    <string name="play_speed_hint">Speed <xliff:g name="speed">%1$s</xliff:g></string>
+    <string name="play_reset">Reset</string>
+    <string name="play_replay">Replay</string>
+    <string name="play_decode">Decode</string>
+    <string name="play_timer">Timer</string>
+    <string name="play_edition">Edition</string>
+    <string name="play_chapter">Chapter</string>
+    <string name="play_scale">Scale</string>
+    <string name="play_config">Config</string>
+    <string name="play_change">Change</string>
+    <string name="play_invert">Invert</string>
+    <string name="play_across">Across</string>
+    <string name="play_reverse">Reverse</string>
+    <string name="play_track_text">Subtitle</string>
+    <string name="play_track_audio">Audio</string>
+    <string name="play_track_video">Video</string>
+    <string name="play_forward_hint">Switched to forward order</string>
+    <string name="play_backward_hint">Switched to reverse order</string>
+    <string name="play_ready">Ready: <xliff:g name="name">%s</xliff:g></string>
+    <string name="play_switch_flag">Switching line to %s</string>
+    <string name="play_switch_site">Switching site to %s</string>
+    <string name="play_switch_parse">Switching parse to %s</string>
+
+    <!-- Playback Setting -->
+    <string name="setting_tab_offset">Offset</string>
+    <string name="setting_effect_basic">Basic</string>
+    <string name="setting_effect_scene">Scene</string>
+    <string name="setting_effect_custom">Custom</string>
+    <string name="setting_preset_original">Original</string>
+
+    <!-- Speed Setting -->
+    <string name="speed_setting">Speed Setting</string>
+    <string name="speed_setting_reset">Reset</string>
+    <string name="speed_setting_current">Playback Speed</string>
+    <string name="speed_setting_long_press">Long Press Speed</string>
+    <string name="speed_setting_quick">Quick Select</string>
+    <string name="speed_setting_skip_silence">Skip Silence</string>
+
+    <!-- Audio Setting -->
+    <string name="audio_setting">Audio Setting</string>
+    <string name="audio_effect_compare">Compare</string>
+    <string name="audio_effect_reset">Reset</string>
+    <string name="audio_effect_tab_preset">Preset</string>
+    <string name="audio_effect_tab_equalizer">Adjust</string>
+    <string name="audio_effect_tab_advanced">Advanced</string>
+    <string name="audio_offset">Audio Offset</string>
+    <string name="audio_effect_category_tone">Tone</string>
+    <string name="audio_effect_category_genre">Genre</string>
+    <string name="audio_effect_natural">Natural</string>
+    <string name="audio_effect_vocal">Vocal</string>
+    <string name="audio_effect_cinema">Cinema</string>
+    <string name="audio_effect_bass">Bass</string>
+    <string name="audio_effect_treble">Treble</string>
+    <string name="audio_effect_pop">Pop</string>
+    <string name="audio_effect_rock">Rock</string>
+    <string name="audio_effect_dance">Dance</string>
+    <string name="audio_effect_electronic">Electronic</string>
+    <string name="audio_effect_hiphop">Hiphop</string>
+    <string name="audio_effect_jazz">Jazz</string>
+    <string name="audio_effect_classical">Classical</string>
+    <string name="audio_effect_custom">Custom</string>
+    <string name="audio_effect_stability">Volume Stability</string>
+    <string name="audio_effect_stability_summary">Reduce the volume difference in the movie</string>
+    <string name="audio_effect_boost">Volume Boost</string>
+    <string name="audio_effect_dialogue">Dialogue Enhance</string>
+    <string name="audio_effect_balance">Channel Balance</string>
+    <string name="audio_effect_headroom">Headroom</string>
+    <string name="audio_effect_loudness">Loudness Balance</string>
+    <string name="audio_effect_loudness_summary">Balance the average volume of different movies</string>
+    <string name="audio_effect_center_gain">Center Gain</string>
+    <string name="audio_channel_mode">Channel Mode</string>
+    <string name="audio_channel_auto">Auto</string>
+    <string name="audio_channel_stereo">Stereo</string>
+    <string name="audio_channel_mono">Mono</string>
+    <string name="audio_channel_reverse">Reverse</string>
+    <string name="audio_effect_balance_center">Center</string>
+    <string name="audio_effect_balance_left">Left %1$d%%</string>
+    <string name="audio_effect_balance_right">Right %1$d%%</string>
+
+    <!-- Video Setting -->
+    <string name="video_setting">Video Setting</string>
+    <string name="video_effect_compare">Compare</string>
+    <string name="video_effect_reset">Reset</string>
+    <string name="video_effect_tab_preset">Preset</string>
+    <string name="video_effect_tab_adjust">Adjust</string>
+    <string name="video_effect_category_boost">Enhance</string>
+    <string name="video_effect_category_tone">Style</string>
+    <string name="video_effect_natural">Natural</string>
+    <string name="video_effect_vivid">Vivid</string>
+    <string name="video_effect_clear">Clear</string>
+    <string name="video_effect_bright">Bright</string>
+    <string name="video_effect_cinema">Cinema</string>
+    <string name="video_effect_soft">Soft</string>
+    <string name="video_effect_warm">Warm</string>
+    <string name="video_effect_cool">Cool</string>
+    <string name="video_effect_comfort">Comfort</string>
+    <string name="video_effect_anime">Anime</string>
+    <string name="video_effect_sport">Sport</string>
+    <string name="video_effect_game">Game</string>
+    <string name="video_effect_custom">Custom</string>
+    <string name="video_effect_saturation">Saturation</string>
+    <string name="video_effect_contrast">Contrast</string>
+    <string name="video_effect_brightness">Brightness</string>
+    <string name="video_effect_gamma">Gamma</string>
+    <string name="video_effect_hue">Hue</string>
+    <string name="video_effect_temperature">Temperature</string>
+    <string name="video_effect_sharpness">Sharpness</string>
+    <string name="video_effect_shadow">Shadow Lift</string>
+
+    <!-- Subtitle Setting -->
+    <string name="subtitle_setting">Subtitle Setting</string>
+    <string name="subtitle_search_api_title">Assrt</string>
+    <string name="subtitle_search_token_hint">Token</string>
+    <string name="subtitle_reset">Reset</string>
+    <string name="subtitle_tab_appearance">Appearance</string>
+    <string name="subtitle_tab_adjust">Adjust</string>
+    <string name="subtitle_tab_advanced">Advanced</string>
+    <string name="subtitle_offset">Subtitle Offset</string>
+    <string name="subtitle_size">Size</string>
+    <string name="subtitle_position">Position</string>
+    <string name="subtitle_style">Style</string>
+    <string name="subtitle_style_source">Style Source</string>
+    <string name="playback_font">Font</string>
+    <string name="playback_font_default">System Default</string>
+    <string name="playback_font_import">Import Font</string>
+    <string name="playback_font_imported">Imported Font: %1$s</string>
+    <string name="playback_font_import_failed">Cannot import font</string>
+    <string name="playback_font_load_failed">Cannot load font</string>
+    <string name="subtitle_style_original">Original</string>
+    <string name="subtitle_style_system">System</string>
+    <string name="subtitle_style_custom">Custom</string>
+    <string name="subtitle_system_setting">System Subtitle Setting</string>
+    <string name="subtitle_text_color">Text Color</string>
+    <string name="subtitle_text_opacity">Text Opacity</string>
+    <string name="subtitle_edge_style">Edge Style</string>
+    <string name="subtitle_edge_none">None</string>
+    <string name="subtitle_edge_outline">Outline</string>
+    <string name="subtitle_edge_shadow">Shadow</string>
+    <string name="subtitle_edge_color">Edge Color</string>
+    <string name="subtitle_edge_opacity">Edge Opacity</string>
+    <string name="subtitle_edge_width">Edge Width</string>
+    <string name="subtitle_shadow_strength">Shadow Strength</string>
+    <string name="subtitle_background">Background</string>
+    <string name="subtitle_background_opacity">Background Opacity</string>
+    <string name="subtitle_secondary_track">Secondary Subtitle</string>
+    <string name="subtitle_secondary_default">Default</string>
+    <string name="subtitle_secondary_off">Off</string>
+    <string name="subtitle_secondary_auto">Auto</string>
+    <string name="subtitle_secondary_select">Select</string>
+    <string name="subtitle_secondary_track_select">Secondary Track</string>
+    <string name="subtitle_secondary_position">Secondary Position</string>
+    <string name="subtitle_color_white">White</string>
+    <string name="subtitle_color_yellow">Yellow</string>
+    <string name="subtitle_color_cyan">Cyan</string>
+    <string name="subtitle_color_green">Green</string>
+    <string name="subtitle_color_orange">Orange</string>
+    <string name="subtitle_color_pink">Pink</string>
+    <string name="subtitle_color_red">Red</string>
+    <string name="subtitle_color_blue">Blue</string>
+    <string name="subtitle_color_black">Black</string>
+    <string name="subtitle_color_gray">Gray</string>
+    <string name="subtitle_color_transparent">Transparent</string>
+    <string name="subtitle_background_dim">Dim</string>
+
+    <!-- Danmaku Setting -->
+    <string name="danmaku">Danmaku</string>
+    <string name="danmaku_select">Select Danmaku</string>
+    <string name="danmaku_setting">Danmaku Setting</string>
+    <string name="danmaku_text_size">Font Scale</string>
+    <string name="danmaku_transparency">Transparency</string>
+    <string name="danmaku_text_bold">Bold</string>
+    <string name="danmaku_style_mode">Font Effect</string>
+    <string name="danmaku_style_none">None</string>
+    <string name="danmaku_style_shadow">Shadow</string>
+    <string name="danmaku_style_stroke">Stroke</string>
+    <string name="danmaku_style_projection">Projection</string>
+    <string name="danmaku_shadow_transparency">Shadow Transparency</string>
+    <string name="danmaku_stroke_width">Stroke Width</string>
+    <string name="danmaku_projection_offset_x">Projection Offset X</string>
+    <string name="danmaku_projection_offset_y">Projection Offset Y</string>
+    <string name="danmaku_projection_transparency">Projection Transparency</string>
+    <string name="danmaku_color_mode">Color Mode</string>
+    <string name="danmaku_color_default">Default</string>
+    <string name="danmaku_color_colorful">Colorful</string>
+    <string name="danmaku_color_gradient">Gradient</string>
+    <string name="danmaku_color_override_hint">Original danmaku color will be ignored</string>
+    <string name="danmaku_auto">Auto</string>
+    <string name="danmaku_duration">Scroll Duration</string>
+    <string name="danmaku_fixed_duration">Fixed Duration</string>
+    <string name="danmaku_time_offset">Time Offset</string>
+    <string name="danmaku_max_on_screen">Max On Screen</string>
+    <string name="danmaku_scroll_area_ratio">Scroll Area</string>
+    <string name="danmaku_max_scroll_lines">Max Scroll Lines</string>
+    <string name="danmaku_max_top_lines">Max Top Lines</string>
+    <string name="danmaku_max_bottom_lines">Max Bottom Lines</string>
+    <string name="danmaku_line_spacing">Line Spacing</string>
+    <string name="danmaku_scroll_gap_ratio">Gap Ratio</string>
+    <string name="danmaku_show_scroll">Scroll</string>
+    <string name="danmaku_show_top">Top</string>
+    <string name="danmaku_show_bottom">Bottom</string>
+    <string name="danmaku_show_reverse">Reverse</string>
+    <string name="danmaku_show_positioned">Positioned</string>
+    <string name="danmaku_show_subtitle">Subtitle</string>
+    <string name="danmaku_show_special">Special</string>
+    <string name="danmaku_section_appearance">Appearance</string>
+    <string name="danmaku_section_display">Display</string>
+    <string name="danmaku_section_timing">Timing</string>
+    <string name="danmaku_section_density">Density</string>
+    <string name="danmaku_reset">Reset</string>
+
+    <!-- Parse -->
+    <string name="parse">Parse</string>
+    <string name="parse_god">God Parse</string>
+    <string name="parse_from">Parse from: <xliff:g name="name">%s</xliff:g></string>
+
+    <!-- Push -->
+    <string name="push">Push</string>
+    <string name="push_image">iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABhGlDQ1BJQ0MgcHJvZmlsZQAAKJF9kT1Iw0AcxV9TpUUqDlYQcchQnSyIijhKFYtgobQVWnUwufQLmjQkKS6OgmvBwY/FqoOLs64OroIg+AHi5uak6CIl/i8ptIjx4Lgf7+7x7h4A1FWZZjBJIJqZZcXjETGdWRcDrwiijzqGJGaM1ORkYh7cx/c9PFS97c9cL0QqoSLS8J6c5bJQ6Ff2D+3k6jA8G/C9LxecmfY3pA4lkjcUvtb6FDWSNuH5SvmFBz9XeCz0YbWt2pLJa0i+RmEZtD9I7vI3rYg/m1r/9v+VYy8TN3xAXn7sQ9cZoNSX30MEQ4QAAAADzGVV7zs/pTVZGT8OA/J1Dm5gKehoEYAC4AAAABJRU5ErkJggg==</string>
+
+    <!-- Setting -->
+    <string name="setting_vod">VOD</string>
+    <string name="setting_live">Live</string>
+    <string name="setting_wall">Wallpaper</string>
+    <string name="setting_player">Player Setting</string>
+    <string name="setting_danmaku">Danmaku Setting</string>
+    <string name="setting_incognito">Incognito</string>
+    <string name="setting_theme_color">Theme Color</string>
+    <string name="setting_auto">Auto</string>
+    <string name="setting_custom">Custom</string>
+    <string name="setting_size">Image Size</string>
+    <string name="setting_doh">DoH</string>
+    <string name="setting_proxy">Proxy</string>
+    <string name="setting_cache">Cache</string>
+    <string name="setting_backup">Backup</string>
+    <string name="setting_restore">Restore</string>
+    <string name="setting_version">Version</string>
+    <string name="setting_choose">Choose</string>
+    <string name="setting_off">Off</string>
+    <string name="setting_on">On</string>
+
+    <!-- Backup & Restore -->
+    <string name="restore_select">Select Backup</string>
+    <string name="restore_success">Restore Success</string>
+    <string name="restore_fail">Restore Failed</string>
+    <string name="backup_success">Backup Success</string>
+    <string name="backup_fail">Backup Failed</string>
+
+    <!-- Player -->
+    <string name="video_quick">Quick</string>
+    <string name="video_player">Player</string>
+    <string name="video_cast">Cast</string>
+    <string name="video_setting_btn">Setting</string>
+    <string name="player">Player Core</string>
+    <string name="player_engine">Player Engine</string>
+    <string name="player_debug">Debug</string>
+    <string name="player_render">Render</string>
+    <string name="player_scale">Scale</string>
+    <string name="player_libass">Subtitle Effect</string>
+    <string name="player_background">Background Play</string>
+    <string name="player_audio_pass_through">Audio Passthrough</string>
+    <string name="player_audio_decode">Audio Soft Decode</string>
+    <string name="player_video_decode">Video Soft Decode</string>
+    <string name="player_dolby_vision_output">Dolby Vision</string>
+    <string name="player_aac_track">AAC Track</string>
+    <string name="player_adblock">Ad Block</string>
+    <string name="player_tunnel">Tunnel</string>
+    <string name="player_buffer">Buffer</string>
+    <string name="player_decode_setting">Decode Setting</string>
+    <string name="player_preload_setting">Preload Setting</string>
+    <string name="player_preload">Preload</string>
+    <string name="player_preload_next">Preload Next</string>
+    <string name="player_preload_threads">Preload Threads</string>
+    <string name="player_preload_threads_value">%1$d</string>
+    <string name="player_preload_size">Preload Size</string>
+    <string name="player_preload_time">Preload Time</string>
+    <string name="player_preload_time_value">%1$d s</string>
+    <string name="player_mpv_conf">mpv.conf</string>
+    <string name="player_mpv_gpu_next">gpu-next</string>
+    <string name="player_mpv_vulkan">vulkan</string>
+    <string name="player_mpv_conf_priority_hint">UI settings take priority, effective on next play.</string>
+    <string name="player_mpv_conf_conflict_hint">UI settings will override: %1$s</string>
+    <string name="player_mpv_conf_import_success">mpv.conf imported</string>
+    <string name="player_mpv_conf_import_failed">Cannot import mpv.conf</string>
+    <string name="player_mpv_conf_save_failed">Cannot save mpv.conf</string>
+    <string name="player_ua">User-Agent</string>
+
+    <!-- Danmaku -->
+    <string name="danmaku_load">Danmaku Load</string>
+    <string name="danmaku_api">Search API</string>
+    <string name="danmaku_auto_load">Auto Search</string>
+    <string name="danmaku_spider_first">Spider First</string>
+
+    <!-- Search -->
+    <string name="search_keyword">Keyword…</string>
+    <string name="search_record">History</string>
+    <string name="search_suggest">Suggest</string>
+    <string name="search_hot">Hot</string>
+
+    <!-- Dialog -->
+    <string name="dialog_edit">Edit</string>
+    <string name="dialog_import">Import</string>
+    <string name="dialog_positive">OK</string>
+    <string name="dialog_negative">Cancel</string>
+    <string name="dialog_select_edition">Select Edition</string>
+    <string name="dialog_select_chapter">Select Chapter</string>
+    <string name="dialog_config_hint">Enter config…</string>
+    <string name="dialog_config_name">Enter name…</string>
+    <string name="dialog_config_url">Enter URL…</string>
+
+    <!-- Error -->
+    <string name="error_config_get">Config fetch failed</string>
+    <string name="error_file_open">Cannot open file</string>
+    <string name="error_play_next">Already the last episode!</string>
+    <string name="error_play_prev">Already the first episode!</string>
+    <string name="error_play_parse">Play URL parse failed</string>
+    <string name="error_play_drm">Device does not support required DRM scheme</string>
+    <string name="error_play_url">Play URL load failed</string>
+    <string name="error_play_flag">No line data</string>
+    <string name="error_play_timeout">Connection timeout</string>
+    <string name="error_audio_effect_unsupported">Audio setting not supported</string>
+    <string name="error_audio_effect_tunnel">Audio setting not supported in tunnel mode</string>
+    <string name="error_audio_effect_passthrough">Audio setting not supported for passthrough track</string>
+    <string name="error_audio_effect_apply">Audio setting apply failed</string>
+    <string name="error_video_effect_unsupported">Video setting not supported</string>
+    <string name="error_video_effect_decode">Video setting requires hardware decode</string>
+    <string name="error_video_effect_drm">Video setting not supported for DRM</string>
+    <string name="error_video_effect_tunnel">Video setting not supported in tunnel mode</string>
+    <string name="error_video_effect_dolby_vision_passthrough">Video setting not supported for Dolby Vision passthrough</string>
+    <string name="error_play_tvbus">Error code: <xliff:g name="name">%s</xliff:g></string>
+    <string name="error_detail">No play data</string>
+    <string name="error_empty">Nothing here 👀</string>
+
+    <!-- Update -->
+    <string name="update_version">New version <xliff:g name="name">%s</xliff:g></string>
+    <string name="update_check">Checking update…</string>
+    <string name="update_confirm">Update</string>
+    <string name="update_invalid">APK verification failed, cleaned, please retry</string>
+
+    <!-- Crash -->
+    <string name="crash_info">Unexpected error\nSorry for the inconvenience</string>
+    <string name="crash_restart">Restart</string>
+    <string name="crash_details">Error Info</string>
+    <string name="crash_details_title">Error Info</string>
+    <string name="crash_details_close">Close</string>
+
+    <!-- Hint -->
+    <string name="copied">Copied</string>
+
+    <!-- UNIT -->
+    <string name="all">All</string>
+    <string name="yes">Yes</string>
+    <string name="none">None</string>
+    <string name="times">×</string>
+    <string name="lines">Lines</string>
+
+    <string-array name="select_decode">
+        <item>Soft</item>
+        <item>Hard</item>
+    </string-array>
+
+    <string-array name="select_dolby_vision_output">
+        <item>Auto</item>
+        <item>On</item>
+        <item>Off</item>
+    </string-array>
+
+    <string-array name="select_size">
+        <item>Small</item>
+        <item>Medium</item>
+        <item>Large</item>
+        <item>Huge</item>
+    </string-array>
+
+    <string-array name="select_scale">
+        <item>Original</item>
+        <item>16:9</item>
+        <item>4:3</item>
+        <item>Fill</item>
+        <item>Crop</item>
+    </string-array>
+
+    <string-array name="audio_effect_stability_levels">
+        <item>Off</item>
+        <item>Slight</item>
+        <item>Soft</item>
+        <item>Standard</item>
+        <item>Obvious</item>
+        <item>Strong</item>
+    </string-array>
+
+    <string-array name="select_track">
+        <item>Select Audio</item>
+        <item>Select Video</item>
+        <item>Select Subtitle</item>
+    </string-array>
+
+    <string name="vod_home">Home</string>
+
+    <string name="control_play_setting">Play Setting</string>
+    <string name="group_play">Play</string>
+    <string name="group_playback">Playback</string>
+    <string name="group_content">Content</string>
+    <string name="group_advanced">Advanced</string>
+    <string name="setting_decode">Decode</string>
+    <string name="setting_scale">Scale</string>
+    <string name="setting_speed">Speed</string>
+    <string name="setting_audio_mode">Audio Mode</string>
+    <string name="setting_opening">Skip Opening</string>
+    <string name="setting_ending">Skip Ending</string>
+    <string name="setting_repeat">Repeat</string>
+    <string name="setting_reset">Reset</string>
+    <string name="setting_audio_effect">Audio Effect</string>
+    <string name="setting_video_effect">Video Effect</string>
+    <string name="audio_mode_off">Off</string>
+    <string name="audio_mode_original">Original</string>
+    <string name="audio_mode_natural">Natural</string>
+    <string name="audio_mode_vocal">Vocal</string>
+    <string name="audio_mode_cinema">Cinema</string>
+    <string name="audio_mode_bass">Bass</string>
+    <string name="audio_mode_treble">Treble</string>
+    <string name="audio_mode_pop">Pop</string>
+    <string name="audio_mode_rock">Rock</string>
+    <string name="audio_mode_dance">Dance</string>
+    <string name="audio_mode_electronic">Electronic</string>
+    <string name="audio_mode_jazz">Jazz</string>
+    <string name="audio_mode_classical">Classical</string>
+    <string name="audio_mode_custom">Custom</string>
+    <string name="control_on">On</string>
+    <string name="control_off">Off</string>
+</resources>
