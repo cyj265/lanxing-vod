@@ -1424,12 +1424,15 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void updateTitle(VideoSize size) {
-        String title = mPlayTitle;
-        if (size != null && size.width > 0 && size.height > 0) {
-            title = title + "  [" + size.width + "x" + size.height + "]";
-        }
-        mBinding.control.title.setText(title);
+        mBinding.control.title.setText(mPlayTitle);
         mBinding.control.title.setSelected(true);
+        boolean hasSize = size != null && size.width > 0 && size.height > 0;
+        if (hasSize) {
+            mBinding.control.resolution.setText("[" + size.width + "x" + size.height + "]");
+            mBinding.control.resolution.setVisibility(View.VISIBLE);
+        } else {
+            mBinding.control.resolution.setVisibility(View.GONE);
+        }
     }
 
     @Override
