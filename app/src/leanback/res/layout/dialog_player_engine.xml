@@ -55,18 +55,6 @@
             android:textSize="14sp" />
 
         <com.google.android.material.textview.MaterialTextView
-            android:id="@+id/mpv"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="8dp"
-            android:background="@drawable/selector_chip_round"
-            android:focusable="true"
-            android:focusableInTouchMode="true"
-            android:text="@string/play_mpv"
-            android:textColor="@color/text"
-            android:textSize="14sp" />
-
-        <com.google.android.material.textview.MaterialTextView
             android:id="@+id/other"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
