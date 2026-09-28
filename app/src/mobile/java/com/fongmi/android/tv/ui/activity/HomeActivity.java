@@ -153,3 +153,125 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
             public void success() {
                 checkAction(getIntent());
             }
+
+            @Override
+            public void error(String msg) {
+                checkAction(getIntent());
+                StateEvent.empty();
+                Notify.show(msg);
+            }
+        };
+    }
+
+    private void loadLive(String url) {
+        LiveConfig.load(Config.find(url, 1), new Callback() {
+            @Override
+            public void success() {
+                openLive();
+            }
+        });
+    }
+
+    private void setNavigation() {
+        mBinding.navigation.getMenu().findItem(R.id.vod).setVisible(true);
+        mBinding.navigation.getMenu().findItem(R.id.history).setVisible(true);
+        mBinding.navigation.getMenu().findItem(R.id.setting).setVisible(true);
+        mBinding.navigation.getMenu().findItem(R.id.live).setVisible(LiveConfig.hasUrl());
+    }
+
+    private boolean openLive() {
+        LiveActivity.start(this);
+        return false;
+    }
+
+    private boolean addShortcut(View view) {
+        ShortcutInfoCompat info = new ShortcutInfoCompat.Builder(this, getString(R.string.nav_live)).setIcon(IconCompat.createWithResource(this, R.mipmap.ic_launcher)).setIntent(new Intent(Intent.ACTION_VIEW, null, this, LiveActivity.class)).setShortLabel(getString(R.string.nav_live)).build();
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(this, 0, new Intent(this, ShortcutReceiver.class).setAction(ShortcutReceiver.ACTION), PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+        ShortcutManagerCompat.requestPinShortcut(this, info, pendingIntent.getIntentSender());
+        return true;
+    }
+
+    public void change(int position) {
+        switch (position) {
+            case 0 -> mBinding.navigation.setSelectedItemId(R.id.vod);
+            case 1 -> mBinding.navigation.setSelectedItemId(R.id.history);
+            case 2 -> mBinding.navigation.setSelectedItemId(R.id.setting);
+            default -> mManager.change(position);
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onConfigEvent(ConfigEvent event) {
+        switch (event.type()) {
+            case VOD:
+                RefreshEvent.home();
+                break;
+            case COMMON:
+                setNavigation();
+                break;
+            case BOOT:
+                LiveActivity.start(this);
+                break;
+        }
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onRefreshEvent(RefreshEvent event) {
+        if (event.getType() == RefreshEvent.Type.THEME) recreate();
+    }
+
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onServerEvent(ServerEvent event) {
+        if (event.type() == ServerEvent.Type.PUSH) VideoActivity.push(this, event.text());
+        if (event.type() == ServerEvent.Type.SEARCH) SearchActivity.start(this, event.text());
+    }
+
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        if (item.getItemId() == R.id.setting) return mManager.change(2);
+        if (item.getItemId() == R.id.vod) return mManager.change(0);
+        if (item.getItemId() == R.id.history) return mManager.change(1);
+        if (item.getItemId() == R.id.live) return openLive();
+        return false;
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        App.post(() -> checkOrientation(newConfig), 100);
+    }
+
+    private void checkOrientation(Configuration newConfig) {
+        if (orientation != newConfig.orientation) {
+            orientation = newConfig.orientation;
+            RefreshEvent.home();
+        }
+    }
+
+    @Override
+    protected void onBackInvoked() {
+        if (!mBinding.navigation.getMenu().findItem(R.id.vod).isVisible()) {
+            setNavigation();
+        } else if (mManager.isVisible(6) || mManager.isVisible(5)) {
+            change(3);
+        } else if (mManager.isVisible(4) || mManager.isVisible(3)) {
+            change(2);
+        } else if (mManager.isVisible(2) || mManager.isVisible(1)) {
+            change(0);
+        } else if (mManager.canBack(0)) {
+            if (PlaybackService.isRunning()) Util.moveToBackground(this);
+            else super.onBackInvoked();
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        LiveConfig.get().clear();
+        VodConfig.get().clear();
+        AppDatabase.backup();
+        OkHttp.get().clear();
+        Source.get().exit();
+        Server.get().stop();
+        super.onDestroy();
+    }
+}
