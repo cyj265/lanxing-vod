@@ -69,7 +69,6 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
     private void refresh() {
         stop();
         load();
-        theme();
     }
 
     private void stop() {
@@ -88,21 +87,12 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
         }
     }
 
+    /**
+     * 统一背景：不再加载主题图片/GIF/视频壁纸，
+     * 全部页面垫底渲染同一张渐变背景，保证全页面背景统一。
+     */
     private void load() {
-        int wall = Setting.getWall();
-        int type = Setting.getWallType();
-        if (isBuiltIn(wall, type)) loadRes(WALL_PAPERS[wall]);
-        else if (type == TYPE_VIDEO) loadVideo(FileUtil.getWall(wall));
-        else if (type == TYPE_GIF) loadGif(FileUtil.getWall(wall));
-        else loadImage();
-    }
-
-    private void theme() {
-        int newColor = getWallColor();
-        int oldColor = Setting.getWallColor();
-        if (newColor == oldColor) return;
-        Setting.putWallColor(newColor);
-        if (Setting.getThemeColor() == 0) RefreshEvent.theme();
+        binding.image.setImageResource(R.drawable.bg_global);
     }
 
     private void loadRes(int resId) {
@@ -158,72 +148,25 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
         addView(video, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
     }
 
-    private boolean hasVideo() {
-        return player != null && video != null && video.getVisibility() == VISIBLE && player.getMediaItemCount() > 0;
-    }
-
-    private int getWallColor() {
-        int wall = Setting.getWall();
-        int type = Setting.getWallType();
-        if (isBuiltIn(wall, type)) return WALL_COLORS[wall];
-        File file = FileUtil.getWallCache();
-        return file.exists() ? paletteColor(file) : WALL_COLORS[1];
-    }
-
-    private int paletteColor(File file) {
-        Bitmap bitmap = decodeBitmap(file);
-        if (bitmap == null) return WALL_COLORS[1];
-        Palette palette = Palette.from(bitmap).maximumColorCount(8).generate();
-        bitmap.recycle();
-        return swatchColor(palette);
-    }
-
-    private Bitmap decodeBitmap(File file) {
-        BitmapFactory.Options opts = new BitmapFactory.Options();
-        opts.inSampleSize = 8;
-        return BitmapFactory.decodeFile(file.getAbsolutePath(), opts);
-    }
-
-    private int swatchColor(Palette palette) {
-        Palette.Swatch swatch = palette.getVibrantSwatch();
-        if (swatch == null) swatch = palette.getDominantSwatch();
-        return swatch != null ? swatch.getRgb() : WALL_COLORS[1];
-    }
-
-    private boolean isBuiltIn(int wall, int type) {
-        return type == TYPE_RES && wall > 0 && wall < WALL_PAPERS.length;
-    }
-
     @Override
-    public void onCreate(@NonNull LifecycleOwner owner) {
-        EventBus.getDefault().register(this);
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        stop();
+        if (player != null) {
+            player.release();
+            player = null;
+        }
     }
 
     @Override
     public void onResume(@NonNull LifecycleOwner owner) {
-        if (drawable != null) drawable.start();
-        if (!hasVideo()) return;
-        video.setPlayer(player);
-        player.play();
+        refresh();
     }
 
     @Override
     public void onPause(@NonNull LifecycleOwner owner) {
-        if (drawable != null) drawable.pause();
-        if (!hasVideo()) return;
-        video.setPlayer(null);
-        player.pause();
-    }
-
-    @Override
-    public void onDestroy(@NonNull LifecycleOwner owner) {
-        EventBus.getDefault().unregister(this);
-        if (drawable != null) drawable.recycle();
-        if (video != null) removeView(video);
-        if (player != null) player.release();
-        drawable = null;
-        binding = null;
-        player = null;
-        video = null;
+        if (player != null && player.isPlaying()) {
+            player.pause();
+        }
     }
 }
