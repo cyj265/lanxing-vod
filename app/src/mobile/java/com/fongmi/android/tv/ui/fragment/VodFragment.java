@@ -96,6 +96,8 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         mBinding.link.setVisibility(View.VISIBLE);
         mBinding.filter.setVisibility(View.GONE);
         mBinding.top.setVisibility(View.INVISIBLE);
+        // 悬浮按钮层置顶：确保绘制在内容列表/海报之上，不被遮挡
+        mBinding.fabLayer.bringToFront();
     }
 
     @Override

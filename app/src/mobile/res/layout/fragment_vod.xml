@@ -67,14 +67,18 @@
         layout="@layout/view_progress"
         android:visibility="gone" />
 
-    <!-- 悬浮按钮层：直接叠在内容之上，layout_gravity 定位不受底栏遮挡，也不随滚动隐藏 -->
+    <!-- 悬浮按钮层：直接叠在内容之上，layout_gravity 定位不受底栏遮挡，也不随滚动隐藏
+         必须显式提升 z 序（elevation + translationZ），否则会被内容列表/海报绘制层盖住 -->
     <FrameLayout
+        android:id="@+id/fabLayer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clickable="false"
         android:focusable="false"
         android:clipChildren="false"
-        android:clipToPadding="false">
+        android:clipToPadding="false"
+        android:elevation="40dp"
+        android:translationZ="40dp">
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton
             android:id="@+id/filter"
