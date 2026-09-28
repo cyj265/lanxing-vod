@@ -31,7 +31,7 @@ import com.fongmi.android.tv.R;
 public class GlassDrawable extends Drawable {
 
     private static final int SCALE = 4;
-    private static final float BLUR_RADIUS_DP = 30f;
+    private static final float BLUR_RADIUS_DP = 42f;
 
     private final View mContent;
     private final Paint mPaint;
@@ -142,7 +142,7 @@ public class GlassDrawable extends Drawable {
     /** 玻璃质感层：半透明底色 + 顶部高光线 + 圆角描边。 */
     private void drawGlassLayer(Canvas canvas, Rect b) {
         Paint glass = new Paint(Paint.ANTI_ALIAS_FLAG);
-        glass.setColor(0x40121212);
+        glass.setColor(0x80121212);
         canvas.drawRoundRect(new RectF(b.left, b.top, b.right, b.bottom), mRadiusPx, mRadiusPx, glass);
 
         Paint line = new Paint(Paint.ANTI_ALIAS_FLAG);
