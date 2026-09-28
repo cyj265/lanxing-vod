@@ -37,7 +37,6 @@ public class GlassDrawable extends Drawable {
     private final Paint mPaint;
     private final Choreographer mChoreographer;
     private final Choreographer.FrameCallback mFrame;
-    private final Drawable mBase;
     private final float mRadiusPx;
     private final boolean mV31;
 
@@ -50,7 +49,6 @@ public class GlassDrawable extends Drawable {
     public GlassDrawable(View content) {
         mContent = content;
         mPaint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
-        mBase = content.getContext().getDrawable(R.drawable.bg_global);
         mRadiusPx = dp(BLUR_RADIUS_DP);
         mV31 = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S;
         if (mV31) initV31();
@@ -116,10 +114,6 @@ public class GlassDrawable extends Drawable {
         int h = b.height();
         RecordingCanvas rc = mNode.beginRecording(w, h);
         try {
-            if (mBase != null) {
-                mBase.setBounds(0, 0, w, h);
-                mBase.draw(rc);
-            }
             rc.translate(-b.left, -b.top);
             mContent.draw(rc);
         } finally {
@@ -137,10 +131,6 @@ public class GlassDrawable extends Drawable {
 
         mCacheCanvas.save();
         mCacheCanvas.scale(1f / SCALE, 1f / SCALE);
-        if (mBase != null) {
-            mBase.setBounds(0, 0, w, h);
-            mBase.draw(mCacheCanvas);
-        }
         mContent.draw(mCacheCanvas);
         mCacheCanvas.restore();
 
