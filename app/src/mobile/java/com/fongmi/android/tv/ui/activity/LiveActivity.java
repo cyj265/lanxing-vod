@@ -3,6 +3,7 @@ package com.fongmi.android.tv.ui.activity;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -156,6 +157,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if (!ResUtil.isLand(this)) setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         Util.hideSystemUI(this);
     }
 
@@ -1171,6 +1173,12 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
         if (hasFocus) Util.hideSystemUI(this);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        applyPanelLayout();
     }
 
     @Override
