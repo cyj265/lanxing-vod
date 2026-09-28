@@ -91,6 +91,11 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         showProgress();
         setTitle();
         setLogo();
+        // 强制初始化悬浮按钮状态，不依赖任何异步数据加载时序：
+        // 首页默认显示"播放地址"按钮，筛选/回顶按钮隐藏
+        mBinding.link.setVisibility(View.VISIBLE);
+        mBinding.filter.setVisibility(View.GONE);
+        mBinding.top.setVisibility(View.INVISIBLE);
     }
 
     @Override
