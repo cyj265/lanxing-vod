@@ -62,7 +62,8 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
     }
 
     private String getKeyword() {
-        return getArguments().getString("keyword");
+        String value = getArguments() == null ? null : getArguments().getString("keyword");
+        return value == null ? "" : value;
     }
 
     private boolean empty() {
@@ -150,7 +151,7 @@ public class SearchFragment extends BaseFragment implements MenuProvider, WordAd
     }
 
     private void getWord(String text) {
-        if (text.isEmpty()) getHot();
+        if (TextUtils.isEmpty(text)) getHot();
         else getSuggest(text);
     }
 

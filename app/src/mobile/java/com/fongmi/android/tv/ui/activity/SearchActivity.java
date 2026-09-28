@@ -24,7 +24,8 @@ public class SearchActivity extends BaseActivity {
     }
 
     private String getKeyword() {
-        return getIntent().getStringExtra("keyword");
+        String keyword = getIntent().getStringExtra("keyword");
+        return keyword == null ? "" : keyword;
     }
 
     @Override

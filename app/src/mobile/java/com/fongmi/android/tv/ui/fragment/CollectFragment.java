@@ -71,7 +71,8 @@ public class CollectFragment extends BaseFragment implements
     }
 
     private String getKeyword() {
-        return getArguments().getString("keyword");
+        String value = getArguments() == null ? null : getArguments().getString("keyword");
+        return value == null ? "" : value;
     }
 
     private String lineKey(Config config) {
