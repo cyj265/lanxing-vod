@@ -85,6 +85,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
         mBinding.navigation.setOnItemSelectedListener(this);
         mGlass = new GlassDrawable(mBinding.container);
         mBinding.navigation.setBackground(mGlass);
+        setNavigation();
         PermissionUtil.requestNotify(this);
         initFragment(savedInstanceState);
         Updater.create().start(this);
@@ -120,7 +121,7 @@ public class HomeActivity extends BaseActivity implements NavigationBarView.OnIt
     }
 
     private void checkType(Intent intent) {
-        if ("text/plain".equals(intent.getType()) || UrlUtil.path(intent.getData()).endsWith(".m3u") || UrlUtil.path(intent.getData()).endsWith(".txt")) {
+        if ("text/plain".equals(intent.getType()) || UrlUtil.path(intent.getData()).endsWith(".m3u")) {
             loadLive("file:/" + FileChooser.getPathFromUri(intent.getData()));
         } else {
             VideoActivity.push(this, intent.getData().toString());
