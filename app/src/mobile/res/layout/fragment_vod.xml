@@ -67,49 +67,54 @@
         layout="@layout/view_progress"
         android:visibility="gone" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/filter"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:layout_marginBottom="92dp"
-        android:visibility="gone"
-        app:backgroundTint="?attr/colorSecondaryContainer"
-        app:layout_anchor="@id/pager"
-        app:layout_anchorGravity="end|bottom"
-        app:layout_behavior="com.fongmi.android.tv.ui.custom.CustomFabBehavior"
-        app:srcCompat="@drawable/ic_fab_filter"
-        app:tint="?attr/colorOnSecondaryContainer"
-        tools:visibility="visible" />
+    <!-- 悬浮按钮层：直接叠在内容之上，layout_gravity 定位不受底栏遮挡，也不随滚动隐藏 -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clickable="false"
+        android:focusable="false"
+        android:clipChildren="false"
+        android:clipToPadding="false">
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/link"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:layout_marginBottom="92dp"
-        app:backgroundTint="?attr/colorSecondaryContainer"
-        app:layout_anchor="@id/pager"
-        app:layout_anchorGravity="end|bottom"
-        app:layout_behavior="com.fongmi.android.tv.ui.custom.CustomFabBehavior"
-        app:srcCompat="@drawable/ic_fab_link"
-        app:tint="?attr/colorOnSecondaryContainer"
-        tools:visibility="visible" />
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/filter"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|bottom"
+            android:layout_margin="16dp"
+            android:layout_marginBottom="108dp"
+            android:visibility="gone"
+            app:backgroundTint="?attr/colorSecondaryContainer"
+            app:srcCompat="@drawable/ic_fab_filter"
+            app:tint="?attr/colorOnSecondaryContainer"
+            tools:visibility="visible" />
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/top"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="16dp"
-        android:layout_marginBottom="92dp"
-        android:tag="top"
-        android:visibility="invisible"
-        app:backgroundTint="?attr/colorSecondaryContainer"
-        app:layout_anchor="@id/pager"
-        app:layout_anchorGravity="end|bottom"
-        app:layout_behavior="com.fongmi.android.tv.ui.custom.CustomFabBehavior"
-        app:srcCompat="@drawable/ic_fab_top"
-        app:tint="?attr/colorOnSecondaryContainer"
-        tools:visibility="visible" />
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/link"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|bottom"
+            android:layout_margin="16dp"
+            android:layout_marginBottom="108dp"
+            app:backgroundTint="?attr/colorSecondaryContainer"
+            app:srcCompat="@drawable/ic_fab_link"
+            app:tint="?attr/colorOnSecondaryContainer"
+            tools:visibility="visible" />
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/top"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|bottom"
+            android:layout_margin="16dp"
+            android:layout_marginBottom="108dp"
+            android:tag="top"
+            android:visibility="invisible"
+            app:backgroundTint="?attr/colorSecondaryContainer"
+            app:srcCompat="@drawable/ic_fab_top"
+            app:tint="?attr/colorOnSecondaryContainer"
+            tools:visibility="visible" />
+
+    </FrameLayout>
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
