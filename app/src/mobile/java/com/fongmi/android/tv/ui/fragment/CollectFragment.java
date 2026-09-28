@@ -134,14 +134,11 @@ public class CollectFragment extends BaseFragment implements
 
     private void loadLines() {
         mLines.clear();
-        // 搜索线路 = 用户添加的全部点播配置(type=0)，不再依赖内置宸龙 depot。
-        // 当前正在用的配置由 getSearchOrder() 置顶。
-        mLines.addAll(AppDatabase.get().getConfigDao().findByType(0));
-        // 兜底：数据库为空(新装未添加)时用当前加载的配置，避免搜索页无线路。
-        if (mLines.isEmpty()) {
-            Config current = VodConfig.get().getConfig();
-            if (current != null) mLines.add(current);
-        }
+        // 搜索左栏只显示当前正在使用的源，避免把用户添加的全部源都列出来影响体验。
+        Config current = VodConfig.get().getConfig();
+        if (current != null && !current.getUrl().isEmpty()) mLines.add(current);
+        // 兜底：当前配置为空时用数据库中最近一个点播配置，避免搜索页无线路。
+        if (mLines.isEmpty()) mLines.addAll(AppDatabase.get().getConfigDao().findByType(0));
     }
 
     private List<Config> getSearchOrder() {

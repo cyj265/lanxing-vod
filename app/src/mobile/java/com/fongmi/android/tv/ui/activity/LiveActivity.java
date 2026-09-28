@@ -301,7 +301,9 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         if (isHalfPanel()) return;
         int padding = ResUtil.dp2px(48);
         if (live.getWidth() == 0) for (Group item : live.getGroups()) live.setWidth(Math.max(live.getWidth(), ResUtil.getTextWidth(item.getName(), 14)));
-        int width = live.getWidth() == 0 ? 0 : Math.min(live.getWidth() + padding, ResUtil.getScreenWidth() / 4);
+        int minWidth = ResUtil.dp2px(96);
+        int maxWidth = ResUtil.getScreenWidth() / 4;
+        int width = live.getWidth() == 0 ? 0 : Math.max(minWidth, Math.min(live.getWidth() + padding, maxWidth));
         setWidth(mBinding.group, width);
     }
 
