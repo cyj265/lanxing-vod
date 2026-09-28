@@ -1,4 +1,5 @@
 {
   "version": "5.6.36",
-  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.36/lanxing-5.6.36-mobile-arm64_v8a.apk"
+  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.36/lanxing-5.6.36-mobile-arm64_v8a.apk",
+  "desc": "5.6.36：修复应用内检查不到更新（更新源改为 raw + 镜像加速）；安装包校验加固，避免误装旧包/错包。"
 }

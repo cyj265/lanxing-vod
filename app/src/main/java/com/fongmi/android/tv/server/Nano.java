@@ -80,6 +80,7 @@ public class Nano extends NanoHTTPD {
 
     private Response getAssets(String path) {
         try {
+            if (path.contains("..")) return newFixedLengthResponse(Response.Status.NOT_FOUND, MIME_HTML, null, 0);
             if (path.isEmpty()) path = INDEX;
             InputStream is = Asset.open(path);
             return newFixedLengthResponse(Response.Status.OK, getMimeTypeForFile(path), is, -1);

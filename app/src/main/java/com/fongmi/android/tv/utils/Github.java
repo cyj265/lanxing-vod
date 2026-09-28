@@ -23,12 +23,15 @@ public class Github {
         JSONObject json = new JSONObject(body);
         String version = json.optString("version", "");
         String url = json.optString("url", "");
+        String desc = json.optString("desc", "");
         String current = BuildConfig.VERSION_NAME;
         if (version.isEmpty() || url.isEmpty()) return null;
         if (compare(version, current) <= 0) return null;
         JSONObject release = new JSONObject();
         release.put("tag_name", "v" + version);
         release.put("apk_url", url);
+        release.put("name", version);
+        release.put("body", desc);
         return release;
     }
 

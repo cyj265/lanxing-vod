@@ -35,7 +35,11 @@ public class Force implements Source.Extractor, ServiceConnection {
     public String fetch(String url) throws Exception {
         String scheme = Util.scheme(url);
         if (!set.contains(scheme)) init(scheme);
-        while (!set.contains(scheme)) SystemClock.sleep(10);
+        long deadline = SystemClock.elapsedRealtime() + 8000;
+        while (!set.contains(scheme)) {
+            if (SystemClock.elapsedRealtime() >= deadline) throw new IllegalStateException("Force service not connected: " + scheme);
+            SystemClock.sleep(10);
+        }
         Uri uri = UrlUtil.uri(url);
         int port = Util.port(scheme);
         String id = uri.getLastPathSegment();
@@ -51,9 +55,8 @@ public class Force implements Source.Extractor, ServiceConnection {
     @Override
     public void exit() {
         try {
-            if (!set.isEmpty()) App.get().unbindService(this);
-        } catch (Exception e) {
-            e.printStackTrace();
+            App.get().unbindService(this);
+        } catch (Exception ignored) {
         } finally {
             set.clear();
         }

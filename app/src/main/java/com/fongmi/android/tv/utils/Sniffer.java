@@ -34,8 +34,13 @@ public class Sniffer {
 
     public static boolean isVideoFormat(String url) {
         Rule rule = getRule(UrlUtil.uri(url));
-        for (String exclude : rule.getExclude()) if (url.contains(exclude)) return false;
-        for (String exclude : rule.getExclude()) if (Pattern.compile(exclude).matcher(url).find()) return false;
+        for (String exclude : rule.getExclude()) {
+            if (url.contains(exclude)) return false;
+            try {
+                if (Pattern.compile(exclude).matcher(url).find()) return false;
+            } catch (Exception ignored) {
+            }
+        }
         for (String regex : rule.getRegex()) if (url.contains(regex)) return true;
         for (String regex : rule.getRegex()) if (Pattern.compile(regex).matcher(url).find()) return true;
         if (url.contains("url=http") || url.contains("v=http") || url.contains(".html")) return false;

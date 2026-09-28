@@ -142,7 +142,7 @@ public class ParseJob implements ParseCallback {
         CountDownLatch latch = new CountDownLatch(count);
         for (Parse item : json) infinite.execute(() -> jsonParse(latch, item, webUrl));
         if (!webs.isEmpty()) startWeb(webs, webUrl);
-        latch.await();
+        latch.await(Constant.TIMEOUT_PARSE_DEF, TimeUnit.MILLISECONDS);
         onParseError();
     }
 

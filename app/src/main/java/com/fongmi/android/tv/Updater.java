@@ -1,6 +1,7 @@
 package com.fongmi.android.tv;
 
 import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.view.View;
 
 import androidx.fragment.app.FragmentActivity;
@@ -52,6 +53,7 @@ public class Updater implements Download.Callback, UpdateListener {
     private void doInBackground(FragmentActivity activity) {
         try {
             JSONObject object = Github.getLatestRelease();
+            if (object == null) return;
             String tag = object.optString("tag_name");
             String name = object.optString("name");
             String desc = object.optString("body");
@@ -152,7 +154,7 @@ public class Updater implements Download.Callback, UpdateListener {
     /** 检测本地已安装包版本号是否异常高于当前版本（常见于装过非正规构建），此时安装任何低版本都会失败 */
     private boolean isInstalledAbnormal() {
         try {
-            PackageInfo installed = App.get().getPackageManager().getPackageInfo(BuildConfig.APPLICATION_ID, 0);
+            PackageInfo installed = App.get().getBaseContext().getPackageManager().getPackageInfo(BuildConfig.APPLICATION_ID, 0);
             return installed != null && installed.versionCode > BuildConfig.VERSION_CODE;
         } catch (Exception e) {
             return false;
@@ -162,10 +164,11 @@ public class Updater implements Download.Callback, UpdateListener {
     /** 下载完成后校验安装包：包名一致且版本号不低于当前版本，避免误装旧包/错包 */
     private boolean isValidApk(File file) {
         try {
-            PackageInfo info = App.get().getPackageManager().getPackageArchiveInfo(file.getAbsolutePath(), 0);
+            PackageManager pm = App.get().getBaseContext().getPackageManager();
+            PackageInfo info = pm.getPackageArchiveInfo(file.getAbsolutePath(), PackageManager.GET_SIGNATURES);
             if (info == null) return false;
             if (info.versionCode < BuildConfig.VERSION_CODE) return false;
-            return info.packageName == null || info.packageName.equals(BuildConfig.APPLICATION_ID);
+            return info.packageName != null && info.packageName.equals(BuildConfig.APPLICATION_ID);
         } catch (Exception e) {
             e.printStackTrace();
             return false;

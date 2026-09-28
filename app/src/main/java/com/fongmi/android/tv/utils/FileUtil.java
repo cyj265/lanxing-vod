@@ -247,6 +247,7 @@ public class FileUtil {
         if (size <= 0) return ResUtil.getString(R.string.none);
         String[] units = new String[]{"bytes", "KB", "MB", "GB", "TB"};
         int digitGroups = (int) (Math.log10(size) / Math.log10(1024));
+        digitGroups = Math.min(digitGroups, units.length - 1);
         return new DecimalFormat("#,##0.#").format(size / Math.pow(1024, digitGroups)) + " " + units[digitGroups];
     }
     public static long getDirectorySize(File dir) {
