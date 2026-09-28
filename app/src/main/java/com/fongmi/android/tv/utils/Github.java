@@ -3,33 +3,33 @@ package com.fongmi.android.tv.utils;
 import com.fongmi.android.tv.BuildConfig;
 import com.github.catvod.net.OkHttp;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 public class Github {
 
-    public static final String RELEASES = "https://api.github.com/repos/cyj265/lanxing-vod/releases?per_page=100";
+    /**
+     * 更新清单地址：raw.githubusercontent 上的 update.json。
+     * 不用 api.github.com 的原因是：国内网络直连与常见镜像均不稳定，会导致“检查不到更新”；
+     * raw 域名的 gh-proxy 等镜像加速稳定（已在真实网络验证）。
+     */
+    public static final String UPDATE = "https://raw.githubusercontent.com/cyj265/lanxing-vod/dev-5.6.1/update.json";
     private static final String[] MIRRORS = {"https://gh-proxy.com/", "https://ghfast.top/", "https://ghproxy.net/"};
 
     /**
-     * 返回与当前版本同系列（如 v5.6.x）的最新 release，包含预发布；
-     * 只认版本号高于当前安装版本的，避免把相同版本当更新推送；无匹配返回 null。
-     * 这样 5.6.x 测试版只认本系列更新，不会与 5.4.x 正式版互相干扰。
+     * 读取 update.json 清单，只认版本号高于当前安装版本的；无更新或清单异常返回 null。
      */
     public static JSONObject getLatestRelease() throws Exception {
-        String body = fetch(RELEASES);
-        JSONArray releases = new JSONArray(body);
-        String prefix = getPrefix();
-        String current = "v" + BuildConfig.VERSION_NAME;
-        JSONObject target = null;
-        for (int i = 0; i < releases.length(); i++) {
-            JSONObject release = releases.optJSONObject(i);
-            String tag = release == null ? "" : release.optString("tag_name", "");
-            if (tag.startsWith("v" + prefix) && getApkUrl(release) != null && compare(tag, current) > 0) {
-                if (target == null || compare(tag, target.optString("tag_name")) > 0) target = release;
-            }
-        }
-        return target;
+        String body = fetch(UPDATE);
+        JSONObject json = new JSONObject(body);
+        String version = json.optString("version", "");
+        String url = json.optString("url", "");
+        String current = BuildConfig.VERSION_NAME;
+        if (version.isEmpty() || url.isEmpty()) return null;
+        if (compare(version, current) <= 0) return null;
+        JSONObject release = new JSONObject();
+        release.put("tag_name", "v" + version);
+        release.put("apk_url", url);
+        return release;
     }
 
     /** 依次尝试直连与多个镜像，任一成功即返回 */
@@ -48,13 +48,6 @@ public class Github {
             }
         }
         throw last == null ? new Exception("all fetch failed") : last;
-    }
-
-    /** 当前版本系列前缀，如 5.6.4 -> "5.6." */
-    private static String getPrefix() {
-        String version = BuildConfig.VERSION_NAME;
-        int i = version.lastIndexOf('.');
-        return i > 0 ? version.substring(0, i + 1) : version + ".";
     }
 
     private static int compare(String a, String b) {
@@ -82,14 +75,7 @@ public class Github {
     }
 
     public static String getApkUrl(JSONObject release) {
-        JSONArray assets = release == null ? null : release.optJSONArray("assets");
-        if (assets == null) return null;
-        for (int i = 0; i < assets.length(); i++) {
-            JSONObject asset = assets.optJSONObject(i);
-            String name = asset == null ? "" : asset.optString("name", "");
-            if (name.endsWith(".apk") && name.contains("arm64_v8a")) return asset.optString("browser_download_url");
-        }
-        return null;
+        return release == null ? null : release.optString("apk_url", null);
     }
 
     /** 依次尝试各镜像的下载加速地址 */
