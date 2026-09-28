@@ -37,9 +37,7 @@ import com.fongmi.android.tv.ui.activity.KeepActivity;
 import com.fongmi.android.tv.ui.activity.SearchActivity;
 import com.fongmi.android.tv.ui.adapter.TypeAdapter;
 import com.fongmi.android.tv.ui.base.BaseFragment;
-import com.fongmi.android.tv.ui.dialog.FilterDialog;
 import com.fongmi.android.tv.ui.dialog.HistoryDialog;
-import com.fongmi.android.tv.ui.dialog.LinkDialog;
 import com.fongmi.android.tv.ui.dialog.ReceiveDialog;
 import com.fongmi.android.tv.ui.dialog.SiteDialog;
 import com.fongmi.android.tv.utils.ImgUtil;
@@ -91,23 +89,12 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         showProgress();
         setTitle();
         setLogo();
-        // 强制初始化悬浮按钮状态，不依赖任何异步数据加载时序：
-        // 首页默认显示"播放地址"按钮，筛选/回顶按钮隐藏
-        mBinding.link.setVisibility(View.VISIBLE);
-        mBinding.filter.setVisibility(View.GONE);
-        mBinding.top.setVisibility(View.INVISIBLE);
-        // 悬浮按钮层置顶：确保绘制在内容列表/海报之上，不被遮挡
-        mBinding.fabLayer.bringToFront();
     }
 
     @Override
     protected void initEvent() {
-        mBinding.top.setOnClickListener(this::onTop);
         mBinding.logo.setOnClickListener(this::onLogo);
-        mBinding.link.setOnClickListener(this::onLink);
         mBinding.title.setOnClickListener(this::onSite);
-        mBinding.filter.setOnClickListener(this::onFilter);
-        mBinding.filter.setOnLongClickListener(this::onLink);
         mBinding.toolbar.setOnMenuItemClickListener(this::onMenuItemClick);
         mBinding.appBar.addOnOffsetChangedListener((appBarLayout, verticalOffset) -> {
             float factor = Math.abs(verticalOffset * 1f / appBarLayout.getTotalScrollRange());
@@ -120,7 +107,6 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
             public void onPageSelected(int position) {
                 mBinding.type.smoothScrollToPosition(position);
                 mAdapter.setSelected(position);
-                setFabVisible(position);
             }
         });
     }
@@ -140,52 +126,14 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     private void setAdapter(Result result) {
         mAdapter.addAll(mResult = result);
         mBinding.pager.getAdapter().notifyDataSetChanged();
-        setFabVisible(0);
         hideProgress();
         showContent();
-    }
-
-    private void setFabVisible(int position) {
-        if (mAdapter.getItemCount() == 0) {
-            mBinding.top.setVisibility(View.INVISIBLE);
-            mBinding.link.setVisibility(View.VISIBLE);
-            mBinding.filter.setVisibility(View.GONE);
-            return;
-        }
-        Class item = mAdapter.get(position);
-        if ("discover".equals(item.getTypeId()) || "home".equals(item.getTypeId())) {
-            mBinding.top.setVisibility(View.INVISIBLE);
-            mBinding.link.setVisibility(View.VISIBLE);
-            mBinding.filter.setVisibility(View.GONE);
-            return;
-        }
-        if (!item.getFilters().isEmpty()) {
-            mBinding.top.setVisibility(View.INVISIBLE);
-            mBinding.link.setVisibility(View.GONE);
-            mBinding.filter.show();
-        } else {
-            mBinding.top.setVisibility(View.INVISIBLE);
-            mBinding.filter.setVisibility(View.GONE);
-            mBinding.link.show();
-        }
     }
 
     private void setTitle() {
         List<String> items = Arrays.asList(getHome().getName(), getConfig().getName(), getString(R.string.app_name));
         Optional<String> optional = items.stream().filter(s -> !TextUtils.isEmpty(s)).findFirst();
         optional.ifPresent(s -> mBinding.title.setText(s));
-    }
-
-    private void onTop(View view) {
-        if (mBinding.pager.getCurrentItem() > 0) getFragment().scrollToTop();
-        mBinding.top.setVisibility(View.INVISIBLE);
-        if (mBinding.filter.getVisibility() == View.INVISIBLE) mBinding.filter.show();
-        else if (mBinding.link.getVisibility() == View.INVISIBLE) mBinding.link.show();
-    }
-
-    private boolean onLink(View view) {
-        LinkDialog.show(this);
-        return true;
     }
 
     private void onLogo(View view) {
@@ -196,10 +144,6 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     private void onSite(View view) {
         // 标题文字：当前 Config 里面的真实 Site / 直线路列表，可直接选择。
         SiteDialog.create().change().show(this);
-    }
-
-    private void onFilter(View view) {
-        if (mAdapter.getItemCount() > 0) FilterDialog.create().filter(mAdapter.get(mBinding.pager.getCurrentItem()).getFilters()).show(this);
     }
 
     private boolean onMenuItemClick(MenuItem item) {
@@ -229,7 +173,6 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
 
     private void homeContent() {
         showProgress();
-        setFabVisible(0);
         mAdapter.clear();
         mViewModel.homeContent();
         mBinding.pager.setAdapter(new PageAdapter(getChildFragmentManager()));
