@@ -148,25 +148,72 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
         addView(video, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
     }
 
+    private boolean hasVideo() {
+        return player != null && video != null && video.getVisibility() == VISIBLE && player.getMediaItemCount() > 0;
+    }
+
+    private int getWallColor() {
+        int wall = Setting.getWall();
+        int type = Setting.getWallType();
+        if (isBuiltIn(wall, type)) return WALL_COLORS[wall];
+        File file = FileUtil.getWallCache();
+        return file.exists() ? paletteColor(file) : WALL_COLORS[1];
+    }
+
+    private int paletteColor(File file) {
+        Bitmap bitmap = decodeBitmap(file);
+        if (bitmap == null) return WALL_COLORS[1];
+        Palette palette = Palette.from(bitmap).maximumColorCount(8).generate();
+        bitmap.recycle();
+        return swatchColor(palette);
+    }
+
+    private Bitmap decodeBitmap(File file) {
+        BitmapFactory.Options opts = new BitmapFactory.Options();
+        opts.inSampleSize = 8;
+        return BitmapFactory.decodeFile(file.getAbsolutePath(), opts);
+    }
+
+    private int swatchColor(Palette palette) {
+        Palette.Swatch swatch = palette.getVibrantSwatch();
+        if (swatch == null) swatch = palette.getDominantSwatch();
+        return swatch != null ? swatch.getRgb() : WALL_COLORS[1];
+    }
+
+    private boolean isBuiltIn(int wall, int type) {
+        return type == TYPE_RES && wall > 0 && wall < WALL_PAPERS.length;
+    }
+
     @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        stop();
-        if (player != null) {
-            player.release();
-            player = null;
-        }
+    public void onCreate(@NonNull LifecycleOwner owner) {
+        EventBus.getDefault().register(this);
     }
 
     @Override
     public void onResume(@NonNull LifecycleOwner owner) {
-        refresh();
+        if (drawable != null) drawable.start();
+        if (!hasVideo()) return;
+        video.setPlayer(player);
+        player.play();
     }
 
     @Override
     public void onPause(@NonNull LifecycleOwner owner) {
-        if (player != null && player.isPlaying()) {
-            player.pause();
-        }
+        if (drawable != null) drawable.pause();
+        if (!hasVideo()) return;
+        video.setPlayer(null);
+        player.pause();
+    }
+
+    @Override
+    public void onDestroy(@NonNull LifecycleOwner owner) {
+        EventBus.getDefault().unregister(this);
+        if (drawable != null) drawable.recycle();
+        if (video != null) removeView(video);
+        if (player != null) player.release();
+        drawable = null;
+        binding = null;
+        player = null;
+        video = null;
     }
 }
