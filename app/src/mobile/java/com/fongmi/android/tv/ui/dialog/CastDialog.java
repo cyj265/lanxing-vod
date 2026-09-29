@@ -167,6 +167,8 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
             DLNACastManager.get().search();
             adapter.sort(DLNACastManager.get().getRegistered(), this::setRecyclerVisible);
         });
+        App.post(() -> DLNACastManager.get().search(), 2000);
+        App.post(() -> DLNACastManager.get().search(), 4500);
         showLoading();
     }
 
@@ -226,7 +228,6 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
         super.onDestroyView();
         App.removeCallbacks(mEmpty);
         DLNACastManager.get().setDeviceListener(null);
-        DLNACastManager.get().release(requireActivity());
         scanTask.stop();
     }
 

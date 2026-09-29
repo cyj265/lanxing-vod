@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
+import android.util.Log;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.bean.Device;
@@ -13,6 +14,7 @@ import com.fongmi.android.tv.service.DLNACastService;
 import org.jupnp.android.AndroidUpnpService;
 import org.jupnp.controlpoint.ControlPoint;
 import org.jupnp.model.message.header.STAllHeader;
+import org.jupnp.model.message.header.UDADeviceTypeHeader;
 import org.jupnp.model.meta.RemoteDevice;
 import org.jupnp.model.meta.RemoteService;
 import org.jupnp.model.types.UDADeviceType;
@@ -25,6 +27,7 @@ import java.util.stream.Collectors;
 
 public class DLNACastManager extends DefaultRegistryListener implements ServiceConnection {
 
+    private static final String TAG = "DLNACast";
     private static final UDADeviceType RENDERER_TYPE = new UDADeviceType("MediaRenderer", 1);
     private static final UDAServiceType AVT_TYPE = new UDAServiceType("AVTransport", 1);
 
@@ -38,12 +41,27 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
 
     @Override
     public void remoteDeviceAdded(Registry registry, RemoteDevice device) {
-        if (device.getType().implementsVersion(RENDERER_TYPE)) notifyAdded(Device.get(device));
+        Log.d(TAG, "remoteDeviceAdded: " + device.getDisplayString() + ", type=" + device.getType());
+        if (isRenderer(device)) notifyAdded(Device.get(device));
+    }
+
+    @Override
+    public void remoteDeviceDiscoveryFailed(Registry registry, RemoteDevice device, Exception ex) {
+        Log.w(TAG, "remoteDeviceDiscoveryFailed: " + (device == null ? "null" : device.getDisplayString()), ex);
+    }
+
+    private boolean isRenderer(RemoteDevice device) {
+        try {
+            if (device.getType() != null && device.getType().implementsVersion(RENDERER_TYPE)) return true;
+            return device.findService(AVT_TYPE) != null;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     @Override
     public void remoteDeviceRemoved(Registry registry, RemoteDevice device) {
-        if (device.getType().implementsVersion(RENDERER_TYPE)) notifyRemoved(Device.get(device));
+        if (isRenderer(device)) notifyRemoved(Device.get(device));
     }
 
     @Override
@@ -78,7 +96,10 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
     }
 
     public void search() {
-        if (upnpService != null) upnpService.getControlPoint().search(new STAllHeader());
+        if (upnpService == null) return;
+        ControlPoint control = upnpService.getControlPoint();
+        control.search(new STAllHeader());
+        control.search(new UDADeviceTypeHeader(RENDERER_TYPE));
     }
 
     public List<Device> getRegistered() {
@@ -120,6 +141,9 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
         upnpService = service;
         upnpService.getRegistry().addListener(this);
         search();
+        App.post(() -> {
+            if (upnpService != null) search();
+        }, 2500);
     }
 
     private void detach() {

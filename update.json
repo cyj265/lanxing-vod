@@ -1,6 +1,6 @@
 {
-  "version": "5.6.40",
-  "name": "5.6.40",
-  "body": "直播半屏高度改为16:9贴合画面（控制栏不再悬空）；EPG节目名超长省略不再截断；仓库管理弹窗美化（轻量按钮+圆角卡片列表）；播放设置全部选择项改为点按弹窗选择，修复刷新/轨道/定时等空白值。",
-  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.40/lanxing-5.6.40-mobile-arm64_v8a.apk"
+  "version": "5.6.41",
+  "name": "5.6.41",
+  "body": "修复5.6.40安装包构建失败；投屏搜索增强：补发定向探测+延迟重试，弹窗关闭不再销毁发现服务（反复开关投屏不再失灵），设备发现全程加日志。",
+  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.41/lanxing-5.6.41-mobile-arm64_v8a.apk"
 }
