@@ -93,7 +93,22 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
 
     @Override
     public void onServiceDisconnected(ComponentName name) {
+        Log.w(TAG, "onServiceDisconnected: " + name);
         detach();
+    }
+
+    @Override
+    public void onNullBinding(ComponentName name) {
+        // API 26+：服务 onCreate 抛异常/返回 null binder 时触发，说明服务根本没起来
+        Log.e(TAG, "onNullBinding: service returned null binder (service likely crashed in onCreate?)");
+        bound = false;
+    }
+
+    @Override
+    public void onBindingDied(ComponentName name) {
+        Log.e(TAG, "onBindingDied: " + name);
+        detach();
+        bound = false;
     }
 
     public void setDeviceListener(DeviceListener listener) {
@@ -109,13 +124,21 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
     }
 
     public void init(Context context) {
-        Log.d(TAG, "init bound=" + bound);
-        if (bound) {
+        Log.d(TAG, "init bound=" + bound + " attached=" + (upnpService != null));
+        if (upnpService != null) {
             search();
-        } else {
-            bind(context.getApplicationContext());
-            App.post(this::checkAttached, 5000);
+            return;
         }
+        if (bound) {
+            // 之前 bind 返回了 true 但 onServiceConnected 始终没来（服务起不来），先解绑再重试
+            Log.w(TAG, "init: previous bind stale (service never attached), rebinding");
+            try {
+                unbind(context.getApplicationContext());
+            } catch (Throwable ignore) {
+            }
+        }
+        bind(context.getApplicationContext());
+        App.post(this::checkAttached, 5000);
     }
 
     private void checkAttached() {

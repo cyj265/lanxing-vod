@@ -1,6 +1,6 @@
 {
-  "version": "5.6.48",
-  "name": "5.6.48",
-  "body": "投屏诊断版：为 DLNACastService.onCreate 与 DLNACastManager 的 onServiceConnected/bind 增加异常与连接看门狗日志（标签 DLNACast），定位一加 Android17 上 jupnp 服务未连接(root cause)的真正异常。无功能变更。",
-  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.48/lanxing-5.6.48-mobile-arm64_v8a.apk"
+  "version": "5.6.49",
+  "name": "5.6.49",
+  "body": "投屏诊断加强版：DLNACastManager 在「已 bind 但未连上服务」时自动重新绑定，新增 onNullBinding/onBindingDied 诊断，看门狗区分「服务未起」与「已起但搜不到设备」。配合 logcat 定位一加 Android17 投屏根因。无功能变更。",
+  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.49/lanxing-5.6.49-mobile-arm64_v8a.apk"
 }
