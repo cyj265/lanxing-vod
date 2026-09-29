@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.dlna;
 
 import android.content.Context;
+import android.net.wifi.WifiManager;
 import android.text.TextUtils;
 import android.util.Log;
 
@@ -49,6 +50,7 @@ public class DLNACastManager {
 
     private final List<Device> registered;
     private DeviceListener deviceListener;
+    private WifiManager.MulticastLock multicastLock;
 
     public static DLNACastManager get() {
         return Loader.INSTANCE;
@@ -70,6 +72,15 @@ public class DLNACastManager {
     }
 
     public void init(Context context) {
+        try {
+            WifiManager wifi = (WifiManager) App.get().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+            if (wifi != null) {
+                multicastLock = wifi.createMulticastLock("DLNACast");
+                multicastLock.setReferenceCounted(false);
+            }
+        } catch (Exception e) {
+            Log.w(TAG, "init multicast lock failed: " + e.getMessage());
+        }
     }
 
     public void setDeviceListener(DeviceListener listener) {
@@ -94,28 +105,49 @@ public class DLNACastManager {
 
     private void runSearch() {
         Map<String, String> found = new LinkedHashMap<>();
-        for (InetAddress address : getLocalAddresses()) {
-            try (DatagramSocket socket = new DatagramSocket(new InetSocketAddress(address, 0))) {
-                socket.setSoTimeout(300);
-                byte[] buffer = new byte[2048];
-                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                InetAddress group = InetAddress.getByName(SSDP_ADDRESS);
-                long deadline = System.currentTimeMillis() + 4500;
-                for (String target : SEARCH_TARGETS) socket.send(createSearch(address, group, target));
-                while (System.currentTimeMillis() < deadline) {
-                    try {
-                        socket.receive(packet);
-                        parseResponse(new String(packet.getData(), 0, packet.getLength()), found);
-                    } catch (SocketTimeoutException e) {
-                        packet.setLength(buffer.length);
+        acquireMulticastLock();
+        try {
+            for (InetAddress address : getLocalAddresses()) {
+                try (DatagramSocket socket = new DatagramSocket(new InetSocketAddress(address, 0))) {
+                    socket.setSoTimeout(300);
+                    byte[] buffer = new byte[2048];
+                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                    InetAddress group = InetAddress.getByName(SSDP_ADDRESS);
+                    long deadline = System.currentTimeMillis() + 4500;
+                    for (String target : SEARCH_TARGETS) socket.send(createSearch(address, group, target));
+                    while (System.currentTimeMillis() < deadline) {
+                        try {
+                            socket.receive(packet);
+                            parseResponse(new String(packet.getData(), 0, packet.getLength()), found);
+                        } catch (SocketTimeoutException e) {
+                            packet.setLength(buffer.length);
+                        }
                     }
+                } catch (Exception e) {
+                    Log.w(TAG, "search on " + address + " failed: " + e.getMessage());
                 }
-            } catch (Exception e) {
-                Log.w(TAG, "search on " + address + " failed: " + e.getMessage());
             }
+            for (Map.Entry<String, String> entry : found.entrySet()) fetchDescription(entry.getKey(), entry.getValue());
+        } finally {
+            releaseMulticastLock();
         }
-        for (Map.Entry<String, String> entry : found.entrySet()) fetchDescription(entry.getKey(), entry.getValue());
         Log.d(TAG, "search done, devices=" + registered.size());
+    }
+
+    private void acquireMulticastLock() {
+        try {
+            if (multicastLock != null && !multicastLock.isHeld()) multicastLock.acquire();
+        } catch (Exception e) {
+            Log.w(TAG, "acquire multicast lock failed: " + e.getMessage());
+        }
+    }
+
+    private void releaseMulticastLock() {
+        try {
+            if (multicastLock != null && multicastLock.isHeld()) multicastLock.release();
+        } catch (Exception e) {
+            Log.w(TAG, "release multicast lock failed: " + e.getMessage());
+        }
     }
 
     private DatagramPacket createSearch(InetAddress source, InetAddress group, String target) {

@@ -1,6 +1,6 @@
 {
-  "version": "5.6.43",
-  "name": "5.6.43",
-  "body": "投屏彻底重构：发送端弃用 jupnp，改自研 SSDP 搜索 + SOAP 控制栈，修复搜不到 DLNA 设备（同环境影视仓可搜到）的问题。",
-  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.43/lanxing-5.6.43-mobile-arm64_v8a.apk"
+  "version": "5.6.44",
+  "name": "5.6.44",
+  "body": "投屏修复：SSDP 发现前获取 WifiManager.MulticastLock，修复组播发送被内核拒绝(EPERM)导致搜不到设备的问题。",
+  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.44/lanxing-5.6.44-mobile-arm64_v8a.apk"
 }
