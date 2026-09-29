@@ -51,6 +51,9 @@ public class Device implements Diffable<Device>, Comparable<Device> {
     @Ignore
     @SerializedName("time")
     private long time;
+    @Ignore
+    @SerializedName("url")
+    private String url;
 
     public static Device get() {
         Device device = new Device();
@@ -139,6 +142,14 @@ public class Device implements Diffable<Device>, Comparable<Device> {
 
     public void setTime(long time) {
         this.time = time;
+    }
+
+    public String getUrl() {
+        return TextUtils.isEmpty(url) ? "" : url;
+    }
+
+    public void setUrl(String url) {
+        this.url = url;
     }
 
     public boolean isLeanback() {

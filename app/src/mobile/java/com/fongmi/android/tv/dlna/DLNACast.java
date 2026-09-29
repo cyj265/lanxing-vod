@@ -1,92 +1,77 @@
 package com.fongmi.android.tv.dlna;
 
+import android.text.TextUtils;
+
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.CastVideo;
 import com.fongmi.android.tv.bean.Device;
 import com.fongmi.android.tv.utils.Notify;
-
-import org.jupnp.controlpoint.ControlPoint;
-import org.jupnp.model.action.ActionInvocation;
-import org.jupnp.model.message.UpnpResponse;
-import org.jupnp.model.meta.RemoteService;
-import org.jupnp.support.avtransport.callback.Play;
-import org.jupnp.support.avtransport.callback.Seek;
-import org.jupnp.support.avtransport.callback.SetAVTransportURI;
-import org.jupnp.support.contentdirectory.DIDLParser;
-import org.jupnp.support.model.DIDLContent;
-import org.jupnp.support.model.DIDLObject;
-import org.jupnp.support.model.ProtocolInfo;
-import org.jupnp.support.model.Res;
-import org.jupnp.support.model.SeekMode;
-import org.jupnp.support.model.item.VideoItem;
+import com.github.catvod.net.OkHttp;
 
 import java.util.Locale;
 
+import okhttp3.MediaType;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
+
+/**
+ * DLNA 投屏控制：直接向 AVTransport controlURL 发 SOAP 指令（SetAVTransportURI/Play/Seek）。
+ */
 public record DLNACast(CastVideo video, Runnable runnable) {
 
+    private static final String AVT_NS = "urn:schemas-upnp-org:service:AVTransport:1";
+
     public void cast(Device item) {
-        DLNACastManager mgr = DLNACastManager.get();
-        ControlPoint control = mgr.getControlPoint();
-        RemoteService service = mgr.findAVTransport(item);
-        if (service != null && control != null) {
-            control.execute(uriAction(control, service));
-        } else {
+        if (TextUtils.isEmpty(item.getUrl())) {
             App.post(() -> Notify.show(R.string.device_offline));
+            return;
         }
+        new Thread(() -> execute(item), "DLNACastThread").start();
     }
 
-    private String buildMetaData() {
+    private void execute(Device item) {
         try {
-            DIDLContent content = new DIDLContent();
-            VideoItem item = new VideoItem("0", "-1", video.name(), "", new Res(new ProtocolInfo("http-get:*:video/*:*"), 0L, video.url()));
-            if (!video.headers().isEmpty()) item.addProperty(new DIDLObject.Property.DC.DESCRIPTION(App.gson().toJson(video.headers())));
-            content.addItem(item);
-            return new DIDLParser().generate(content);
+            String uri = video.url();
+            soap(item.getUrl(), "SetAVTransportURI", "<InstanceID>0</InstanceID><CurrentURI>" + escape(uri) + "</CurrentURI><CurrentURIMetaData>" + escape(buildMetaData(uri)) + "</CurrentURIMetaData>");
+            soap(item.getUrl(), "Play", "<InstanceID>0</InstanceID><Speed>1</Speed>");
+            if (video.position() > 0) soap(item.getUrl(), "Seek", "<InstanceID>0</InstanceID><Unit>REL_TIME</Unit><Target>" + formatMs(video.position()) + "</Target>");
+            App.post(runnable);
         } catch (Exception e) {
-            return "";
+            String message = e.getMessage();
+            App.post(() -> Notify.show(TextUtils.isEmpty(message) ? "cast failed" : message));
         }
     }
 
-    private SetAVTransportURI uriAction(ControlPoint control, RemoteService service) {
-        return new SetAVTransportURI(service, video.url(), buildMetaData()) {
-            @Override
-            public void success(ActionInvocation i) {
-                control.execute(playAction(control, service));
-            }
-
-            @Override
-            public void failure(ActionInvocation i, UpnpResponse r, String msg) {
-                App.post(() -> Notify.show(msg));
-            }
-        };
+    private void soap(String controlUrl, String action, String args) throws Exception {
+        String envelope = "<?xml version=\"1.0\" encoding=\"utf-8\"?>" +
+                "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\" s:encodingStyle=\"http://schemas.xmlsoap.org/soap/encoding/\"><s:Body>" +
+                "<u:" + action + " xmlns:u=\"" + AVT_NS + "\">" + args + "</u:" + action + ">" +
+                "</s:Body></s:Envelope>";
+        Request request = new Request.Builder().url(controlUrl)
+                .post(RequestBody.create(envelope, MediaType.parse("text/xml; charset=\"utf-8\"")))
+                .header("SOAPACTION", "\"" + AVT_NS + "#" + action + "\"")
+                .build();
+        try (Response response = OkHttp.client(15000).newCall(request).execute()) {
+            String body = response.body() != null ? response.body().string() : "";
+            if (!response.isSuccessful() || body.contains("UPnPError")) throw new Exception(action + " failed: " + response.code());
+        }
     }
 
-    private Play playAction(ControlPoint control, RemoteService service) {
-        return new Play(service) {
-            @Override
-            public void success(ActionInvocation i) {
-                if (video.position() > 0) control.execute(seekAction(service));
-                App.post(runnable);
-            }
-
-            @Override
-            public void failure(ActionInvocation i, UpnpResponse r, String msg) {
-                App.post(() -> Notify.show(msg));
-            }
-        };
+    private String buildMetaData(String url) {
+        String description = video.headers().isEmpty() ? "" : "<dc:description>" + App.gson().toJson(video.headers()) + "</dc:description>";
+        return "<DIDL-Lite xmlns=\"urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/\" xmlns:dc=\"http://purl.org/dc/elements/1.1/\" xmlns:upnp=\"urn:schemas-upnp-org:metadata-1-0/upnp/\">" +
+                "<item id=\"0\" parentID=\"-1\" restricted=\"1\">" +
+                "<dc:title>" + escape(video.name()) + "</dc:title>" +
+                "<upnp:class>object.item.videoItem</upnp:class>" + description +
+                "<res protocolInfo=\"http-get:*:video/*:*\">" + escape(url) + "</res>" +
+                "</item></DIDL-Lite>";
     }
 
-    private Seek seekAction(RemoteService service) {
-        return new Seek(service, SeekMode.REL_TIME, formatMs(video.position())) {
-            @Override
-            public void success(ActionInvocation i) {
-            }
-
-            @Override
-            public void failure(ActionInvocation i, UpnpResponse r, String m) {
-            }
-        };
+    private String escape(String text) {
+        if (text == null) return "";
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\"", "&quot;");
     }
 
     private String formatMs(long ms) {

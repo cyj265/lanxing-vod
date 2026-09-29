@@ -1,6 +1,6 @@
 {
-  "version": "5.6.42",
-  "name": "5.6.42",
-  "body": "直播半屏布局修正：播放窗口从状态栏下方开始（与点播窗口对齐，画面不再被状态栏遮住一截）；修复挖孔屏误报安全区导致节目列表整体右移、EPG 溢出屏幕右缘的问题；频道/节目列表行距压缩，一屏多看约3个频道。",
-  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.42/lanxing-5.6.42-mobile-arm64_v8a.apk"
+  "version": "5.6.43",
+  "name": "5.6.43",
+  "body": "投屏彻底重构：发送端弃用 jupnp，改自研 SSDP 搜索 + SOAP 控制栈，修复搜不到 DLNA 设备（同环境影视仓可搜到）的问题。",
+  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.43/lanxing-5.6.43-mobile-arm64_v8a.apk"
 }
