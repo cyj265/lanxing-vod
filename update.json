@@ -1,6 +1,6 @@
 {
-  "version": "5.6.39",
-  "name": "5.6.39",
-  "body": "修复首页最近观看不显示；控制栏改为暂停常驻、播放中自动隐藏；投屏改为居中设备选择弹窗（搜索loading+已连接标记）；播放页右上新增网速/电池屏显；推荐海报新增评分角标；音效新增3D环绕，HiFi标签对齐。",
-  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.39/lanxing-5.6.39-mobile-arm64_v8a.apk"
+  "version": "5.6.40",
+  "name": "5.6.40",
+  "body": "直播半屏高度改为16:9贴合画面（控制栏不再悬空）；EPG节目名超长省略不再截断；仓库管理弹窗美化（轻量按钮+圆角卡片列表）；播放设置全部选择项改为点按弹窗选择，修复刷新/轨道/定时等空白值。",
+  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.40/lanxing-5.6.40-mobile-arm64_v8a.apk"
 }

@@ -364,15 +364,16 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
             mBinding.recycler.setLayoutParams(lp);
             mBinding.recycler.setVisibility(View.GONE);
         } else {
-            // 半屏：视频上半屏、频道列表下半屏，不重叠
+            // 半屏：视频上半屏（16:9 实际高度，避免控制栏与画面脱节）、频道列表下半屏，不重叠
             int screenH = ResUtil.getScreenHeight();
+            int videoH = Math.min(ResUtil.getScreenWidth() * 9 / 16, screenH / 2);
             vp.width = ViewGroup.LayoutParams.MATCH_PARENT;
-            vp.height = (int) (screenH * 0.55f);
+            vp.height = videoH;
             vp.gravity = Gravity.TOP;
             mBinding.video.setLayoutParams(vp);
 
             lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
-            lp.height = (int) (screenH * 0.45f);
+            lp.height = screenH - videoH;
             lp.gravity = Gravity.BOTTOM;
             mBinding.recycler.setLayoutParams(lp);
             mBinding.recycler.setVisibility(View.VISIBLE);
