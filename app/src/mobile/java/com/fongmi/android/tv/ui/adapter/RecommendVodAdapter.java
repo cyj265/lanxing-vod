@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.ui.adapter;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -48,6 +49,10 @@ public class RecommendVodAdapter extends RecyclerView.Adapter<RecommendVodAdapte
         Vod item = mItems.get(position);
         holder.binding.name.setText(item.getName());
         holder.binding.remark.setText(item.getRemarks());
+        // 豆瓣榜单 remark 形如 "8.5分"，作为海报角标展示
+        boolean hasScore = item.getRemarks() != null && item.getRemarks().contains("分");
+        holder.binding.score.setVisibility(hasScore ? View.VISIBLE : View.GONE);
+        if (hasScore) holder.binding.score.setText(item.getRemarks());
         ImgUtil.load(item.getName(), item.getPic(), holder.binding.pic);
         holder.itemView.setOnClickListener(v -> mListener.onItemClick(item));
     }

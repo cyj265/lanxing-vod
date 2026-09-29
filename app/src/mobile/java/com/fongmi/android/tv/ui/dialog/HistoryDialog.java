@@ -11,6 +11,7 @@ import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewbinding.ViewBinding;
 
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Config;
 import com.fongmi.android.tv.api.config.LiveConfig;
 import com.fongmi.android.tv.api.config.VodConfig;
@@ -161,7 +162,10 @@ public class HistoryDialog extends BaseAlertDialog implements ConfigAdapter.OnCl
     }
 
     private void add() {
-        ConfigDialog.create().type(type).show(this);
+        ConfigDialog dialog = ConfigDialog.create();
+        if (type == 1) dialog.live();
+        else dialog.vod();
+        dialog.show(this);
     }
 
     @Override

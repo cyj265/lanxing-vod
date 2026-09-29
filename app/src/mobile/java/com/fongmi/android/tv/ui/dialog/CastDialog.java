@@ -4,12 +4,10 @@ import android.app.Activity;
 import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
-import android.view.ViewGroup;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.media3.common.C;
@@ -34,7 +32,9 @@ import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ScanTask;
 import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Path;
+import com.github.catvod.utils.Prefers;
 import com.github.catvod.utils.Util;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 import java.io.IOException;
 
@@ -44,7 +44,10 @@ import okhttp3.FormBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Response;
 
-public class CastDialog extends BaseBottomSheetDialog implements DeviceAdapter.OnClickListener, ScanTask.Listener, DLNACastManager.DeviceListener, Callback {
+/**
+ * 选择投屏设备对话框：居中弹窗、搜索 loading、设备列表、点击连接、已连接标记（对齐影视仓）。
+ */
+public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClickListener, ScanTask.Listener, DLNACastManager.DeviceListener, Callback {
 
     private final FormBody.Builder body;
     private final OkHttpClient client;
@@ -53,7 +56,10 @@ public class CastDialog extends BaseBottomSheetDialog implements DeviceAdapter.O
     private DeviceAdapter adapter;
     private ScanTask scanTask;
     private CastVideo video;
+    private Device casting;
     private boolean fm;
+
+    private final Runnable mEmpty = this::showEmpty;
 
     public CastDialog() {
         scanTask = new ScanTask(this);
@@ -86,33 +92,60 @@ public class CastDialog extends BaseBottomSheetDialog implements DeviceAdapter.O
     }
 
     @Override
-    protected ViewBinding getBinding(@NonNull LayoutInflater inflater, @Nullable ViewGroup container) {
-        return binding = DialogDeviceBinding.inflate(inflater, container, false);
+    protected ViewBinding getBinding() {
+        return binding = DialogDeviceBinding.inflate(getLayoutInflater());
+    }
+
+    @Override
+    protected MaterialAlertDialogBuilder getBuilder() {
+        return builder().setView(getBinding().getRoot());
     }
 
     @Override
     protected void initView() {
         binding.scan.setVisibility(fm ? View.VISIBLE : View.GONE);
+        setWidth(0.85f);
         DLNACastManager.get().init(requireActivity());
         DLNACastManager.get().setDeviceListener(this);
         setRecyclerView();
         getDevice();
+        showLoading();
     }
 
     @Override
     protected void initEvent() {
         binding.scan.setOnClickListener(v -> onScan());
         binding.refresh.setOnClickListener(v -> onRefresh());
+        binding.empty.setOnClickListener(v -> onRefresh());
     }
 
     private void setRecyclerView() {
         binding.recycler.setHasFixedSize(false);
-        binding.recycler.setAdapter(adapter = new DeviceAdapter(this));
+        binding.recycler.setAdapter(adapter = new DeviceAdapter(this).connected(Prefers.getString("cast_last_device")));
         binding.recycler.addItemDecoration(new SpaceItemDecoration(1, 16));
     }
 
     private void setRecyclerVisible() {
-        binding.recycler.setVisibility(adapter.getItemCount() > 0 ? View.VISIBLE : View.GONE);
+        boolean has = adapter.getItemCount() > 0;
+        binding.recycler.setVisibility(has ? View.VISIBLE : View.GONE);
+        if (has) {
+            binding.progress.setVisibility(View.GONE);
+            binding.empty.setVisibility(View.GONE);
+            App.removeCallbacks(mEmpty);
+        }
+    }
+
+    private void showLoading() {
+        binding.progress.setVisibility(View.VISIBLE);
+        binding.empty.setVisibility(View.GONE);
+        App.removeCallbacks(mEmpty);
+        App.post(mEmpty, 8000);
+    }
+
+    private void showEmpty() {
+        if (binding == null || adapter.getItemCount() > 0) return;
+        binding.progress.setVisibility(View.GONE);
+        binding.empty.setVisibility(View.VISIBLE);
     }
 
     private void getDevice() {
@@ -134,9 +167,14 @@ public class CastDialog extends BaseBottomSheetDialog implements DeviceAdapter.O
             DLNACastManager.get().search();
             adapter.sort(DLNACastManager.get().getRegistered(), this::setRecyclerVisible);
         });
+        showLoading();
     }
 
     private void onCasted() {
+        if (casting != null) {
+            Prefers.put("cast_last_device", casting.getName());
+            adapter.setConnected(casting.getName());
+        }
         ((CastDialog.Listener) requireActivity()).onCasted();
         dismiss();
     }
@@ -173,6 +211,7 @@ public class CastDialog extends BaseBottomSheetDialog implements DeviceAdapter.O
 
     @Override
     public void onItemClick(Device item) {
+        casting = item;
         if (item.isDLNA()) new DLNACast(video, this::onCasted).cast(item);
         else OkHttp.newCall(client, item.getIp().concat("/action?do=cast"), body.build()).enqueue(this);
     }
@@ -185,6 +224,7 @@ public class CastDialog extends BaseBottomSheetDialog implements DeviceAdapter.O
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        App.removeCallbacks(mEmpty);
         DLNACastManager.get().setDeviceListener(null);
         DLNACastManager.get().release(requireActivity());
         scanTask.stop();

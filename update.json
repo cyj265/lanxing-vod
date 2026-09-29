@@ -1,6 +1,6 @@
 {
-  "version": "5.6.38",
-  "name": "5.6.38",
-  "body": "新增仓库管理（多源聚合/线路合集双模式、长按复制、左滑删除、刷新/添加）；直播改为默认半屏布局（上播放下列表，横屏全屏由转屏触发）；直播分类栏加宽，分类名完整显示。",
-  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.38/lanxing-5.6.38-mobile-arm64_v8a.apk"
+  "version": "5.6.39",
+  "name": "5.6.39",
+  "body": "修复首页最近观看不显示；控制栏改为暂停常驻、播放中自动隐藏；投屏改为居中设备选择弹窗（搜索loading+已连接标记）；播放页右上新增网速/电池屏显；推荐海报新增评分角标；音效新增3D环绕，HiFi标签对齐。",
+  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.39/lanxing-5.6.39-mobile-arm64_v8a.apk"
 }

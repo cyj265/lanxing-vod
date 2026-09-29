@@ -19,6 +19,22 @@
             android:layout_height="match_parent"
             android:scaleType="centerCrop" />
 
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/score"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|top"
+            android:layout_margin="6dp"
+            android:background="@drawable/shape_recommend_score"
+            android:paddingStart="6dp"
+            android:paddingTop="2dp"
+            android:paddingEnd="6dp"
+            android:paddingBottom="2dp"
+            android:textColor="#FFFFFF"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
     </androidx.cardview.widget.CardView>
 
     <com.google.android.material.textview.MaterialTextView

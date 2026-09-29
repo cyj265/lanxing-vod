@@ -496,6 +496,7 @@ final class AudioSettingPanel {
                 {AudioEffectPreset.VOCAL, binding.presetVocal.getId()},
                 {AudioEffectPreset.CINEMA, binding.presetCinema.getId()},
                 {AudioEffectPreset.BASS, binding.presetBass.getId()},
+                {AudioEffectPreset.SURROUND, binding.presetSurround.getId()},
                 {AudioEffectPreset.TREBLE, binding.presetTreble.getId()},
                 {AudioEffectPreset.POP, binding.presetPop.getId()},
                 {AudioEffectPreset.ROCK, binding.presetRock.getId()},

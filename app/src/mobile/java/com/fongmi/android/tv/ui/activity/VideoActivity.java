@@ -4,6 +4,8 @@ import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.os.BatteryManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.drawable.Drawable;
@@ -132,6 +134,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private PiP mPiP;
     private Runnable mR1;
     private Runnable mR2;
+    private Runnable mR7;
     private Runnable mR3;
     private Runnable mR4;
     private Runnable mR5;
@@ -308,6 +311,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mClock = Clock.create();
         mR1 = this::hideControl;
         mR2 = this::setTraffic;
+        mR7 = this::setOsd;
         mR3 = this::setOrient;
         mR4 = this::showEmpty;
         mR5 = this::scrollEpisode;
@@ -1226,6 +1230,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.getRoot().animate().cancel();
         mBinding.control.getRoot().setAlpha(0f);
         mBinding.control.getRoot().animate().alpha(1f).setDuration(200).start();
+        setOsd();
         setR1Callback();
     }
 
@@ -1241,6 +1246,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
             root.setAlpha(1f);
         }).start();
         App.removeCallbacks(mR1);
+        App.removeCallbacks(mR7);
     }
 
     private void dismissDialogs() {
@@ -1252,6 +1258,24 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         App.post(mR2, 1000);
     }
 
+    /** 播放页右上屏显：分辨率 + 网速 + 电池（对齐影视仓），控制栏可见期间每秒刷新 */
+    private void setOsd() {
+        if (mBinding == null) return;
+        Traffic.setSpeed(mBinding.control.speed);
+        setBattery();
+        if (isVisible(mBinding.control.getRoot())) App.post(mR7, 1000);
+    }
+
+    private void setBattery() {
+        Intent intent = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        if (intent == null) return;
+        int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+        if (level < 0 || scale <= 0) return;
+        mBinding.control.battery.setVisibility(View.VISIBLE);
+        mBinding.control.battery.setText(level * 100 / scale + "%");
+    }
+
     private void setOrient() {
         if (isPort() && isAutoRotate()) setRequestedOrientation(PlaybackOrientation.getPortAutoRotateOrientation());
         if (isLand() && isAutoRotate()) setRequestedOrientation(PlaybackOrientation.getLandAutoRotateOrientation());
@@ -1259,7 +1283,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void setR1Callback() {
         if (isScrubbing()) return;
-        App.post(mR1, Constant.INTERVAL_HIDE);
+        App.removeCallbacks(mR1);
+        // 对齐影视仓交互：暂停/加载时常驻显示控制栏，仅播放中倒计时自动隐藏。
+        if (player().isPlaying()) App.post(mR1, Constant.INTERVAL_HIDE);
     }
 
     @Override
@@ -1429,6 +1455,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private void updatePlayControl(boolean isPlaying) {
         mBinding.control.play.setImageResource(isPlaying ? androidx.media3.ui.R.drawable.exo_icon_pause : androidx.media3.ui.R.drawable.exo_icon_play);
         mPiP.update(this, isPlaying);
+        // 播放/暂停切换时重置控制栏自动隐藏计时。
+        if (mBinding != null && isVisible(mBinding.control.getRoot())) setR1Callback();
     }
 
     @Override
@@ -1754,6 +1782,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         DanmakuApi.cancel();
         RefreshEvent.keep();
         App.removeCallbacks(mR1, mR2, mR3, mR4, mR6);
+        App.removeCallbacks(mR7);
         if (mBinding != null && mBinding.episode != null) mBinding.episode.removeCallbacks(mR5);
         super.onDestroy();
     }

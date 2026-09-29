@@ -89,7 +89,8 @@
     <string name="audio_offset">音軌偏移</string>
     <string name="audio_effect_category_tone">音色</string>
     <string name="audio_effect_category_genre">曲風</string>
-    <string name="audio_effect_natural">自然</string>
+    <string name="audio_effect_natural">HiFi</string>
+    <string name="audio_effect_surround">3D環繞</string>
     <string name="audio_effect_vocal">人聲</string>
     <string name="audio_effect_cinema">影院</string>
     <string name="audio_effect_bass">低音</string>

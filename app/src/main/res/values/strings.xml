@@ -88,7 +88,8 @@
     <string name="audio_offset">Audio Offset</string>
     <string name="audio_effect_category_tone">Tone</string>
     <string name="audio_effect_category_genre">Genre</string>
-    <string name="audio_effect_natural">Natural</string>
+    <string name="audio_effect_natural">HiFi</string>
+    <string name="audio_effect_surround">3D Surround</string>
     <string name="audio_effect_vocal">Vocal</string>
     <string name="audio_effect_cinema">Cinema</string>
     <string name="audio_effect_bass">Bass</string>

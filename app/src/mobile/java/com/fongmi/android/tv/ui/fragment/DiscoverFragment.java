@@ -108,9 +108,20 @@ public class DiscoverFragment extends Fragment {
         List<History> items = History.get();
         if (items == null || items.isEmpty()) {
             mBinding.continueLayout.setVisibility(View.GONE);
-        } else {
-            mBinding.continueLayout.setVisibility(View.VISIBLE);
+            return;
         }
+        mBinding.continueLayout.setVisibility(View.VISIBLE);
+        int count = Math.min(items.size(), 10);
+        mBinding.continueRecycler.setAdapter(new ContinueAdapter(items.subList(0, count), item ->
+            VideoActivity.start(requireActivity(), item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic())
+        ));
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        // 从播放页/历史页返回时刷新"最近观看"，避免停留在旧的空状态。
+        if (mBinding != null) setContinue();
     }
 
     private void loadRanks() {

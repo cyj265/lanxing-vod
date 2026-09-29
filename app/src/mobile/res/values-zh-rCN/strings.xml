@@ -28,8 +28,10 @@
     <string name="detail_search">快搜“<xliff:g name="name">%s</xliff:g>”</string>
 
     <!-- Device -->
-    <string name="device_select">选择装置</string>
+    <string name="device_select">选择投屏设备</string>
     <string name="device_offline">装置已离线</string>
+    <string name="cast_connected">已连接</string>
+    <string name="cast_empty">未发现设备\n点击重新搜索</string>
     <string name="device_scan">请扫描影视 QRCode 进行绑定</string>
 
     <!-- Control -->

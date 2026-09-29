@@ -25,8 +25,18 @@ public final class AudioPresetLevels {
             case AudioEffectPreset.HIPHOP -> hiphop(hz);
             case AudioEffectPreset.JAZZ -> jazz(hz);
             case AudioEffectPreset.CLASSICAL -> classical(hz);
+            case AudioEffectPreset.SURROUND -> surround(hz);
             default -> 0;
         };
+    }
+
+    /** 3D环绕：V 形曲线强化低频包围感与高频空间感（EXO 软件均衡器近似） */
+    private static int surround(int hz) {
+        if (hz < 120) return 320;
+        if (hz < 500) return 120;
+        if (hz < 2000) return -60;
+        if (hz < 6000) return 220;
+        return 360;
     }
 
     private static int natural(int hz) {

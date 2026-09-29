@@ -16,8 +16,9 @@ public final class AudioEffectPreset {
     public static final int JAZZ = 11;
     public static final int CLASSICAL = 12;
     public static final int CUSTOM = 13;
+    public static final int SURROUND = 14;
 
     public static int clamp(int preset) {
-        return Math.clamp(preset, OFF, CUSTOM);
+        return Math.clamp(preset, OFF, SURROUND);
     }
 }

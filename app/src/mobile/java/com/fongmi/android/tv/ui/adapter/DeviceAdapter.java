@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.ui.adapter;
 
 import android.view.LayoutInflater;
+import android.view.View;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
@@ -16,9 +17,20 @@ import java.util.List;
 public class DeviceAdapter extends BaseDiffAdapter<Device, DeviceAdapter.ViewHolder> {
 
     private final OnClickListener listener;
+    private String connected;
 
     public DeviceAdapter(OnClickListener listener) {
         this.listener = listener;
+    }
+
+    public DeviceAdapter connected(String name) {
+        this.connected = name;
+        return this;
+    }
+
+    public void setConnected(String name) {
+        this.connected = name;
+        notifyDataSetChanged();
     }
 
     public interface OnClickListener {
@@ -46,6 +58,7 @@ public class DeviceAdapter extends BaseDiffAdapter<Device, DeviceAdapter.ViewHol
         holder.binding.name.setText(item.getName());
         holder.binding.host.setText(item.getHost());
         holder.binding.type.setImageResource(getIcon(item));
+        holder.binding.connected.setVisibility(connected != null && connected.equals(item.getName()) ? View.VISIBLE : View.GONE);
         holder.binding.getRoot().setOnClickListener(v -> listener.onItemClick(item));
         holder.binding.getRoot().setOnLongClickListener(v -> listener.onLongClick(item));
     }
