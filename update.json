@@ -1,6 +1,6 @@
 {
-  "version": "5.6.44",
-  "name": "5.6.44",
-  "body": "投屏修复：SSDP 发现前获取 WifiManager.MulticastLock，修复组播发送被内核拒绝(EPERM)导致搜不到设备的问题。",
-  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.44/lanxing-5.6.44-mobile-arm64_v8a.apk"
+  "version": "5.6.45",
+  "name": "5.6.45",
+  "body": "投屏修复：SSDP 改用 MulticastSocket 并显式 setNetworkInterface 指定出网接口（对齐 jupnp 工作方式），修复一加等机型组播 sendto EPERM 导致搜不到设备的问题。",
+  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.45/lanxing-5.6.45-mobile-arm64_v8a.apk"
 }

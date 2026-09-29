@@ -13,10 +13,10 @@ import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
 import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.MulticastSocket;
 import java.net.NetworkInterface;
 import java.net.SocketTimeoutException;
 import java.net.URL;
@@ -107,12 +107,28 @@ public class DLNACastManager {
         Map<String, String> found = new LinkedHashMap<>();
         acquireMulticastLock();
         try {
+            InetAddress group;
+            try {
+                group = InetAddress.getByName(SSDP_ADDRESS);
+            } catch (Exception e) {
+                Log.w(TAG, "resolve ssdp group failed: " + e.getMessage());
+                return;
+            }
             for (InetAddress address : getLocalAddresses()) {
-                try (DatagramSocket socket = new DatagramSocket(new InetSocketAddress(address, 0))) {
+                try {
+                    NetworkInterface ni = NetworkInterface.getByInetAddress(address);
+                    if (ni == null) continue;
+                    // 关键：用 MulticastSocket 并显式指定出网接口。
+                    // 普通 DatagramSocket 绑定到特定本地地址后发组播，在部分 Android 内核上
+                    // 会被 sendto 拒绝(EPERM)——因为内核无法决定出接口。jupnp 即采用此方式。
+                    MulticastSocket socket = new MulticastSocket(null);
+                    socket.setReuseAddress(true);
+                    socket.setNetworkInterface(ni);
+                    socket.setLoopbackMode(true);
+                    socket.bind(new InetSocketAddress(address, 0));
                     socket.setSoTimeout(300);
                     byte[] buffer = new byte[2048];
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                    InetAddress group = InetAddress.getByName(SSDP_ADDRESS);
                     long deadline = System.currentTimeMillis() + 4500;
                     for (String target : SEARCH_TARGETS) socket.send(createSearch(address, group, target));
                     while (System.currentTimeMillis() < deadline) {
@@ -123,6 +139,7 @@ public class DLNACastManager {
                             packet.setLength(buffer.length);
                         }
                     }
+                    socket.close();
                 } catch (Exception e) {
                     Log.w(TAG, "search on " + address + " failed: " + e.getMessage());
                 }
@@ -137,6 +154,7 @@ public class DLNACastManager {
     private void acquireMulticastLock() {
         try {
             if (multicastLock != null && !multicastLock.isHeld()) multicastLock.acquire();
+            Log.d(TAG, "multicast lock held=" + (multicastLock != null && multicastLock.isHeld()));
         } catch (Exception e) {
             Log.w(TAG, "acquire multicast lock failed: " + e.getMessage());
         }
