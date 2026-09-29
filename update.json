@@ -1,6 +1,6 @@
 {
-  "version": "5.6.46",
-  "name": "5.6.46",
-  "body": "投屏修复(续)：SSDP 的 MulticastSocket 改绑通配地址(0.0.0.0)并用 setNetworkInterface 指定出网接口，根治一加 Android17 组播 sendto EPERM 搜不到设备的问题；同时修复播放设置/音效弹窗未传入 player 导致的空指针崩溃(NullPointerException)。",
-  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.46/lanxing-5.6.46-mobile-arm64_v8a.apk"
+  "version": "5.6.47",
+  "name": "5.6.47",
+  "body": "投屏发现机制回退为 jupnp(UpnpService)方案：对齐影视仓/主分支 5.4.44 的网络栈，由 DLNACastService 承载 AndroidUpnpService、监听 Registry 发现 MediaRenderer，彻底规避自研 MulticastSocket 在一加 Android17 上 sendto EPERM 搜不到设备的问题；发现时抽取 AVTransport 控制地址写入 Device 以保证可投屏。附带修复播放设置/音效弹窗未传 player 的空指针崩溃。",
+  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.47/lanxing-5.6.47-mobile-arm64_v8a.apk"
 }

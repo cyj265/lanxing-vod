@@ -1,63 +1,171 @@
 package com.fongmi.android.tv.dlna;
 
+import android.content.ComponentName;
 import android.content.Context;
-import android.net.wifi.WifiManager;
-import android.text.TextUtils;
+import android.content.Intent;
+import android.content.ServiceConnection;
+import android.os.IBinder;
 import android.util.Log;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.bean.Device;
-import com.github.catvod.net.OkHttp;
+import com.fongmi.android.tv.service.DLNACastService;
 
-import org.xmlpull.v1.XmlPullParser;
-import org.xmlpull.v1.XmlPullParserFactory;
+import org.jupnp.android.AndroidUpnpService;
+import org.jupnp.controlpoint.ControlPoint;
+import org.jupnp.model.message.header.STAllHeader;
+import org.jupnp.model.meta.RemoteDevice;
+import org.jupnp.model.meta.RemoteService;
+import org.jupnp.model.types.UDADeviceType;
+import org.jupnp.model.types.UDAServiceType;
+import org.jupnp.registry.DefaultRegistryListener;
+import org.jupnp.registry.Registry;
 
-import java.net.DatagramPacket;
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.MulticastSocket;
-import java.net.NetworkInterface;
-import java.net.SocketTimeoutException;
-import java.net.URL;
-import java.io.StringReader;
+import java.net.URI;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
-
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 /**
- * 自研轻量 DLNA 发送端栈（mobile 专用）：SSDP M-SEARCH 发现 + 设备描述 XML 解析。
- * 不依赖 jupnp，规避其网络栈在部分机型上收不到搜索响应的问题（leanback 接收端仍用 jupnp）。
+ * DLNA 发送端发现：基于 jupnp 的 UpnpService（与影视仓同款网络栈，在一加等机型上可正常收发组播）。
+ * 由 DLNACastService 承载 AndroidUpnpService，本类 bind 后监听 Registry 发现 MediaRenderer。
+ * 设备控制仍走 DLNACast（SOAP SetAVTransportURI），故发现时把 AVTransport 控制地址写入 Device.url/ip。
  */
-public class DLNACastManager {
+public class DLNACastManager extends DefaultRegistryListener implements ServiceConnection {
 
     private static final String TAG = "DLNACast";
-    private static final String SSDP_ADDRESS = "239.255.255.250";
-    private static final int SSDP_PORT = 1900;
-    private static final String AVT_NS = "urn:schemas-upnp-org:service:AVTransport";
+    private static final UDADeviceType RENDERER_TYPE = new UDADeviceType("MediaRenderer", 1);
+    private static final UDAServiceType AVT_TYPE = new UDAServiceType("AVTransport", 1);
 
-    private static final String[] SEARCH_TARGETS = {
-            "urn:schemas-upnp-org:device:MediaRenderer:1",
-            "urn:schemas-upnp-org:device:MediaRenderer:2",
-            "ssdp:all"
-    };
-
-    private final List<Device> registered;
+    private AndroidUpnpService upnpService;
     private DeviceListener deviceListener;
-    private WifiManager.MulticastLock multicastLock;
+    private boolean bound;
 
     public static DLNACastManager get() {
         return Loader.INSTANCE;
     }
 
-    DLNACastManager() {
-        registered = Collections.synchronizedList(new ArrayList<>());
+    @Override
+    public void remoteDeviceAdded(Registry registry, RemoteDevice device) {
+        if (device.getType().implementsVersion(RENDERER_TYPE)) notifyAdded(buildDevice(device));
+    }
+
+    @Override
+    public void remoteDeviceRemoved(Registry registry, RemoteDevice device) {
+        if (device.getType().implementsVersion(RENDERER_TYPE)) notifyRemoved(buildDevice(device));
+    }
+
+    private Device buildDevice(RemoteDevice device) {
+        Device bean = Device.get(device);
+        RemoteService avt = device.findService(AVT_TYPE);
+        if (avt != null && avt.getControlURI() != null) {
+            String url = avt.getControlURI().toString();
+            bean.setUrl(url);
+            bean.setIp(host(url));
+            Log.d(TAG, "device found: " + bean.getName() + ", avt=" + url);
+        } else {
+            Log.d(TAG, "device found(no AVT): " + bean.getName());
+        }
+        return bean;
+    }
+
+    private String host(String url) {
+        try {
+            URI parsed = new URI(url);
+            return parsed.getPort() > 0 ? parsed.getHost() + ":" + parsed.getPort() : parsed.getHost();
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    @Override
+    public void onServiceConnected(ComponentName name, IBinder binder) {
+        if (!bound) return;
+        attach((AndroidUpnpService) binder);
+    }
+
+    @Override
+    public void onServiceDisconnected(ComponentName name) {
+        detach();
+    }
+
+    public void setDeviceListener(DeviceListener listener) {
+        deviceListener = listener;
+    }
+
+    private void notifyAdded(Device bean) {
+        if (deviceListener != null) App.post(() -> deviceListener.onDeviceAdded(bean));
+    }
+
+    private void notifyRemoved(Device bean) {
+        if (deviceListener != null) App.post(() -> deviceListener.onDeviceRemoved(bean));
+    }
+
+    public void init(Context context) {
+        Log.d(TAG, "init bound=" + bound);
+        if (bound) {
+            search();
+        } else {
+            bind(context.getApplicationContext());
+        }
+    }
+
+    public void search() {
+        Log.d(TAG, "search");
+        if (upnpService != null) upnpService.getControlPoint().search(new STAllHeader());
+    }
+
+    public List<Device> getRegistered() {
+        List<Device> result = new ArrayList<>();
+        if (upnpService == null) return result;
+        for (org.jupnp.model.meta.Device d : upnpService.getRegistry().getDevices(RENDERER_TYPE)) {
+            result.add(buildDevice((RemoteDevice) d));
+        }
+        return result;
+    }
+
+    public RemoteDevice findDevice(Device bean) {
+        if (upnpService == null) return null;
+        for (org.jupnp.model.meta.Device d : upnpService.getRegistry().getDevices(RENDERER_TYPE)) {
+            if (d.getIdentity().getUdn().getIdentifierString().equals(bean.getUuid())) return (RemoteDevice) d;
+        }
+        return null;
+    }
+
+    public RemoteService findAVTransport(Device bean) {
+        RemoteDevice rd = findDevice(bean);
+        return rd != null ? rd.findService(AVT_TYPE) : null;
+    }
+
+    public ControlPoint getControlPoint() {
+        return upnpService != null ? upnpService.getControlPoint() : null;
+    }
+
+    public void release(Context context) {
+        detach();
+        unbind(context.getApplicationContext());
+    }
+
+    private void bind(Context context) {
+        bound = context.bindService(new Intent(context, DLNACastService.class), this, Context.BIND_AUTO_CREATE);
+    }
+
+    private void unbind(Context context) {
+        if (!bound) return;
+        context.unbindService(this);
+        bound = false;
+    }
+
+    private void attach(AndroidUpnpService service) {
+        detach();
+        upnpService = service;
+        upnpService.getRegistry().addListener(this);
+        Log.d(TAG, "upnp service attached");
+        search();
+    }
+
+    private void detach() {
+        if (upnpService != null) upnpService.getRegistry().removeListener(this);
+        upnpService = null;
     }
 
     public interface DeviceListener {
@@ -69,236 +177,5 @@ public class DLNACastManager {
 
     private static class Loader {
         static final DLNACastManager INSTANCE = new DLNACastManager();
-    }
-
-    public void init(Context context) {
-        try {
-            WifiManager wifi = (WifiManager) App.get().getApplicationContext().getSystemService(Context.WIFI_SERVICE);
-            if (wifi != null) {
-                multicastLock = wifi.createMulticastLock("DLNACast");
-                multicastLock.setReferenceCounted(false);
-            }
-        } catch (Exception e) {
-            Log.w(TAG, "init multicast lock failed: " + e.getMessage());
-        }
-    }
-
-    public void setDeviceListener(DeviceListener listener) {
-        deviceListener = listener;
-    }
-
-    public void release(Context context) {
-        deviceListener = null;
-    }
-
-    public void search() {
-        new Thread(this::runSearch, "DLNASearch").start();
-    }
-
-    public List<Device> getRegistered() {
-        synchronized (registered) {
-            List<Device> snapshot = new ArrayList<>(registered);
-            Collections.sort(snapshot);
-            return snapshot;
-        }
-    }
-
-    private void runSearch() {
-        Map<String, String> found = new LinkedHashMap<>();
-        acquireMulticastLock();
-        try {
-            InetAddress group;
-            try {
-                group = InetAddress.getByName(SSDP_ADDRESS);
-            } catch (Exception e) {
-                Log.w(TAG, "resolve ssdp group failed: " + e.getMessage());
-                return;
-            }
-            for (InetAddress address : getLocalAddresses()) {
-                try {
-                    NetworkInterface ni = NetworkInterface.getByInetAddress(address);
-                    if (ni == null) continue;
-                    // 关键：用 MulticastSocket 并显式指定出网接口。
-                    // 普通 DatagramSocket 绑定到特定本地地址后发组播，在部分 Android 内核上
-                    // 会被 sendto 拒绝(EPERM)——因为内核无法决定出接口。jupnp 即采用此方式。
-                    // 关键：MulticastSocket 必须绑到通配地址(0.0.0.0)，再用 setNetworkInterface 指定
-                    // 出网接口。若再 bind 到特定本地地址，内核无法决定组播出接口，sendto 会被
-                    // 内核以 EPERM 拒绝（本机一加 Android17 实测）。jupnp 即用此通配写法。
-                    MulticastSocket socket = new MulticastSocket(null);
-                    socket.setReuseAddress(true);
-                    socket.setNetworkInterface(ni);
-                    socket.setLoopbackMode(true);
-                    socket.setSoTimeout(300);
-                    byte[] buffer = new byte[2048];
-                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                    long deadline = System.currentTimeMillis() + 4500;
-                    for (String target : SEARCH_TARGETS) socket.send(createSearch(address, group, target));
-                    while (System.currentTimeMillis() < deadline) {
-                        try {
-                            socket.receive(packet);
-                            parseResponse(new String(packet.getData(), 0, packet.getLength()), found);
-                        } catch (SocketTimeoutException e) {
-                            packet.setLength(buffer.length);
-                        }
-                    }
-                    socket.close();
-                } catch (Exception e) {
-                    Log.w(TAG, "search on " + address + " failed: " + e.getMessage());
-                }
-            }
-            for (Map.Entry<String, String> entry : found.entrySet()) fetchDescription(entry.getKey(), entry.getValue());
-        } finally {
-            releaseMulticastLock();
-        }
-        Log.d(TAG, "search done, devices=" + registered.size());
-    }
-
-    private void acquireMulticastLock() {
-        try {
-            if (multicastLock != null && !multicastLock.isHeld()) multicastLock.acquire();
-            Log.d(TAG, "multicast lock held=" + (multicastLock != null && multicastLock.isHeld()));
-        } catch (Exception e) {
-            Log.w(TAG, "acquire multicast lock failed: " + e.getMessage());
-        }
-    }
-
-    private void releaseMulticastLock() {
-        try {
-            if (multicastLock != null && multicastLock.isHeld()) multicastLock.release();
-        } catch (Exception e) {
-            Log.w(TAG, "release multicast lock failed: " + e.getMessage());
-        }
-    }
-
-    private DatagramPacket createSearch(InetAddress source, InetAddress group, String target) {
-        String message = "M-SEARCH * HTTP/1.1\r\n" +
-                "HOST: " + SSDP_ADDRESS + ":" + SSDP_PORT + "\r\n" +
-                "MAN: \"ssdp:discover\"\r\n" +
-                "MX: 3\r\n" +
-                "ST: " + target + "\r\n" +
-                "USER-AGENT: Android DLNACast/1.0\r\n\r\n";
-        byte[] data = message.getBytes();
-        return new DatagramPacket(data, data.length, group, SSDP_PORT);
-    }
-
-    private List<InetAddress> getLocalAddresses() {
-        List<InetAddress> addresses = new ArrayList<>();
-        try {
-            for (NetworkInterface ni : Collections.list(NetworkInterface.getNetworkInterfaces())) {
-                if (!ni.isUp() || ni.isLoopback() || ni.isVirtual()) continue;
-                String name = ni.getName() == null ? "" : ni.getName();
-                if (name.startsWith("rmnet") || name.startsWith("ccmni") || name.startsWith("clat")) continue;
-                for (InetAddress address : Collections.list(ni.getInetAddresses())) {
-                    if (address instanceof Inet4Address && address.isSiteLocalAddress()) addresses.add(address);
-                }
-            }
-        } catch (Exception e) {
-            Log.w(TAG, "list interfaces failed: " + e.getMessage());
-        }
-        return addresses;
-    }
-
-    private void parseResponse(String response, Map<String, String> found) {
-        String usn = null;
-        String location = null;
-        for (String line : response.split("\r?\n")) {
-            String trimmed = line.trim();
-            if (trimmed.isEmpty()) continue;
-            String upper = trimmed.toUpperCase();
-            if (usn == null && upper.startsWith("USN:")) usn = trimmed.substring(4).trim();
-            if (location == null && upper.startsWith("LOCATION:")) location = trimmed.substring(9).trim();
-        }
-        if (!TextUtils.isEmpty(usn) && !TextUtils.isEmpty(location) && !found.containsKey(usn)) found.put(usn, location);
-    }
-
-    private void fetchDescription(String usn, String location) {
-        try {
-            OkHttpClient client = OkHttp.client(5000);
-            Request request = new Request.Builder().url(location).header("USER-AGENT", "Android DLNACast/1.0").build();
-            try (Response response = client.newCall(request).execute()) {
-                if (response.isSuccessful() && response.body() != null) {
-                    Device device = parseDescription(response.body().string(), usn, location);
-                    if (device != null) addFound(device);
-                }
-            }
-        } catch (Exception e) {
-            Log.w(TAG, "fetch description failed: " + location + ", " + e.getMessage());
-        }
-    }
-
-    private Device parseDescription(String xml, String usn, String location) throws Exception {
-        XmlPullParser parser = XmlPullParserFactory.newInstance().newPullParser();
-        parser.setInput(new StringReader(xml));
-        String friendlyName = null;
-        String udn = null;
-        String controlUrl = null;
-        boolean avt = false;
-        int event = parser.getEventType();
-        while (event != XmlPullParser.END_DOCUMENT) {
-            if (event == XmlPullParser.START_TAG) {
-                switch (parser.getName()) {
-                    case "friendlyName":
-                        if (friendlyName == null) friendlyName = readText(parser);
-                        break;
-                    case "UDN":
-                        if (udn == null) udn = readText(parser);
-                        break;
-                    case "serviceType":
-                        avt = readText(parser).startsWith(AVT_NS);
-                        break;
-                    case "controlURL":
-                        String url = readText(parser);
-                        if (avt && TextUtils.isEmpty(controlUrl)) controlUrl = url;
-                        break;
-                }
-            }
-            event = parser.next();
-        }
-        if (TextUtils.isEmpty(controlUrl)) return null;
-        if (TextUtils.isEmpty(friendlyName)) friendlyName = host(location);
-        if (TextUtils.isEmpty(udn)) udn = "uuid:" + usn;
-        Device device = new Device();
-        device.setUuid(udn.replaceFirst("^uuid:", "").trim());
-        device.setName(friendlyName);
-        device.setType(2);
-        device.setUrl(new URL(new URL(location), controlUrl.trim()).toString());
-        device.setIp(host(location));
-        Log.d(TAG, "device found: " + friendlyName + ", control=" + device.getUrl());
-        return device;
-    }
-
-    private String readText(XmlPullParser parser) throws Exception {
-        StringBuilder text = new StringBuilder();
-        int event = parser.next();
-        while (event != XmlPullParser.END_TAG) {
-            if (event == XmlPullParser.TEXT) text.append(parser.getText());
-            event = parser.next();
-        }
-        return text.toString().trim();
-    }
-
-    private String host(String url) {
-        try {
-            URL parsed = new URL(url);
-            return parsed.getPort() > 0 ? parsed.getHost() + ":" + parsed.getPort() : parsed.getHost();
-        } catch (Exception e) {
-            return "";
-        }
-    }
-
-    private void addFound(Device device) {
-        boolean added = false;
-        synchronized (registered) {
-            int index = registered.indexOf(device);
-            if (index < 0) {
-                registered.add(device);
-                added = true;
-            } else {
-                registered.get(index).setUrl(device.getUrl());
-            }
-        }
-        if (added && deviceListener != null) App.post(() -> {
-            if (deviceListener != null) deviceListener.onDeviceAdded(device);
-        });
     }
 }

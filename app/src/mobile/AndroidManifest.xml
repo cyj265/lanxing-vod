@@ -136,5 +136,9 @@
             android:name=".receiver.ShortcutReceiver"
             android:exported="false" />
 
+        <service
+            android:name="com.fongmi.android.tv.service.DLNACastService"
+            android:exported="false" />
+
     </application>
 </manifest>
