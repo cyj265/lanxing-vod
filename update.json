@@ -1,6 +1,6 @@
 {
-  "version": "5.6.50",
-  "name": "5.6.50",
-  "body": "投屏诊断改版：放弃受 ColorOS 污染的 logcat 过滤，改为把关键事件（bind 结果、onServiceConnected/onNullBinding、网络类型、MulticastLock 状态、12s 看门狗是否发现设备）写入 App 私有目录文件 dlna_diag.log。用户只需 adb pull 该文件即可，无需 logcat。用于定位一加 Android17 投屏组播 EPERM 根因。无功能变更。",
-  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.50/lanxing-5.6.50-mobile-arm64_v8a.apk"
+  "version": "5.6.51",
+  "name": "5.6.51",
+  "body": "投屏组播 EPERM 根治：DLNACastService 在 jupnp 创建组播 socket 前，把进程网络路由 bindProcessToNetwork 绑到活动 WiFi 网络（仅 WiFi 时生效，退出投屏恢复默认路由）。解决一加 Android17 上 SSDP 组播被内核 EPERM 掐死、搜不到设备的问题。保留诊断日志。",
+  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.51/lanxing-5.6.51-mobile-arm64_v8a.apk"
 }

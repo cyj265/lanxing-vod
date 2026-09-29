@@ -1,7 +1,11 @@
 package com.fongmi.android.tv.service;
 
 import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.util.Log;
 
 import com.fongmi.android.tv.dlna.DlnaDiag;
@@ -21,6 +25,9 @@ public class DLNACastService extends AndroidUpnpServiceImpl {
     public void onCreate() {
         DlnaDiag.init(getApplicationContext());
         DlnaDiag.logNetwork(getApplicationContext());
+        // 必须在 super.onCreate() 之前绑定：Android 11+ 按网络隔离路由，组播不发往 WiFi 接口会被内核 EPERM 掐死。
+        // 把进程路由绑到活动 WiFi 网络，jupnp 后续创建的组播 socket 才会从 WiFi 发出去。
+        bindWifiNetwork();
         // 显式再拿一次 MulticastLock（jupnp 内部也会拿，这里 double-acquire 仅用于诊断可见性）
         try {
             WifiManager wm = (WifiManager) getApplicationContext().getSystemService(Context.WIFI_SERVICE);
@@ -58,6 +65,48 @@ public class DLNACastService extends AndroidUpnpServiceImpl {
         } catch (Throwable ignore) {
         }
         super.onDestroy();
+        // 恢复进程默认路由（投屏结束，不再劫持全局网络到 WiFi）
+        unbindWifiNetwork();
+    }
+
+    /** 把进程网络路由绑到活动 WiFi 网络，使 jupnp 的 SSDP 组播能从 WiFi 接口发出（根治 Android 11+ 的 EPERM）。 */
+    private void bindWifiNetwork() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            DlnaDiag.log("bindWifi: SDK<23, skip (no bindProcessToNetwork)");
+            return;
+        }
+        try {
+            ConnectivityManager cm = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm == null) {
+                DlnaDiag.log("bindWifi: ConnectivityManager=null");
+                return;
+            }
+            Network net = cm.getActiveNetwork();
+            if (net == null) {
+                DlnaDiag.log("bindWifi: activeNetwork=null");
+                return;
+            }
+            NetworkCapabilities cap = cm.getNetworkCapabilities(net);
+            if (cap == null || !cap.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)) {
+                DlnaDiag.log("bindWifi: active network is NOT wifi (cellular/other), skip");
+                return;
+            }
+            boolean ok = cm.bindProcessToNetwork(net);
+            DlnaDiag.log("bindProcessToNetwork(wifi)=" + ok + " net=" + net);
+        } catch (Throwable t) {
+            DlnaDiag.log("bindWifi FAILED");
+            DlnaDiag.log(t);
+        }
+    }
+
+    private void unbindWifiNetwork() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return;
+        try {
+            ConnectivityManager cm = (ConnectivityManager) getApplicationContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+            if (cm != null) cm.bindProcessToNetwork(null);
+            DlnaDiag.log("bindProcessToNetwork(null) restored");
+        } catch (Throwable ignore) {
+        }
     }
 
     @Override
