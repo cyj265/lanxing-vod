@@ -22,7 +22,6 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.DialogSubtitleSettingBinding;
 import com.fongmi.android.tv.databinding.ViewSettingSliderBinding;
 import com.fongmi.android.tv.player.PlayerManager;
-import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.SubtitleSetting;
 import com.fongmi.android.tv.utils.SliderUtil;
 import com.fongmi.android.tv.utils.Util;
@@ -305,7 +304,7 @@ final class SubtitleSettingPanel {
     }
 
     private SecondaryState getSecondaryState() {
-        boolean supported = isMpvEngine();
+        boolean supported = player != null && !player.isReleased();
         List<SecondaryTrack> tracks = supported ? getSecondaryTracks() : List.of();
         int trackId = supported ? getAvailableSecondarySubtitleTrackId(tracks) : SubtitleSetting.SECONDARY_SUBTITLE_OFF;
         if (supported && trackId != SubtitleSetting.getSecondaryTrackId()) SubtitleSetting.putSecondaryTrackId(trackId);
@@ -489,10 +488,6 @@ final class SubtitleSettingPanel {
         Context context = binding.getRoot().getContext();
         SubtitleSetting.applyStyle(context, subtitleView);
         if (player != null && !player.isReleased()) player.setSubtitleSettingStyle();
-    }
-
-    private boolean isMpvEngine() {
-        return player != null && !player.isReleased() && player.getEngine() == PlayerSetting.ENGINE_MPV;
     }
 
     private boolean canApplyTextStyle() {

@@ -79,6 +79,7 @@ public class PlayerManager implements ParseCallback {
 
     public void release() {
         App.removeCallbacks(runnable);
+        stopParse();
         if (player != null) player.removeListener(listener);
         if (engine != null) engine.release();
         engine = null;
@@ -95,7 +96,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public Tracks getCurrentTracks() {
-        return player.getCurrentTracks();
+        return player == null ? Tracks.EMPTY : player.getCurrentTracks();
     }
 
     public int getAudioChannelCount() {
@@ -103,23 +104,23 @@ public class PlayerManager implements ParseCallback {
     }
 
     public List<MediaChapter> getCurrentMediaChapters() {
-        return player.getCurrentMediaChapters();
+        return player == null ? List.of() : player.getCurrentMediaChapters();
     }
 
     public List<MediaEdition> getCurrentMediaEditions() {
-        return player.getCurrentMediaEditions();
+        return player == null ? List.of() : player.getCurrentMediaEditions();
     }
 
     public MediaItem getCurrentMediaItem() {
-        return player.getCurrentMediaItem();
+        return player == null ? null : player.getCurrentMediaItem();
     }
 
     public int getPlaybackState() {
-        return player.getPlaybackState();
+        return player == null ? Player.STATE_IDLE : player.getPlaybackState();
     }
 
     public boolean isPlaying() {
-        return player.isPlaying();
+        return player != null && player.isPlaying();
     }
 
     public boolean isReleased() {
@@ -158,6 +159,7 @@ public class PlayerManager implements ParseCallback {
         if (spec == null || metadata.equals(spec.getMetadata())) return;
         spec.setMetadata(metadata);
         if (TextUtils.isEmpty(spec.getUrl())) return;
+        if (player == null) return;
         MediaItem current = player.getCurrentMediaItem();
         if (current != null) player.replaceMediaItem(player.getCurrentMediaItemIndex(), current.buildUpon().setMediaMetadata(metadata).build());
     }
@@ -167,7 +169,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public float getSpeed() {
-        return player.getPlaybackParameters().speed;
+        return player == null ? 1f : player.getPlaybackParameters().speed;
     }
 
     public boolean isEmpty() {
@@ -191,11 +193,11 @@ public class PlayerManager implements ParseCallback {
     }
 
     public boolean isLive() {
-        return player.getCurrentMediaItem() != null && player.isCurrentMediaItemLive();
+        return player != null && player.getCurrentMediaItem() != null && player.isCurrentMediaItemLive();
     }
 
     public boolean isVod() {
-        return player.getCurrentMediaItem() != null && !player.isCurrentMediaItemLive();
+        return player != null && player.getCurrentMediaItem() != null && !player.isCurrentMediaItemLive();
     }
 
     public boolean haveTrack(int type) {
@@ -231,7 +233,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public long getPosition() {
-        return player.getCurrentPosition();
+        return player == null ? 0 : player.getCurrentPosition();
     }
 
     public String getSizeText() {
@@ -267,12 +269,13 @@ public class PlayerManager implements ParseCallback {
     }
 
     public int getEngine() {
-        return isMpvEngine() ? PlayerSetting.ENGINE_MPV : PlayerSetting.ENGINE_EXO;
+        return PlayerSetting.ENGINE_EXO;
     }
 
     public void setEngine(int targetEngine) {
         PlayerSetting.putEngine(targetEngine);
-        if (isEmpty() || PlayerEngineFactory.matches(engine, spec)) return;
+        if (isEmpty() || engine == null || player == null) return;
+        if (PlayerEngineFactory.matches(engine, spec)) return;
         PlaybackSnapshot snapshot = PlaybackSnapshot.capture(player);
         startCurrent(snapshot.positionMs());
         snapshot.restore(player);
@@ -283,7 +286,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public long getDuration() {
-        return player.getDuration();
+        return player == null ? 0 : player.getDuration();
     }
 
     public String getDurationTime() {
@@ -292,6 +295,7 @@ public class PlayerManager implements ParseCallback {
 
     public void setSub(Sub sub) {
         if (spec != null) spec.setSub(sub);
+        if (engine == null) return;
         if (engine.addSubtitle(sub)) play();
         else startCurrent();
     }
@@ -302,10 +306,12 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void selectChapter(MediaChapter chapter) {
+        if (player == null || chapter == null) return;
         player.selectChapter(chapter);
     }
 
     public void selectEdition(MediaEdition edition) {
+        if (player == null || edition == null) return;
         player.selectEdition(edition);
     }
 
@@ -329,7 +335,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public float setSpeed(float speed) {
-        if (!player.isCommandAvailable(Player.COMMAND_SET_SPEED_AND_PITCH)) return getSpeed();
+        if (player == null || !player.isCommandAvailable(Player.COMMAND_SET_SPEED_AND_PITCH)) return getSpeed();
         player.setPlaybackParameters(player.getPlaybackParameters().withSpeed(SpeedSetting.clamp(speed)));
         return getSpeed();
     }
@@ -351,7 +357,8 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void setTrack(List<Track> tracks) {
-        if (!tracks.isEmpty()) TrackUtil.setTrackSelection(player, tracks);
+        if (player == null || tracks == null || tracks.isEmpty()) return;
+        TrackUtil.setTrackSelection(player, tracks);
     }
 
     public void setVideoSetting(int preset) {
@@ -378,59 +385,56 @@ public class PlayerManager implements ParseCallback {
         effects.previewAudioSetting(original);
     }
 
-    private boolean isMpvEngine() {
-        return engine != null && engine.getType() == PlayerEngine.Type.MPV;
-    }
-
     public void play() {
-        player.play();
+        if (player != null) player.play();
     }
 
     public void pause() {
-        player.pause();
+        if (player != null) player.pause();
     }
 
     public void stop() {
-        engine.stop();
+        if (engine != null) engine.stop();
         stopParse();
     }
 
     public void clearMediaItems() {
-        player.clearMediaItems();
+        if (player != null) player.clearMediaItems();
     }
 
     public boolean isRepeatOne() {
-        return player.getRepeatMode() == Player.REPEAT_MODE_ONE;
+        return player != null && player.getRepeatMode() == Player.REPEAT_MODE_ONE;
     }
 
     public void setRepeatOne(boolean repeat) {
-        player.setRepeatMode(repeat ? Player.REPEAT_MODE_ONE : Player.REPEAT_MODE_OFF);
+        if (player != null) player.setRepeatMode(repeat ? Player.REPEAT_MODE_ONE : Player.REPEAT_MODE_OFF);
     }
 
     public void replay(long positionMs) {
+        if (player == null) return;
         if (positionMs == C.TIME_UNSET) player.seekToDefaultPosition();
         else player.seekTo(positionMs);
         player.play();
     }
 
     public void seekTo(long time) {
-        player.seekTo(time);
+        if (player != null) player.seekTo(time);
     }
 
     public long getTextOffsetMs() {
-        return player.isCommandAvailable(Player.COMMAND_GET_TEXT_OFFSET) ? player.getTextOffsetMs() : 0;
+        return player != null && player.isCommandAvailable(Player.COMMAND_GET_TEXT_OFFSET) ? player.getTextOffsetMs() : 0;
     }
 
     public void setTextOffsetMs(long offsetMs) {
-        if (player.isCommandAvailable(Player.COMMAND_SET_TEXT_OFFSET)) player.setTextOffsetMs(offsetMs);
+        if (player != null && player.isCommandAvailable(Player.COMMAND_SET_TEXT_OFFSET)) player.setTextOffsetMs(offsetMs);
     }
 
     public long getAudioOffsetMs() {
-        return player.isCommandAvailable(Player.COMMAND_GET_AUDIO_OFFSET) ? player.getAudioOffsetMs() : 0;
+        return player != null && player.isCommandAvailable(Player.COMMAND_GET_AUDIO_OFFSET) ? player.getAudioOffsetMs() : 0;
     }
 
     public void setAudioOffsetMs(long offsetMs) {
-        if (player.isCommandAvailable(Player.COMMAND_SET_AUDIO_OFFSET)) player.setAudioOffsetMs(offsetMs);
+        if (player != null && player.isCommandAvailable(Player.COMMAND_SET_AUDIO_OFFSET)) player.setAudioOffsetMs(offsetMs);
     }
 
     public void reset() {
@@ -455,7 +459,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     public void resetTrack() {
-        TrackUtil.reset(player);
+        if (player != null) TrackUtil.reset(player);
     }
 
     public void toggleDecode() {
@@ -476,7 +480,7 @@ public class PlayerManager implements ParseCallback {
 
     private void setDecode(int decode) {
         this.decode = decode;
-        engine.setDecode(decode);
+        if (engine != null) engine.setDecode(decode);
         callback.onDecodeChanged();
     }
 
@@ -490,6 +494,7 @@ public class PlayerManager implements ParseCallback {
     }
 
     private void ensureEngine(PlaySpec spec) {
+        if (player == null || engine == null) return;
         if (PlayerEngineFactory.matches(engine, spec)) return;
         PlayerEngine old = engine;
         player.removeListener(listener);
@@ -534,6 +539,7 @@ public class PlayerManager implements ParseCallback {
     private void setMediaItem(long timeout, long startPositionMs) {
         if (spec == null || spec.getUrl() == null) return;
         ensureEngine(spec.checkUa());
+        if (engine == null) return;
         pendingPreload = null;
         initTrack = false;
         engine.start(spec, startPositionMs);
@@ -552,7 +558,8 @@ public class PlayerManager implements ParseCallback {
 
     private void startPreloadIfReady() {
         PendingPreload preload = pendingPreload;
-        if (preload == null || player.getPlaybackState() != Player.STATE_READY) return;
+        if (preload == null || player == null || engine == null) return;
+        if (player.getPlaybackState() != Player.STATE_READY) return;
         pendingPreload = null;
         engine.preload(preload.spec(), preload.startPositionMs());
     }
@@ -673,7 +680,7 @@ public class PlayerManager implements ParseCallback {
 
         @Override
         public void onPlayerError(@NonNull PlaybackException e) {
-            if (spec == null) return;
+            if (spec == null || engine == null) return;
             PlayerEngine.ErrorAction action = engine.handleError(e);
             if (action != PlayerEngine.ErrorAction.RECOVERED) App.removeCallbacks(runnable);
             switch (action) {

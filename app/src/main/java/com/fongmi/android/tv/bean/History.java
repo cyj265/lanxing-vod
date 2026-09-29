@@ -266,12 +266,19 @@ public class History implements Diffable<History> {
         return VodConfig.get().getSite(getSiteKey()).getName();
     }
 
+    private String[] keyParts() {
+        String key = getKey();
+        return key == null ? new String[0] : key.split(AppDatabase.SYMBOL);
+    }
+
     public String getSiteKey() {
-        return getKey().split(AppDatabase.SYMBOL)[0];
+        String[] parts = keyParts();
+        return parts.length > 0 ? parts[0] : "";
     }
 
     public String getVodId() {
-        return getKey().split(AppDatabase.SYMBOL)[1];
+        String[] parts = keyParts();
+        return parts.length > 1 ? parts[1] : "";
     }
 
     public Flag getFlag() {

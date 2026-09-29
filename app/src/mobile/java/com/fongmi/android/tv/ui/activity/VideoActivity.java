@@ -134,6 +134,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private Runnable mR2;
     private Runnable mR3;
     private Runnable mR4;
+    private Runnable mR5;
+    private Runnable mR6;
     private History mHistory;
     private String mPlayTitle = "";
     private boolean fullscreen;
@@ -308,6 +310,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mR2 = this::setTraffic;
         mR3 = this::setOrient;
         mR4 = this::showEmpty;
+        mR5 = this::scrollEpisode;
+        mR6 = this::runLock;
         mPiP = new PiP();
         checkDanmakuImg();
         setRecyclerView();
@@ -971,6 +975,17 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         showControl();
     }
 
+    /** 成员 Runnable 版：原先每次 new 出来的匿名任务无法在 onDestroy 移除，销毁后仍会改屏幕方向 */
+    private void runLock() {
+        if (isDestroyed()) return;
+        onLock();
+    }
+
+    private void scrollEpisode() {
+        if (isDestroyed() || mBinding == null || mEpisodeAdapter == null) return;
+        mBinding.episode.scrollToPosition(mEpisodeAdapter.getPosition());
+    }
+
     private void onRotate() {
         setR1Callback();
         if (isFullscreen()) exitFullscreen();
@@ -1136,7 +1151,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         setFullscreen(false);
         if (isLand() && !player().isPortrait()) setTransition();
         setRequestedOrientation(PlaybackOrientation.getExitFullscreenOrientation(isPort()));
-        mBinding.episode.postDelayed(() -> mBinding.episode.scrollToPosition(mEpisodeAdapter.getPosition()), 100);
+        mBinding.episode.postDelayed(mR5, 100);
         mBinding.control.title.setVisibility(View.INVISIBLE);
         mBinding.video.setLayoutParams(mFrameParams);
         mKeyDown.resetScale();
@@ -1646,14 +1661,24 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && requestCode == 1001) PlaybackIntent.onExternalResult(data, service()::dispatchNext, controller()::seekTo);
+        // 不能用 service()::dispatchNext / controller()::seekTo：方法引用在传参时立即对目标求值，
+        // 服务尚未重绑或 controller 未就绪时会当场抛 NPE，且发生在 onExternalResult 的 try 之外。
+        if (resultCode == RESULT_OK && requestCode == 1001) {
+            var svc = service();
+            var ctrl = controller();
+            PlaybackIntent.onExternalResult(data, () -> {
+                if (svc != null) svc.dispatchNext();
+            }, position -> {
+                if (ctrl != null) ctrl.seekTo(position);
+            });
+        }
     }
 
     @Override
     protected void onUserLeaveHint() {
         super.onUserLeaveHint();
         if (isRedirect()) return;
-        if (isLock()) App.post(this::onLock, 500);
+        if (isLock()) App.post(mR6, 500);
         if (service() != null && player().haveTrack(C.TRACK_TYPE_VIDEO)) mPiP.enter(this, player().getVideoWidth(), player().getVideoHeight(), getScale());
     }
 
@@ -1728,7 +1753,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         Timer.get().reset();
         DanmakuApi.cancel();
         RefreshEvent.keep();
-        App.removeCallbacks(mR1, mR2, mR3, mR4);
+        App.removeCallbacks(mR1, mR2, mR3, mR4, mR6);
+        if (mBinding != null && mBinding.episode != null) mBinding.episode.removeCallbacks(mR5);
         super.onDestroy();
     }
 }

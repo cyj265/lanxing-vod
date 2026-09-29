@@ -96,6 +96,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     private Runnable mR1;
     private Runnable mR2;
     private Runnable mR3;
+    private Runnable mR4;
     private List<Group> mHides;
     private Group mGroup;
     private Channel mChannel;
@@ -171,6 +172,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mR1 = this::hideControl;
         mR2 = this::setTraffic;
         mR3 = this::hideInfo;
+        mR4 = this::runLock;
         mPiP = new PiP();
         setRecyclerView();
         setVideoView();
@@ -430,6 +432,12 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mKeyDown.setLock(isLock());
         checkLockImg();
         showControl();
+    }
+
+    /** 成员 Runnable 版：原先每次 new 出来的匿名任务无法在 onDestroy 移除，销毁后仍会改屏幕方向 */
+    private void runLock() {
+        if (isDestroyed()) return;
+        onLock();
     }
 
     private void onRotate() {
@@ -1147,7 +1155,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     protected void onUserLeaveHint() {
         super.onUserLeaveHint();
         if (isRedirect()) return;
-        if (isLock()) App.post(this::onLock, 500);
+        if (isLock()) App.post(mR4, 500);
         if (service() != null && player().haveTrack(C.TRACK_TYPE_VIDEO)) mPiP.enter(this, player().getVideoWidth(), player().getVideoHeight(), LiveSetting.getScale());
     }
 
@@ -1213,7 +1221,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     @Override
     protected void onDestroy() {
         Source.get().exit();
-        App.removeCallbacks(mR1, mR2, mR3);
+        App.removeCallbacks(mR1, mR2, mR3, mR4);
         super.onDestroy();
     }
 }

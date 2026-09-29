@@ -86,8 +86,13 @@ public class TrackUtil {
         TrackSelectionParameters.Builder builder = player.getTrackSelectionParameters().buildUpon();
         mediaGroupMapByType.forEach((type, mediaGroup) -> {
             Integer selectedIndex = selectedIndexMapByType.get(type);
-            List<Integer> indices = selectedIndex != null ? List.of(selectedIndex) : List.of();
-            builder.setOverrideForType(new TrackSelectionOverride(mediaGroup, indices));
+            // 没有选中项时不能写入空 override：空列表在 Media3 中表示「该组不选任何轨道」，
+            // 效果等同于禁用整个轨道类型（没声音 / 没字幕），这里应改为恢复默认选择。
+            if (selectedIndex == null) {
+                builder.clearOverridesOfType(type);
+                return;
+            }
+            builder.setOverrideForType(new TrackSelectionOverride(mediaGroup, List.of(selectedIndex)));
         });
         player.setTrackSelectionParameters(builder.build());
     }

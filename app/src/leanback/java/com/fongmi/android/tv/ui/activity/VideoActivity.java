@@ -1430,7 +1430,17 @@ public class VideoActivity extends PlaybackActivity implements VodPlaybackHost, 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        if (resultCode == RESULT_OK && requestCode == 1001) PlaybackIntent.onExternalResult(data, service()::dispatchNext, controller()::seekTo);
+        // 不能用 service()::dispatchNext / controller()::seekTo：方法引用在传参时立即对目标求值，
+        // 服务尚未重绑或 controller 未就绪时会当场抛 NPE，且发生在 onExternalResult 的 try 之外。
+        if (resultCode == RESULT_OK && requestCode == 1001) {
+            var svc = service();
+            var ctrl = controller();
+            PlaybackIntent.onExternalResult(data, () -> {
+                if (svc != null) svc.dispatchNext();
+            }, position -> {
+                if (ctrl != null) ctrl.seekTo(position);
+            });
+        }
     }
 
     @Override

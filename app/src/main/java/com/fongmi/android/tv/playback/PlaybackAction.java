@@ -75,7 +75,11 @@ public final class PlaybackAction {
     }
 
     public static String getEngineText(PlayerManager player) {
-        return ResUtil.getStringArray(R.array.select_engine)[getEngine(player)];
+        String[] engines = ResUtil.getStringArray(R.array.select_engine);
+        int index = getEngine(player);
+        // Engine is fixed to EXO; clamp so a stale value can never index out of bounds.
+        if (index < 0 || index >= engines.length) index = PlayerSetting.ENGINE_EXO;
+        return engines[index];
     }
 
     public static int getEngine(PlayerManager player) {

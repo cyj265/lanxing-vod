@@ -1,9 +1,16 @@
-package androidx.media3.mpvplayer.audio;
+package com.fongmi.android.tv.player.effect.audio;
 
-/** Compatibility math helper retained by FM's software audio processor. */
+/**
+ * Channel mixing math helper used by the software audio processor.
+ * <p>
+ * Originally lived under the MPV package, but it has no MPV dependency and is
+ * still used by the EXO audio effect chain, so it was moved here when the MPV
+ * backend was removed.
+ */
 public final class AudioChannelMix {
 
-    private AudioChannelMix() {}
+    private AudioChannelMix() {
+    }
 
     public static float mixMono(float[] samples) {
         if (samples == null || samples.length == 0) return 0f;
@@ -14,7 +21,6 @@ public final class AudioChannelMix {
 
     public static float mixStereoLeft(float[] samples) {
         if (samples == null || samples.length == 0) return 0f;
-        if (samples.length == 1) return samples[0];
         return samples[0];
     }
 

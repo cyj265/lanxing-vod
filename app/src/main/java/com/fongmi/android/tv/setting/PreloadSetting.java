@@ -70,7 +70,7 @@ public class PreloadSetting {
     public static long getDurationMs() {
         return getTimeSeconds() * 1000L;
     }
-    // ---- FongMi MPV compatibility API ----
+
     public static boolean isPreload() {
         return isEnabled();
     }

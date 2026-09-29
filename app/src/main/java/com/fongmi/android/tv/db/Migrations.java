@@ -6,6 +6,9 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 
 public class Migrations {
 
+    /** 迁移链能覆盖的最低版本：低于它的库只能走 destructive migration，必须先备份 */
+    public static final int EARLIEST_VERSION = 30;
+
     public static final Migration MIGRATION_30_31 = new Migration(30, 31) {
         @Override
         public void migrate(@NonNull SupportSQLiteDatabase database) {

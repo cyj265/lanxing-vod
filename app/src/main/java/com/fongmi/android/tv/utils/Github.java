@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.utils;
 
 import com.fongmi.android.tv.BuildConfig;
+import com.fongmi.android.tv.R;
 import com.github.catvod.net.OkHttp;
 
 import org.json.JSONObject;
@@ -23,15 +24,17 @@ public class Github {
         JSONObject json = new JSONObject(body);
         String version = json.optString("version", "");
         String url = json.optString("url", "");
-        String desc = json.optString("desc", "");
         String current = BuildConfig.VERSION_NAME;
         if (version.isEmpty() || url.isEmpty()) return null;
         if (compare(version, current) <= 0) return null;
         JSONObject release = new JSONObject();
         release.put("tag_name", "v" + version);
         release.put("apk_url", url);
-        release.put("name", version);
-        release.put("body", desc);
+        // Updater 用 name 作弹窗标题、body 作更新说明；清单里没写就回退到版本号，避免显示空白
+        String title = json.optString("name", "");
+        String desc = json.optString("body", "");
+        release.put("name", title.isEmpty() ? version : title);
+        release.put("body", desc.isEmpty() ? ResUtil.getString(R.string.update_desc_default) : desc);
         return release;
     }
 

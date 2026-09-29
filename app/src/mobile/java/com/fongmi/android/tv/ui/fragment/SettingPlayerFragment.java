@@ -17,7 +17,6 @@ import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.activity.HomeActivity;
 import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.dialog.BufferDialog;
-import com.fongmi.android.tv.ui.dialog.MpvConfDialog;
 import com.fongmi.android.tv.ui.dialog.UaDialog;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -28,7 +27,6 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
     private String[] background;
     private String[] render;
     private String[] scale;
-    private String[] engine;
 
     public static SettingPlayerFragment newInstance() {
         return new SettingPlayerFragment();
@@ -45,20 +43,14 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         setPlaybackModeText();
         mBinding.adblockText.setText(Setting.getSwitch(Setting.isAdblock()));
         mBinding.bufferText.setText(String.valueOf(PlayerSetting.getBuffer()));
-        mBinding.mpvVulkanText.setText(Setting.getSwitch(PlayerSetting.isMpvVulkan()));
-        mBinding.mpvGpuNextText.setText(Setting.getSwitch(PlayerSetting.isMpvGpuNext()));
         mBinding.scaleText.setText((scale = ResUtil.getStringArray(R.array.select_scale))[PlayerSetting.getScale()]);
         mBinding.backgroundText.setText((background = ResUtil.getStringArray(R.array.select_background))[PlayerSetting.getBackground()]);
     }
 
     @Override
     protected void initEvent() {
-        mBinding.engine.setOnClickListener(this::setEngine);
         mBinding.decode.setOnClickListener(this::onDecode);
         mBinding.adblock.setOnClickListener(this::setAdblock);
-        mBinding.mpvConf.setOnClickListener(this::onMpvConf);
-        mBinding.mpvGpuNext.setOnClickListener(this::setMpvGpuNext);
-        mBinding.mpvVulkan.setOnClickListener(this::setMpvVulkan);
         mBinding.render.setOnClickListener(this::setRender);
         mBinding.scale.setOnClickListener(this::onScale);
         mBinding.background.setOnClickListener(this::onBackground);
@@ -68,33 +60,10 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
     }
 
     private void setVisible() {
-        boolean exo = PlayerSetting.isExo();
-        mBinding.mpvConf.setVisibility(exo ? View.GONE : View.VISIBLE);
-        mBinding.mpvVulkan.setVisibility(exo ? View.GONE : View.VISIBLE);
-        mBinding.mpvGpuNext.setVisibility(exo ? View.GONE : View.VISIBLE);
-        mBinding.adblock.setVisibility(exo ? View.VISIBLE : View.GONE);
-        mBinding.buffer.setVisibility(exo ? View.VISIBLE : View.GONE);
-    }
-
-    private void setEngine(View view) {
-        int index = (PlayerSetting.getEngine() + 1) % engine.length;
-        PlayerSetting.putEngine(index);
-        setPlaybackModeText();
-        setVisible();
-    }
-
-    private void onMpvConf(View view) {
-        MpvConfDialog.show(this);
-    }
-
-    private void setMpvGpuNext(View view) {
-        PlayerSetting.putMpvGpuNext(!PlayerSetting.isMpvGpuNext());
-        mBinding.mpvGpuNextText.setText(Setting.getSwitch(PlayerSetting.isMpvGpuNext()));
-    }
-
-    private void setMpvVulkan(View view) {
-        PlayerSetting.putMpvVulkan(!PlayerSetting.isMpvVulkan());
-        mBinding.mpvVulkanText.setText(Setting.getSwitch(PlayerSetting.isMpvVulkan()));
+        // Engine is fixed to EXO (MPV backend removed), so the engine row is hidden.
+        mBinding.engine.setVisibility(View.GONE);
+        mBinding.adblock.setVisibility(View.VISIBLE);
+        mBinding.buffer.setVisibility(View.VISIBLE);
     }
 
     private void setRender(View view) {
@@ -104,9 +73,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
     }
 
     private void setPlaybackModeText() {
-        engine = ResUtil.getStringArray(R.array.select_engine);
         render = ResUtil.getStringArray(R.array.select_render);
-        mBinding.engineText.setText(engine[PlayerSetting.getEngine()]);
         mBinding.renderText.setText(render[PlayerSetting.getRender()]);
     }
 

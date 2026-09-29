@@ -90,18 +90,6 @@ android {
         }
     }
 
-    sourceSets {
-        main {
-            java {
-                // Real bundled MPV is enabled. The three legacy effect wrappers below
-                // target the older private MPV API and stay excluded.
-                exclude 'com/fongmi/android/tv/player/mpv/MpvPlayerEffect.java'
-                exclude 'com/fongmi/android/tv/player/effect/audio/MpvAudioEffectFilter.java'
-                exclude 'com/fongmi/android/tv/player/effect/video/MpvVideoEffectController.java'
-            }
-        }
-    }
-
     lint {
         disable 'UnsafeOptInUsageError'
         disable 'ExpiredTargetSdkVersion'

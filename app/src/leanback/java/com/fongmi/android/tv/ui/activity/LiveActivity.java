@@ -94,6 +94,10 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
     private Runnable mR2;
     private Runnable mR3;
     private Runnable mR4;
+    private Runnable mR5;
+    private long mPendingSeekTime;
+    private View mPendingFocusView;
+    private Runnable mR6;
     private List<Group> mHides;
     private Group mGroup;
     private Channel mChannel;
@@ -162,6 +166,8 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
         mR2 = this::setTraffic;
         mR3 = this::hideInfo;
         mR4 = this::hideUI;
+        mR5 = this::runPendingSeek;
+        mR6 = this::runPendingFocus;
         setRecyclerView();
         setVideoView();
         setViewModel();
@@ -567,7 +573,8 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
     private void showControl(View view) {
         mBinding.control.getRoot().setVisibility(View.VISIBLE);
         mBinding.widget.top.setVisibility(View.VISIBLE);
-        App.post(view::requestFocus, 25);
+        mPendingFocusView = view;
+        App.post(mR6, 25);
         setR1Callback();
         hideInfo();
     }
@@ -930,6 +937,17 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
         seekTo(time);
     }
 
+    /** 延迟 seek 必须是成员 Runnable，否则 onDestroy 无法移除它，页面销毁后仍会回调 */
+    private void runPendingSeek() {
+        if (isDestroyed()) return;
+        seek(mPendingSeekTime);
+    }
+
+    private void runPendingFocus() {
+        if (isDestroyed() || mPendingFocusView == null) return;
+        mPendingFocusView.requestFocus();
+    }
+
     private void onPaused() {
         controller().pause();
     }
@@ -996,14 +1014,22 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
 
     @Override
     public void onKeyLeft(long time) {
-        if (player().isLive()) prevLine();
-        else App.post(() -> seek(time), 250);
+        if (player().isLive()) {
+            prevLine();
+            return;
+        }
+        mPendingSeekTime = time;
+        App.post(mR5, 250);
     }
 
     @Override
     public void onKeyRight(long time) {
-        if (player().isLive()) nextLine(true);
-        else App.post(() -> seek(time), 250);
+        if (player().isLive()) {
+            nextLine(true);
+            return;
+        }
+        mPendingSeekTime = time;
+        App.post(mR5, 250);
     }
 
     @Override
@@ -1059,7 +1085,8 @@ public class LiveActivity extends PlaybackActivity implements GroupAdapter.OnCli
     protected void onDestroy() {
         mClock.release();
         Source.get().exit();
-        App.removeCallbacks(mR0, mR1, mR2, mR3, mR4);
+        App.removeCallbacks(mR0, mR1, mR2, mR3, mR4, mR5, mR6);
+        mPendingFocusView = null;
         super.onDestroy();
     }
 }

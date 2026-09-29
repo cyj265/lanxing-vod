@@ -994,7 +994,6 @@ public record PlaybackAutoContext(
     public enum Kernel {
         EXO("exo"),
         IJK("ijk"),
-        MPV("mpv"),
         UNKNOWN("unknown");
 
         private final String label;
@@ -1045,8 +1044,6 @@ public record PlaybackAutoContext(
 
     public enum RenderPath {
         EXO_TUNNELING("exo-tunneling"),
-        MPV_SURFACE_DIRECT("mpv-surface-direct"),
-        MPV_GPU("mpv-gpu"),
         IJK_NATIVE("ijk-native"),
         UNKNOWN("unknown");
 

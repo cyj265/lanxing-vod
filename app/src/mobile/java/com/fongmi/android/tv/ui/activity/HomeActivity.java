@@ -283,6 +283,10 @@ public class HomeActivity extends BaseActivity {
         OkHttp.get().clear();
         Source.get().exit();
         Server.get().stop();
+        if (mGlass != null) {
+            mGlass.release();
+            mGlass = null;
+        }
         super.onDestroy();
     }
 }

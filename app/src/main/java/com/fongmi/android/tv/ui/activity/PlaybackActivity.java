@@ -231,6 +231,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     }
 
     protected boolean seekTo(long deltaMs) {
+        if (mController == null) return false;
         PlayerManager player = player();
         long targetMs = Math.max(0, player.getPosition() + deltaMs);
         long durationMs = player.getDuration();
