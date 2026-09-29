@@ -1,6 +1,6 @@
 {
-  "version": "5.6.51",
-  "name": "5.6.51",
-  "body": "投屏组播 EPERM 根治：DLNACastService 在 jupnp 创建组播 socket 前，把进程网络路由 bindProcessToNetwork 绑到活动 WiFi 网络（仅 WiFi 时生效，退出投屏恢复默认路由）。解决一加 Android17 上 SSDP 组播被内核 EPERM 掐死、搜不到设备的问题。保留诊断日志。",
-  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.51/lanxing-5.6.51-mobile-arm64_v8a.apk"
+  "version": "5.6.52",
+  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.52/app-mobile-release.apk",
+  "desc": "投屏诊断增强：看门狗重放内存缓冲 + 自带网络/绑网状态结论，一次性定性 5.6.51 的 bindProcessToNetwork(wifi) 是否根治 EPERM",
+  "time": "2026-09-29"
 }

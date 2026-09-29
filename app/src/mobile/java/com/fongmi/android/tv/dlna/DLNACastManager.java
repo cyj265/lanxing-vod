@@ -39,6 +39,7 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
     private AndroidUpnpService upnpService;
     private DeviceListener deviceListener;
     private boolean bound;
+    private Context appCtx;
 
     public static DLNACastManager get() {
         return Loader.INSTANCE;
@@ -126,6 +127,7 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
 
     public void init(Context context) {
         DlnaDiag.init(context);
+        appCtx = context.getApplicationContext();
         DlnaDiag.log("init bound=" + bound + " attached=" + (upnpService != null));
         DlnaDiag.logNetwork(context);
         if (upnpService != null) {
@@ -151,12 +153,17 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
     }
 
     private void checkDevices() {
+        // 把内存缓冲里的全部诊断重放到 logcat 末尾，对抗 ColorOS 把早期行冲掉导致抓不到 bindProcessToNetwork 等关键信息
+        DlnaDiag.replay();
         if (upnpService == null) {
-            DlnaDiag.log("WATCHDOG: 12s 后仍无 upnpService -> 服务未连接，组播发现不可能进行");
+            DlnaDiag.logState(appCtx);
+            DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=false -> 服务未连接，组播发现不可能进行（看 REPLAY 中 onNullBinding/onCreate FAILED）");
             return;
         }
         int n = upnpService.getRegistry().getDevices(RENDERER_TYPE).size();
-        DlnaDiag.log("WATCHDOG: 12s 后已连接，发现 MediaRenderer=" + n + (n == 0 ? " (组播可能被 EPERM 拦截或无设备)" : ""));
+        DlnaDiag.logState(appCtx);
+        DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=" + n
+                + (n == 0 ? " -> 组播仍被 EPERM 拦截(看 REPLAY 中 bindProcessToNetwork 是否=true) 或网络无设备" : " -> 成功，投屏列表应有设备"));
     }
 
     public void search() {
