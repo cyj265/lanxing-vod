@@ -79,8 +79,16 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder binder) {
-        if (!bound) return;
-        attach((AndroidUpnpService) binder);
+        Log.d(TAG, "onServiceConnected: " + name);
+        if (!bound) {
+            Log.w(TAG, "onServiceConnected but not bound, ignore");
+            return;
+        }
+        try {
+            attach((AndroidUpnpService) binder);
+        } catch (Throwable t) {
+            Log.e(TAG, "onServiceConnected attach FAILED", t);
+        }
     }
 
     @Override
@@ -106,7 +114,13 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
             search();
         } else {
             bind(context.getApplicationContext());
+            App.post(this::checkAttached, 5000);
         }
+    }
+
+    private void checkAttached() {
+        if (upnpService == null) Log.w(TAG, "WATCHDOG: service NOT attached after 5s (bound=" + bound + ")");
+        else Log.d(TAG, "WATCHDOG: attached ok");
     }
 
     public void search() {
@@ -147,6 +161,7 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
 
     private void bind(Context context) {
         bound = context.bindService(new Intent(context, DLNACastService.class), this, Context.BIND_AUTO_CREATE);
+        Log.d(TAG, "bind() returned " + bound);
     }
 
     private void unbind(Context context) {

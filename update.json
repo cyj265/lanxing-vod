@@ -1,6 +1,6 @@
 {
-  "version": "5.6.47",
-  "name": "5.6.47",
-  "body": "投屏发现机制回退为 jupnp(UpnpService)方案：对齐影视仓/主分支 5.4.44 的网络栈，由 DLNACastService 承载 AndroidUpnpService、监听 Registry 发现 MediaRenderer，彻底规避自研 MulticastSocket 在一加 Android17 上 sendto EPERM 搜不到设备的问题；发现时抽取 AVTransport 控制地址写入 Device 以保证可投屏。附带修复播放设置/音效弹窗未传 player 的空指针崩溃。",
-  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.47/lanxing-5.6.47-mobile-arm64_v8a.apk"
+  "version": "5.6.48",
+  "name": "5.6.48",
+  "body": "投屏诊断版：为 DLNACastService.onCreate 与 DLNACastManager 的 onServiceConnected/bind 增加异常与连接看门狗日志（标签 DLNACast），定位一加 Android17 上 jupnp 服务未连接(root cause)的真正异常。无功能变更。",
+  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.48/lanxing-5.6.48-mobile-arm64_v8a.apk"
 }
