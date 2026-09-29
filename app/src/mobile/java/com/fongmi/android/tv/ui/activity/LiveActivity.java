@@ -6,7 +6,9 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Bundle;
+import android.view.DisplayCutout;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
@@ -356,6 +358,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
             vp.width = ViewGroup.LayoutParams.MATCH_PARENT;
             vp.height = ViewGroup.LayoutParams.MATCH_PARENT;
             vp.gravity = Gravity.TOP;
+            vp.topMargin = 0;
             mBinding.video.setLayoutParams(vp);
 
             lp.width = ViewGroup.LayoutParams.WRAP_CONTENT;
@@ -363,26 +366,37 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
             lp.gravity = Gravity.LEFT;
             mBinding.recycler.setLayoutParams(lp);
             mBinding.recycler.setVisibility(View.GONE);
+            setPadding(mBinding.recycler, true);
         } else {
-            // 半屏：视频上半屏（16:9 实际高度，避免控制栏与画面脱节）、频道列表下半屏，不重叠
+            // 半屏：视频上半屏（16:9 实际高度，从状态栏/挖孔下方开始，与点播播放窗口对齐）、频道列表下半屏
             int screenH = ResUtil.getScreenHeight();
             int videoH = Math.min(ResUtil.getScreenWidth() * 9 / 16, screenH / 2);
             vp.width = ViewGroup.LayoutParams.MATCH_PARENT;
             vp.height = videoH;
             vp.gravity = Gravity.TOP;
+            vp.topMargin = getInsetTop();
             mBinding.video.setLayoutParams(vp);
 
             lp.width = ViewGroup.LayoutParams.MATCH_PARENT;
-            lp.height = screenH - videoH;
+            lp.height = screenH - videoH - vp.topMargin;
             lp.gravity = Gravity.BOTTOM;
             mBinding.recycler.setLayoutParams(lp);
             mBinding.recycler.setVisibility(View.VISIBLE);
             mBinding.group.setVisibility(View.VISIBLE);
             mBinding.channel.setVisibility(View.VISIBLE);
             mBinding.epgData.setVisibility(View.VISIBLE);
+            // 半屏面板贴底部，不涉及顶部挖孔；居中挖孔机型 SafeInsetLeft 会被误报成整块宽度，
+            // 不能把挖孔填充当左 padding 用（会把整个列表顶到右边、EPG 溢出屏幕）
+            noPadding(mBinding.recycler);
             setPanelWidth();
             setPosition();
         }
+    }
+
+    private int getInsetTop() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return 0;
+        DisplayCutout cutout = ResUtil.getDisplay(this).getCutout();
+        return cutout == null ? 0 : cutout.getSafeInsetTop();
     }
 
     private void setPanelWidth() {

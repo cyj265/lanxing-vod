@@ -1,6 +1,6 @@
 {
-  "version": "5.6.41",
-  "name": "5.6.41",
-  "body": "修复5.6.40安装包构建失败；投屏搜索增强：补发定向探测+延迟重试，弹窗关闭不再销毁发现服务（反复开关投屏不再失灵），设备发现全程加日志。",
-  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.41/lanxing-5.6.41-mobile-arm64_v8a.apk"
+  "version": "5.6.42",
+  "name": "5.6.42",
+  "body": "直播半屏布局修正：播放窗口从状态栏下方开始（与点播窗口对齐，画面不再被状态栏遮住一截）；修复挖孔屏误报安全区导致节目列表整体右移、EPG 溢出屏幕右缘的问题；频道/节目列表行距压缩，一屏多看约3个频道。",
+  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.42/lanxing-5.6.42-mobile-arm64_v8a.apk"
 }
