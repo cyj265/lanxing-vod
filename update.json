@@ -1,6 +1,6 @@
 {
-  "version": "5.6.49",
-  "name": "5.6.49",
-  "body": "投屏诊断加强版：DLNACastManager 在「已 bind 但未连上服务」时自动重新绑定，新增 onNullBinding/onBindingDied 诊断，看门狗区分「服务未起」与「已起但搜不到设备」。配合 logcat 定位一加 Android17 投屏根因。无功能变更。",
-  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.49/lanxing-5.6.49-mobile-arm64_v8a.apk"
+  "version": "5.6.50",
+  "name": "5.6.50",
+  "body": "投屏诊断改版：放弃受 ColorOS 污染的 logcat 过滤，改为把关键事件（bind 结果、onServiceConnected/onNullBinding、网络类型、MulticastLock 状态、12s 看门狗是否发现设备）写入 App 私有目录文件 dlna_diag.log。用户只需 adb pull 该文件即可，无需 logcat。用于定位一加 Android17 投屏组播 EPERM 根因。无功能变更。",
+  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.50/lanxing-5.6.50-mobile-arm64_v8a.apk"
 }

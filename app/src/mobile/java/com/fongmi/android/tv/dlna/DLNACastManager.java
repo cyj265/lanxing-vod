@@ -61,9 +61,9 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
             String url = avt.getControlURI().toString();
             bean.setUrl(url);
             bean.setIp(host(url));
-            Log.d(TAG, "device found: " + bean.getName() + ", avt=" + url);
+            DlnaDiag.log("device found: " + bean.getName() + ", avt=" + url);
         } else {
-            Log.d(TAG, "device found(no AVT): " + bean.getName());
+            DlnaDiag.log("device found(no AVT): " + bean.getName());
         }
         return bean;
     }
@@ -79,34 +79,35 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
 
     @Override
     public void onServiceConnected(ComponentName name, IBinder binder) {
-        Log.d(TAG, "onServiceConnected: " + name);
+        DlnaDiag.log("onServiceConnected: " + name);
         if (!bound) {
-            Log.w(TAG, "onServiceConnected but not bound, ignore");
+            DlnaDiag.log("onServiceConnected but not bound, ignore");
             return;
         }
         try {
             attach((AndroidUpnpService) binder);
         } catch (Throwable t) {
-            Log.e(TAG, "onServiceConnected attach FAILED", t);
+            DlnaDiag.log("onServiceConnected attach FAILED");
+            DlnaDiag.log(t);
         }
     }
 
     @Override
     public void onServiceDisconnected(ComponentName name) {
-        Log.w(TAG, "onServiceDisconnected: " + name);
+        DlnaDiag.log("onServiceDisconnected: " + name);
         detach();
     }
 
     @Override
     public void onNullBinding(ComponentName name) {
         // API 26+：服务 onCreate 抛异常/返回 null binder 时触发，说明服务根本没起来
-        Log.e(TAG, "onNullBinding: service returned null binder (service likely crashed in onCreate?)");
+        DlnaDiag.log("onNullBinding: service returned null binder (service likely crashed in onCreate?)");
         bound = false;
     }
 
     @Override
     public void onBindingDied(ComponentName name) {
-        Log.e(TAG, "onBindingDied: " + name);
+        DlnaDiag.log("onBindingDied: " + name);
         detach();
         bound = false;
     }
@@ -124,14 +125,16 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
     }
 
     public void init(Context context) {
-        Log.d(TAG, "init bound=" + bound + " attached=" + (upnpService != null));
+        DlnaDiag.init(context);
+        DlnaDiag.log("init bound=" + bound + " attached=" + (upnpService != null));
+        DlnaDiag.logNetwork(context);
         if (upnpService != null) {
             search();
             return;
         }
         if (bound) {
             // 之前 bind 返回了 true 但 onServiceConnected 始终没来（服务起不来），先解绑再重试
-            Log.w(TAG, "init: previous bind stale (service never attached), rebinding");
+            DlnaDiag.log("init: previous bind stale (service never attached), rebinding");
             try {
                 unbind(context.getApplicationContext());
             } catch (Throwable ignore) {
@@ -139,15 +142,25 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
         }
         bind(context.getApplicationContext());
         App.post(this::checkAttached, 5000);
+        App.post(this::checkDevices, 12000);
     }
 
     private void checkAttached() {
-        if (upnpService == null) Log.w(TAG, "WATCHDOG: service NOT attached after 5s (bound=" + bound + ")");
-        else Log.d(TAG, "WATCHDOG: attached ok");
+        if (upnpService == null) DlnaDiag.log("WATCHDOG: service NOT attached after 5s (bound=" + bound + ")");
+        else DlnaDiag.log("WATCHDOG: attached ok");
+    }
+
+    private void checkDevices() {
+        if (upnpService == null) {
+            DlnaDiag.log("WATCHDOG: 12s 后仍无 upnpService -> 服务未连接，组播发现不可能进行");
+            return;
+        }
+        int n = upnpService.getRegistry().getDevices(RENDERER_TYPE).size();
+        DlnaDiag.log("WATCHDOG: 12s 后已连接，发现 MediaRenderer=" + n + (n == 0 ? " (组播可能被 EPERM 拦截或无设备)" : ""));
     }
 
     public void search() {
-        Log.d(TAG, "search");
+        DlnaDiag.log("search");
         if (upnpService != null) upnpService.getControlPoint().search(new STAllHeader());
     }
 
@@ -184,7 +197,7 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
 
     private void bind(Context context) {
         bound = context.bindService(new Intent(context, DLNACastService.class), this, Context.BIND_AUTO_CREATE);
-        Log.d(TAG, "bind() returned " + bound);
+        DlnaDiag.log("bind() returned " + bound);
     }
 
     private void unbind(Context context) {
@@ -197,7 +210,7 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
         detach();
         upnpService = service;
         upnpService.getRegistry().addListener(this);
-        Log.d(TAG, "upnp service attached");
+        DlnaDiag.log("upnp service attached");
         search();
     }
 
