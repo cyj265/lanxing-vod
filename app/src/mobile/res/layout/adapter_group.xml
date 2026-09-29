@@ -14,7 +14,7 @@
         android:layout_height="wrap_content"
         android:background="@drawable/shape_live"
         android:duplicateParentState="true"
-        android:ellipsize="marquee"
+        android:ellipsize="end"
         android:singleLine="true"
         android:textColor="@color/selector_text"
         android:textSize="14sp"

@@ -158,7 +158,6 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (!ResUtil.isLand(this)) setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
         Util.hideSystemUI(this);
     }
 
@@ -303,7 +302,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         if (isHalfPanel()) return;
         int padding = ResUtil.dp2px(48);
         if (live.getWidth() == 0) for (Group item : live.getGroups()) live.setWidth(Math.max(live.getWidth(), ResUtil.getTextWidth(item.getName(), 14)));
-        int minWidth = ResUtil.dp2px(96);
+        int minWidth = ResUtil.dp2px(120);
         int maxWidth = ResUtil.getScreenWidth() / 4;
         int width = live.getWidth() == 0 ? 0 : Math.max(minWidth, Math.min(live.getWidth() + padding, maxWidth));
         setWidth(mBinding.group, width);
@@ -387,9 +386,9 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
     private void setPanelWidth() {
         int width = ResUtil.getScreenWidth();
-        setWidth(mBinding.group, (int) (width * 0.18f));
-        setWidth(mBinding.channel, (int) (width * 0.37f));
-        setWidth(mBinding.epgData, (int) (width * 0.45f));
+        setWidth(mBinding.group, (int) (width * 0.24f));
+        setWidth(mBinding.channel, (int) (width * 0.35f));
+        setWidth(mBinding.epgData, (int) (width * 0.41f));
     }
 
     private void setPosition(int[] position) {

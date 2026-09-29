@@ -60,4 +60,13 @@
         <item>PiP</item>
     </string-array>
 
+    <!-- Repository manage (多仓/多源聚合) -->
+    <string name="repository_manage">仓库管理</string>
+    <string name="tab_vod">多源聚合</string>
+    <string name="tab_live">线路合集</string>
+    <string name="dialog_refresh">刷新</string>
+    <string name="dialog_add">添加</string>
+    <string name="copy_success">已复制仓库地址</string>
+    <string name="refresh_success">刷新成功</string>
+
 </resources>

@@ -1,6 +1,6 @@
 {
-  "version": "5.6.37",
-  "name": "5.6.37",
-  "body": "修复播放器释放导致的崩溃、EXO 音轨/字幕轨道切换异常（空轨道选择误禁整类轨道）、更新弹窗信息空白，并优化首页毛玻璃性能；彻底移除已停用的 MPV 内核死代码。",
-  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.37/lanxing-5.6.37-mobile-arm64_v8a.apk"
+  "version": "5.6.38",
+  "name": "5.6.38",
+  "body": "新增仓库管理（多源聚合/线路合集双模式、长按复制、左滑删除、刷新/添加）；直播改为默认半屏布局（上播放下列表，横屏全屏由转屏触发）；直播分类栏加宽，分类名完整显示。",
+  "url": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.38/lanxing-5.6.38-mobile-arm64_v8a.apk"
 }
