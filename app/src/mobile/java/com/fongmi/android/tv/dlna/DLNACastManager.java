@@ -121,11 +121,13 @@ public class DLNACastManager {
                     // 关键：用 MulticastSocket 并显式指定出网接口。
                     // 普通 DatagramSocket 绑定到特定本地地址后发组播，在部分 Android 内核上
                     // 会被 sendto 拒绝(EPERM)——因为内核无法决定出接口。jupnp 即采用此方式。
+                    // 关键：MulticastSocket 必须绑到通配地址(0.0.0.0)，再用 setNetworkInterface 指定
+                    // 出网接口。若再 bind 到特定本地地址，内核无法决定组播出接口，sendto 会被
+                    // 内核以 EPERM 拒绝（本机一加 Android17 实测）。jupnp 即用此通配写法。
                     MulticastSocket socket = new MulticastSocket(null);
                     socket.setReuseAddress(true);
                     socket.setNetworkInterface(ni);
                     socket.setLoopbackMode(true);
-                    socket.bind(new InetSocketAddress(address, 0));
                     socket.setSoTimeout(300);
                     byte[] buffer = new byte[2048];
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);

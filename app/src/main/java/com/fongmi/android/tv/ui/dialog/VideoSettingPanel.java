@@ -299,7 +299,7 @@ final class VideoSettingPanel {
     }
 
     private boolean supportsSharpness() {
-        return player.supportsVideoSharpness();
+        return isPlayerAvailable() && player.supportsVideoSharpness();
     }
 
     private int getUnsupportedText() {

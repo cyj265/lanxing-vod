@@ -192,13 +192,13 @@ public class ControlDialog extends BaseBottomSheetDialog {
     }
 
     private boolean openAudioSetting() {
-        AudioSettingDialog.create().show(getActivity());
+        AudioSettingDialog.create().player(player).show(getActivity());
         dismiss();
         return true;
     }
 
     private void openVideoSetting() {
-        VideoSettingDialog.create().show(getActivity());
+        VideoSettingDialog.create().player(player).show(getActivity());
         dismiss();
     }
 
