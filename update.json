@@ -1,6 +1,6 @@
 {
-  "version": "5.6.62",
-  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.62/lanxing-5.6.62-mobile-arm64_v8a.apk",
-  "desc": "投屏本地网络权限运行时申请(Android 17 官方正解)：5.6.61 将 targetSdk 降到 36 仍搜不到设备，实测证实 ColorOS 的本地网络保护(LNP)门槛比 AOSP 文档更低，targetSdk<=30(main/OK影视) 才隐式放行。本次改回 targetSdk=37，并在 CastDialog 进入投屏时运行时申请 ACCESS_LOCAL_NETWORK(系统弹「本地网络」授权框，点允许即放行 SSDP 组播收发)。这是面向 Android 17 的标准修复，保留全部新特性。",
+  "version": "5.6.63",
+  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.63/lanxing-5.6.63-mobile-arm64_v8a.apk",
+  "desc": "修复投屏『能发现设备但点击报 no scheme was found』：jupnp 3.x 不再自动解析相对 controlURL(如 Macast 返回 AVTransport/action)，发现设备时按 UPnP 规范用设备描述文件 URL 将其补全为绝对地址后再发 SOAP 指令。同机 OK影视(main/jupnp 2.x)能投而揽星不能的最后一个差异点消除。",
   "time": "2026-09-30"
 }

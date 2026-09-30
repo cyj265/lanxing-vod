@@ -59,7 +59,7 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
         Device bean = Device.get(device);
         RemoteService avt = device.findService(AVT_TYPE);
         if (avt != null && avt.getControlURI() != null) {
-            String url = avt.getControlURI().toString();
+            String url = absoluteControl(avt.getControlURI(), device).toString();
             bean.setUrl(url);
             bean.setIp(host(url));
             DlnaDiag.log("device found: " + bean.getName() + ", avt=" + url);
@@ -69,9 +69,23 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
         return bean;
     }
 
+    /** jupnp 3.x 不再自动 resolve 相对 controlURL（如 Macast 的 "AVTransport/action"），
+     *  按 UPnP 规范对设备描述文件 URL(URLBase 优先, 否则 descriptor URL) 解析成绝对地址。 */
+    private java.net.URI absoluteControl(java.net.URI control, RemoteDevice device) {
+        if (control.isAbsolute()) return control;
+        try {
+            java.net.URL base = device.getDetails() != null && device.getDetails().getBaseURL() != null ? device.getDetails().getBaseURL() : device.getIdentity().getDescriptorURL();
+            if (base != null) return base.toURI().resolve(control);
+        } catch (Exception e) {
+            DlnaDiag.log("absoluteControl FAILED: " + e);
+        }
+        return control;
+    }
+
     private String host(String url) {
         try {
             URI parsed = new URI(url);
+            if (parsed.getHost() == null) return "";
             return parsed.getPort() > 0 ? parsed.getHost() + ":" + parsed.getPort() : parsed.getHost();
         } catch (Exception e) {
             return "";
