@@ -33,6 +33,7 @@
     <string name="cast_connected">已連接</string>
     <string name="cast_empty">未發現裝置\n點擊重新搜尋</string>
     <string name="device_scan">請掃描影視 QRCode 進行綁定</string>
+    <string name="cast_perm_nearby_hint">投屏發現需要「附近裝置」權限，請到 設定→應用程式→攬星影視→權限 中開啟</string>
 
     <!-- Control -->
     <string name="control_speed">倍速</string>

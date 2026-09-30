@@ -33,6 +33,7 @@
     <string name="cast_connected">Connected</string>
     <string name="cast_empty">No devices found\nTap to search again</string>
     <string name="device_scan">Please scan QR Code to bind</string>
+    <string name="cast_perm_nearby_hint">投屏发现需要「附近的设备」权限，请到 设置→应用→揽星影视→权限 中开启</string>
 
     <!-- Control -->
     <string name="control_speed">Speed</string>

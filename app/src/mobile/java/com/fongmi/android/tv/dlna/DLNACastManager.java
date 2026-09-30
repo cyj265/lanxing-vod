@@ -166,7 +166,7 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
         if (n > 0) {
             DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=" + n + " -> OK, cast list should have devices");
         } else if (DlnaDiag.probeBlockedByEperm) {
-            DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=0 -> PROBE got EPERM: ROM/ColorOS blocks app multicast SEND. Fix: ColorOS Settings > grant app 'WLAN multicast'/'LAN' perm; or adb: appops set com.cyj265.lanxingvod android:multicast_state allow");
+            DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=0 -> PROBE got EPERM: ROM/ColorOS blocks app multicast SEND even with MulticastLock. Fix: grant app 'Nearby devices'(附近的设备) perm in Settings > Apps > 揽星影视 > Permissions; Android 13+ requires NEARBY_WIFI_DEVICES for DLNA cast discovery");
             showEpermToast();
         } else {
             DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=0 -> multicast not EPERM-blocked; no device replied (router AP-isolation/IGMP, or no renderer on network)");
@@ -175,7 +175,7 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
 
     private void showEpermToast() {
         try {
-            Toast.makeText(appCtx, "投屏发现被系统拦截(组播 EPERM)。请在手机设置开启本应用「WLAN 多播 / 局域网」权限，或在电脑执行 adb 命令开启多播(详情见日志)", Toast.LENGTH_LONG).show();
+            Toast.makeText(appCtx, "投屏发现被系统拦截(组播 EPERM)。请到 设置→应用→揽星影视→权限→开启「附近的设备」，并允许 WLAN 多播(详情见日志)", Toast.LENGTH_LONG).show();
         } catch (Throwable ignore) {
         }
     }

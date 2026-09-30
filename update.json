@@ -1,6 +1,6 @@
 {
-  "version": "5.6.54",
-  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.54/lanxing-5.6.54-mobile-arm64_v8a.apk",
-  "desc": "投屏诊断增强：探针确认 ColorOS/Android17 在 CHANGE_WIFI_MULTICAST_STATE 之上仍内核级 EPERM 拦截 app 组播发送；诊断结论/看门狗改 ASCII(避免 logcat 乱码)，检测到 EPERM 时弹 Toast 引导用户在设置放开本应用 WLAN 多播/局域网权限(或 adb appops)。5.6.53 的 Network.bindSocket 修法本身正确，卡点在系统权限闸门。",
+  "version": "5.6.55",
+  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.55/lanxing-5.6.55-mobile-arm64_v8a.apk",
+  "desc": "投屏发现适配 Android 13+ 权限模型：进投屏时运行时申请 NEARBY_WIFI_DEVICES(附近的设备)权限，ColorOS/部分 ROM 据此放行组播发送(此前仅持 MulticastLock 仍被内核级 EPERM 拦截)。诊断 Toast/VERDICT 改为指引开启「附近的设备」权限。同时修正应用内更新检测(apk 字段+CI 自动校正 update.json)。",
   "time": "2026-09-30"
 }

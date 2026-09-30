@@ -1,13 +1,17 @@
 package com.fongmi.android.tv.ui.dialog;
 
 import android.app.Activity;
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.view.LayoutInflater;
 import android.view.View;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.media3.common.C;
@@ -61,6 +65,13 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
 
     private final Runnable mEmpty = this::showEmpty;
 
+    private final ActivityResultLauncher<String> permLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            granted -> {
+                if (granted) DLNACastManager.get().search();
+                else Notify.show(R.string.cast_perm_nearby_hint);
+            });
+
     public CastDialog() {
         scanTask = new ScanTask(this);
         body = new FormBody.Builder();
@@ -105,11 +116,22 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
     protected void initView() {
         binding.scan.setVisibility(fm ? View.VISIBLE : View.GONE);
         setWidth(0.85f);
-        DLNACastManager.get().init(requireActivity());
-        DLNACastManager.get().setDeviceListener(this);
+        ensureNearbyPermission();
         setRecyclerView();
         getDevice();
         showLoading();
+    }
+
+    /** Android 13+ 把 DLNA 投屏发现归到「附近的设备」权限组(NEARBY_WIFI_DEVICES)。
+     *  未授权时 ColorOS/部分 ROM 会在内核层掐掉组播发送(sendto EPERM)。
+     *  这里运行时申请；无论授予与否都照常启动发现(授予后主动再搜一次)。 */
+    private void ensureNearbyPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
+                && ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.NEARBY_WIFI_DEVICES) != PackageManager.PERMISSION_GRANTED) {
+            permLauncher.launch(Manifest.permission.NEARBY_WIFI_DEVICES);
+        }
+        DLNACastManager.get().init(requireActivity());
+        DLNACastManager.get().setDeviceListener(this);
     }
 
     @Override
