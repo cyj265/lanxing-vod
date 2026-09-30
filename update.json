@@ -1,6 +1,6 @@
 {
-  "version": "5.6.55",
-  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.55/lanxing-5.6.55-mobile-arm64_v8a.apk",
-  "desc": "投屏发现适配 Android 13+ 权限模型：进投屏时运行时申请 NEARBY_WIFI_DEVICES(附近的设备)权限，ColorOS/部分 ROM 据此放行组播发送(此前仅持 MulticastLock 仍被内核级 EPERM 拦截)。诊断 Toast/VERDICT 改为指引开启「附近的设备」权限。同时修正应用内更新检测(apk 字段+CI 自动校正 update.json)。",
+  "version": "5.6.56",
+  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.56/lanxing-5.6.56-mobile-arm64_v8a.apk",
+  "desc": "投屏组播出接口修正：枚举真实 WiFi 物理接口(wlan0)代替 ColorOS 在 VPN/网络加速下误报的 tun1，避免组播发进隧道导致搜不到局域网设备。5.6.55 已修复 Android13+ 附近的设备权限(EPERM 导致发送被拦)问题。",
   "time": "2026-09-30"
 }

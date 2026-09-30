@@ -100,17 +100,21 @@ public class DLNACastService extends AndroidUpnpServiceImpl {
             }
             boolean ok = cm.bindProcessToNetwork(net);
             DlnaDiag.log("bindProcessToNetwork(wifi)=" + ok + " net=" + net);
-            // 同时把 WiFi 的 Network 与 NetworkInterface 交给 DlnaNet，供 jupnp 的 MulticastSocket 子类 bindSocket 使用
-            NetworkInterface ni = null;
-            try {
-                LinkProperties lp = cm.getLinkProperties(net);
-                if (lp != null && lp.getInterfaceName() != null) {
-                    ni = NetworkInterface.getByName(lp.getInterfaceName());
+            // 决定组播出接口：优先枚举真实 WiFi 物理接口(wlan0)，避免 ColorOS 在 VPN/网络加速下
+            // 把"WiFi 网络"的链路接口错报成 tun1 导致组播发进隧道、搜不到局域网设备。
+            NetworkInterface ni = DlnaNet.pickRealWifiInterface();
+            if (ni == null) {
+                try {
+                    LinkProperties lp = cm.getLinkProperties(net);
+                    if (lp != null && lp.getInterfaceName() != null) {
+                        ni = NetworkInterface.getByName(lp.getInterfaceName());
+                    }
+                } catch (Throwable ignore) {
                 }
-            } catch (Throwable ignore) {
             }
             DlnaNet.set(net, ni);
-            DlnaDiag.log("DlnaNet set: wifiInterface=" + (ni != null ? ni.getDisplayName() : "null"));
+            DlnaDiag.log("DlnaNet set: wifiInterface=" + (ni != null ? ni.getDisplayName() : "null")
+                    + (ni != null && !ni.getName().matches("wlan\\d+") ? " (WARN: not wlan0, VPN/tunnel may be active)" : ""));
         } catch (Throwable t) {
             DlnaDiag.log("bindWifi FAILED");
             DlnaDiag.log(t);
