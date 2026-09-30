@@ -27,16 +27,15 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class Updater implements Download.Callback, UpdateListener {
 
-    // 与揽星TV 一致的更新逻辑：查 GitHub Releases，用构建号(BUILD_NUMBER)判断是否有新版本。
+    // 更新逻辑：查 GitHub Releases，用版本号(versionName)判断是否有新版本（分段数值比较）。
+    // 注：构建号(BUILD_NUMBER)方案已废弃——安装包的 BUILD_NUMBER 取自 CI run_number，与线上
+    //     release 的构建号恒相等，无法触发更新；改用版本号后，用户装到更高版本号才会提示更新。
     // 注意：不能用 /releases/latest —— 该接口默认排除 prerelease，而 dev 构建发布为预发布版会永远返回 404。
     // 用列表接口(含 prerelease)取最新一条即可。
     private static final String RELEASES_URL = "https://api.github.com/repos/cyj265/lanxing-vod/releases?per_page=1";
-    private static final Pattern APK_BUILD = Pattern.compile("v(\\d+)\\.apk$");
     // 加速节点：直连优先，失败依次回退到多个主流 GitHub 加速中转（国内常见可用节点）
     private static final String[] PROXIES = {
             "https://gh-proxy.com/",
@@ -87,14 +86,14 @@ public class Updater implements Download.Callback, UpdateListener {
             version = release.optString("version", "");
             String desc = release.optString("desc", "");
             if (apkUrl == null || apkUrl.isEmpty() || version.isEmpty()) return;
-            if (!isNewer(release.optInt("build", 0))) return;
+            if (!isNewer(version)) return;
             App.post(() -> show(activity, version, desc));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    /** 读取最新 Release，解析出版本号/构建号/APK 下载地址；无更新或异常返回 null */
+    /** 读取最新 Release，解析出版本号/APK 下载地址；无更新或异常返回 null */
     private JSONObject getLatestRelease() throws Exception {
         HttpURLConnection conn = (HttpURLConnection) new URL(RELEASES_URL).openConnection();
         conn.setConnectTimeout(10000);
@@ -110,39 +109,43 @@ public class Updater implements Download.Callback, UpdateListener {
         JSONArray arr = new JSONArray(body);
         if (arr.length() == 0) return null;
         JSONObject json = arr.getJSONObject(0);
-        String tag = json.optString("tag_name", "").replaceFirst("^v", "");
+        // tag 形如 v5.6.67-r124：去掉前缀 v，再去掉 -r124 等后缀，只留版本号 5.6.67
+        String tag = json.optString("tag_name", "").replaceFirst("^v", "").replaceFirst("-.*$", "");
         JSONArray assets = json.optJSONArray("assets");
         if (assets == null) return null;
         String url = null;
-        String name = null;
         for (int i = 0; i < assets.length(); i++) {
             JSONObject a = assets.getJSONObject(i);
             if (a.optString("name", "").endsWith(".apk")) {
                 url = a.optString("browser_download_url", "");
-                name = a.optString("name", "");
                 break;
             }
         }
-        if (url.isEmpty()) return null;
-        int build = extractBuildNumber(name);
+        if (url == null || url.isEmpty()) return null;
         JSONObject release = new JSONObject();
-        release.put("version", tag.isEmpty() ? version : tag);
-        release.put("build", build);
+        release.put("version", tag.isEmpty() ? "" : tag);
         release.put("apk_url", url);
         release.put("desc", json.optString("body", ""));
         return release;
     }
 
-    /** APK 文件名形如 lanxing-v12.apk（与揽星TV 的 iptv-player-v<run>.apk 一致）→ 取 v12.apk 中的 12 */
-    private int extractBuildNumber(String apkName) {
-        if (apkName == null) return 0;
-        Matcher m = APK_BUILD.matcher(apkName);
-        return m.find() ? parseInt(m.group(1)) : 0;
+    private boolean isNewer(String remoteVersion) {
+        // 用版本号(版本号)判断是否有新版本：分段数值比较，如 5.6.9 < 5.6.10
+        return compareVersion(remoteVersion, BuildConfig.VERSION_NAME) > 0;
     }
 
-    private boolean isNewer(int remoteBuild) {
-        // 用构建号判断：即使版本号相同，构建号增加也提示更新
-        return remoteBuild > BuildConfig.BUILD_NUMBER;
+    /** 分段数值比较：a>b 返回正数，相等返回 0，a<b 返回负数；任一为空视为相等(不提示) */
+    private int compareVersion(String a, String b) {
+        if (a == null || b == null) return 0;
+        String[] pa = a.split("\\.");
+        String[] pb = b.split("\\.");
+        int n = Math.max(pa.length, pb.length);
+        for (int i = 0; i < n; i++) {
+            int x = i < pa.length ? parseInt(pa[i]) : 0;
+            int y = i < pb.length ? parseInt(pb[i]) : 0;
+            if (x != y) return Integer.compare(x, y);
+        }
+        return 0;
     }
 
     private int parseInt(String s) {

@@ -173,7 +173,9 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     protected void initView(Bundle savedInstanceState) {
         super.initView(savedInstanceState);
         mKeyDown = CustomKeyDown.create(this, mBinding.player);
-        setPadding(mBinding.control.getRoot());
+        // 控件层必须与播放窗口完全重叠：挖孔 SafeInset 在居中挖孔机型会误报大数值，
+        // 当左右 padding 打上去控件就内缩了（竖屏视频窗口根本不贴屏幕左右边缘），竖屏一律不 pad
+        noPadding(mBinding.control.getRoot());
         setPadding(mBinding.recycler, true);
         mHides = new ArrayList<>();
         mR1 = this::hideControl;
@@ -383,6 +385,8 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
             mBinding.panelBar.setVisibility(View.GONE);
             setContainerWidth(ViewGroup.LayoutParams.WRAP_CONTENT);
             setPadding(mBinding.recycler, true);
+            // 横屏全屏视频贴屏幕左右边缘，顶部栏需避让侧边挖孔
+            setPadding(mBinding.control.getRoot());
         } else {
             // 半屏：视频上半屏（16:9 实际高度，从状态栏/挖孔下方开始，与点播播放窗口对齐）、频道列表下半屏
             int screenH = ResUtil.getScreenHeight();
@@ -404,6 +408,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
             // 半屏面板贴底部，不涉及顶部挖孔；居中挖孔机型 SafeInsetLeft 会被误报成整块宽度，
             // 不能把挖孔填充当左 padding 用（会把整个列表顶到右边、EPG 溢出屏幕）
             noPadding(mBinding.recycler);
+            noPadding(mBinding.control.getRoot());
             mBinding.panelBar.setVisibility(View.VISIBLE);
             setContainerWidth(ViewGroup.LayoutParams.MATCH_PARENT);
             setPanelWidth();
@@ -822,6 +827,8 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mBinding.widget.line.setVisibility(mChannel.getLineVisible());
         mBinding.control.action.line.setText(mBinding.widget.line.getText());
         mBinding.control.action.line.setVisibility(mBinding.widget.line.getVisibility());
+        // 面板功能行「线路」显示当前线路号：线路N
+        mBinding.panelLine.setText(getString(R.string.live_line, mChannel.getIndex() + 1));
     }
 
     private void onEpgLoaded(Epg epg) {
@@ -1192,7 +1199,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
             noPadding(mBinding.control.getRoot());
         } else {
             setPadding(mBinding.recycler, true);
-            setPadding(mBinding.control.getRoot());
+            noPadding(mBinding.control.getRoot());
         }
         applyPanelLayout();
     }

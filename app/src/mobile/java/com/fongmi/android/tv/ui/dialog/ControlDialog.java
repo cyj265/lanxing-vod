@@ -7,6 +7,7 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.widget.LinearLayoutCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewbinding.ViewBinding;
@@ -21,14 +22,17 @@ import com.fongmi.android.tv.setting.AudioSetting;
 import com.fongmi.android.tv.setting.SpeedSetting;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Timer;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-import java.util.Locale;
-
+/**
+ * 播放设置（对齐影视仓胶囊直选风格）：解码/画面缩放/倍速播放/音效模式 + 片头/片尾/重播/刷新。
+ * 选择项点选即生效；动作项转发给底部功能栏对应按钮（直播布局缺的行自动隐藏）。
+ */
 public class ControlDialog extends BaseBottomSheetDialog {
 
     private static final String ACTION_ARROW = "›";
     private static final int[] AUDIO_MODES = {AudioEffectPreset.OFF, AudioEffectPreset.NATURAL, AudioEffectPreset.SURROUND, AudioEffectPreset.VOCAL, AudioEffectPreset.CINEMA, AudioEffectPreset.BASS, AudioEffectPreset.TREBLE, AudioEffectPreset.POP, AudioEffectPreset.ROCK, AudioEffectPreset.DANCE, AudioEffectPreset.ELECTRONIC, AudioEffectPreset.JAZZ, AudioEffectPreset.CLASSICAL, AudioEffectPreset.CUSTOM};
+    /** 胶囊视觉顺序 [硬解, 软解] 对应 select_decode 下标（0=软解 1=硬解） */
+    private static final int[] DECODE_ORDER = {1, 0};
 
     private DialogControlBinding binding;
     private View parent;   // 底部功能栏根(点播/直播共用，按 id 查找，缺则隐藏对应行)
@@ -76,23 +80,25 @@ public class ControlDialog extends BaseBottomSheetDialog {
         return t != null && t.getVisibility() == View.VISIBLE;
     }
 
+    private static int indexOf(String[] items, CharSequence text) {
+        for (int i = 0; i < items.length; i++) if (items[i].contentEquals(text)) return i;
+        return -1;
+    }
+
+    private static boolean same(float a, float b) {
+        return Math.abs(a - b) < 0.01f;
+    }
+
     @Override
     protected void initView() {
-        TextView p = tv(R.id.player);
-        if (p != null) binding.player.setText(p.getText());
-        TextView d = tv(R.id.decode);
-        if (d != null) binding.decode.setText(d.getText());
-        TextView s = tv(R.id.scale);
-        if (s != null) binding.scale.setText(s.getText());
-        binding.speed.setText(formatSpeed(SpeedSetting.getPlayback()));
-        binding.audio.setText(getAudioModeText(AudioSetting.getPreset()));
-        TextView o = tv(R.id.opening);
-        if (o != null) binding.opening.setText(o.getText());
-        TextView e = tv(R.id.ending);
-        if (e != null) binding.ending.setText(e.getText());
-        setRepeatText();
+        syncDecode();
+        syncScale();
+        syncSpeed();
+        syncAudio();
+        syncOpening();
+        syncEnding();
+        syncRepeat();
         // 动作行（点击执行，无状态值）右侧统一显示箭头
-        binding.reset.setText(ACTION_ARROW);
         binding.track.setText(ACTION_ARROW);
         binding.timer.setText(ACTION_ARROW);
         binding.parse.setText(ACTION_ARROW);
@@ -107,27 +113,22 @@ public class ControlDialog extends BaseBottomSheetDialog {
     @Override
     protected void initEvent() {
         binding.close.setOnClickListener(v -> dismiss());
-        // 选择项：点按弹窗选择，不再点一下切一档
-        binding.player.setOnClickListener(v -> clickAction(R.id.player));
-        binding.decode.setOnClickListener(v -> showDecodeDialog());
-        binding.scale.setOnClickListener(v -> showScaleDialog());
-        binding.speed.setOnClickListener(v -> clickAction(R.id.speed));
-        binding.speed.setOnLongClickListener(v -> onSpeedLong());
-        binding.audio.setOnClickListener(v -> showAudioDialog());
-        binding.audio.setOnLongClickListener(v -> openAudioSetting());
-        binding.repeat.setOnClickListener(v -> showRepeatDialog());
+        // 胶囊直选：点选即生效
+        setRowClick(binding.rowDecode, (row, i) -> onDecode(i));
+        setRowClick(binding.rowScale, (row, i) -> onScale(i));
+        setRowClick(binding.rowSpeed, (row, i) -> onSpeed(i));
+        setRowClick(binding.rowAudio, (row, i) -> onAudio(i));
         // 标记项：点击在当前位置设点，长按清除（直播无 opening/ending 时对应行已隐藏）
-        TextView o = tv(R.id.opening);
-        if (o != null) {
-            binding.opening.setOnClickListener(v -> clickAction(R.id.opening));
+        if (tv(R.id.opening) != null) {
+            binding.opening.setOnClickListener(v -> onOpening());
             binding.opening.setOnLongClickListener(v -> longClickAction(R.id.opening));
         }
-        TextView e = tv(R.id.ending);
-        if (e != null) {
-            binding.ending.setOnClickListener(v -> clickAction(R.id.ending));
+        if (tv(R.id.ending) != null) {
+            binding.ending.setOnClickListener(v -> onEnding());
             binding.ending.setOnLongClickListener(v -> longClickAction(R.id.ending));
         }
-        // 动作项：转发给底部功能栏对应按钮，整行可点
+        binding.repeat.setOnClickListener(v -> onRepeat());
+        // 动作项：转发给底部功能栏对应按钮
         binding.reset.setOnClickListener(v -> clickAction(R.id.reset));
         binding.track.setOnClickListener(v -> clickAction(R.id.text));
         binding.danmaku.setOnClickListener(v -> clickAction(R.id.danmaku));
@@ -145,74 +146,122 @@ public class ControlDialog extends BaseBottomSheetDialog {
         binding.rowTimer.setOnClickListener(v -> onTimer());
     }
 
+    private interface RowClick {
+
+        void onClick(LinearLayoutCompat row, int index);
+    }
+
+    private void setRowClick(LinearLayoutCompat row, RowClick listener) {
+        for (int i = 0; i < row.getChildCount(); i++) {
+            int index = i;
+            row.getChildAt(i).setOnClickListener(v -> listener.onClick(row, index));
+        }
+    }
+
+    private void onDecode(int index) {
+        TextView d = tv(R.id.decode);
+        if (d == null) return;
+        int current = indexOf(ResUtil.getStringArray(R.array.select_decode), d.getText());
+        if (DECODE_ORDER[index] == current) return;
+        d.performClick();// 底部栏解码按钮为硬/软切换
+        syncDecode();
+    }
+
+    private void onScale(int index) {
+        TextView s = tv(R.id.scale);
+        if (s != null && index == indexOf(ResUtil.getStringArray(R.array.select_scale), s.getText())) return;
+        if (getActivity() instanceof Listener listener) listener.onScale(index);
+        syncScale();
+    }
+
+    private void onSpeed(int index) {
+        float preset = SpeedSetting.getPresets()[index];
+        if (same(preset, SpeedSetting.getPlayback())) return;
+        SpeedSetting.putPlayback(preset);
+        player.setSpeed(preset);
+        syncSpeed();
+    }
+
+    private void onAudio(int index) {
+        int preset = AUDIO_MODES[index];
+        if (preset == AudioSetting.getPreset()) return;
+        AudioSetting.putPreset(preset);
+        player.setAudioSetting(preset);
+        syncAudio();
+    }
+
+    private void onOpening() {
+        TextView o = tv(R.id.opening);
+        if (o != null) o.performClick();
+        syncOpening();
+    }
+
+    private void onEnding() {
+        TextView e = tv(R.id.ending);
+        if (e != null) e.performClick();
+        syncEnding();
+    }
+
+    private void onRepeat() {
+        TextView r = tv(R.id.repeat);
+        if (r != null) r.performClick();
+        syncRepeat();
+    }
+
+    private void syncDecode() {
+        TextView d = tv(R.id.decode);
+        int current = d == null ? -1 : indexOf(ResUtil.getStringArray(R.array.select_decode), d.getText());
+        for (int i = 0; i < binding.rowDecode.getChildCount(); i++) binding.rowDecode.getChildAt(i).setSelected(DECODE_ORDER[i] == current);
+    }
+
+    private void syncScale() {
+        String[] items = ResUtil.getStringArray(R.array.select_scale);
+        TextView s = tv(R.id.scale);
+        int current = s == null ? -1 : indexOf(items, s.getText());
+        for (int i = 0; i < binding.rowScale.getChildCount(); i++) {
+            ((TextView) binding.rowScale.getChildAt(i)).setText(items[i]);
+            binding.rowScale.getChildAt(i).setSelected(i == current);
+        }
+    }
+
+    private void syncSpeed() {
+        float[] presets = SpeedSetting.getPresets();
+        float current = SpeedSetting.getPlayback();
+        for (int i = 0; i < binding.rowSpeed.getChildCount() && i < presets.length; i++) {
+            ((TextView) binding.rowSpeed.getChildAt(i)).setText(SpeedSetting.formatValue(presets[i]));
+            binding.rowSpeed.getChildAt(i).setSelected(same(presets[i], current));
+        }
+    }
+
+    private void syncAudio() {
+        for (int i = 0; i < binding.rowAudio.getChildCount() && i < AUDIO_MODES.length; i++) {
+            ((TextView) binding.rowAudio.getChildAt(i)).setText(getAudioModeText(AUDIO_MODES[i]));
+            binding.rowAudio.getChildAt(i).setSelected(AUDIO_MODES[i] == AudioSetting.getPreset());
+        }
+    }
+
+    private void syncOpening() {
+        TextView o = tv(R.id.opening);
+        if (o == null) return;
+        binding.opening.setText(o.getText());
+        binding.opening.setSelected(!o.getText().toString().contentEquals(getString(R.string.play_op)));
+    }
+
+    private void syncEnding() {
+        TextView e = tv(R.id.ending);
+        if (e == null) return;
+        binding.ending.setText(e.getText());
+        binding.ending.setSelected(!e.getText().toString().contentEquals(getString(R.string.play_ed)));
+    }
+
+    private void syncRepeat() {
+        TextView r = tv(R.id.repeat);
+        binding.repeat.setSelected(r != null && r.isSelected());
+    }
+
     private void onTimer() {
         TimerDialog.create().show(getActivity());
         dismiss();
-    }
-
-    private boolean onSpeedLong() {
-        binding.speed.setText(formatSpeed(player.toggleSpeed()));
-        return true;
-    }
-
-    private void showDecodeDialog() {
-        String[] items = ResUtil.getStringArray(R.array.select_decode);
-        int checked = getCheckedIndex(items, binding.decode);
-        new MaterialAlertDialogBuilder(requireActivity()).setTitle(getString(R.string.setting_decode)).setSingleChoiceItems(items, checked, (dialog, which) -> {
-            dialog.dismiss();
-            if (which == checked) return;
-            TextView d = tv(R.id.decode);
-            if (d != null) d.performClick();
-            binding.decode.setText(d != null ? d.getText() : items[which]);
-        }).show();
-    }
-
-    private void showScaleDialog() {
-        String[] items = ResUtil.getStringArray(R.array.select_scale);
-        int checked = getCheckedIndex(items, binding.scale);
-        new MaterialAlertDialogBuilder(requireActivity()).setTitle(getString(R.string.setting_scale)).setSingleChoiceItems(items, checked, (dialog, which) -> {
-            dialog.dismiss();
-            if (which == checked) return;
-            if (getActivity() instanceof Listener listener) listener.onScale(which);
-            binding.scale.setText(items[which]);
-        }).show();
-    }
-
-    private void showAudioDialog() {
-        String[] items = new String[AUDIO_MODES.length];
-        int found = 0;
-        for (int i = 0; i < AUDIO_MODES.length; i++) {
-            items[i] = getAudioModeText(AUDIO_MODES[i]);
-            if (AUDIO_MODES[i] == AudioSetting.getPreset()) found = i;
-        }
-        final int checked = found;
-        new MaterialAlertDialogBuilder(requireActivity()).setTitle(getString(R.string.setting_audio_mode)).setSingleChoiceItems(items, checked, (dialog, which) -> {
-            dialog.dismiss();
-            if (which == checked) return;
-            int preset = AUDIO_MODES[which];
-            AudioSetting.putPreset(preset);
-            player.setAudioSetting(preset);
-            binding.audio.setText(getAudioModeText(preset));
-        }).show();
-    }
-
-    private void showRepeatDialog() {
-        String[] items = {getString(R.string.control_off), getString(R.string.control_on)};
-        TextView r = tv(R.id.repeat);
-        boolean selected = r != null && r.isSelected();
-        new MaterialAlertDialogBuilder(requireActivity()).setTitle(getString(R.string.setting_repeat)).setSingleChoiceItems(items, selected ? 1 : 0, (dialog, which) -> {
-            dialog.dismiss();
-            boolean target = which == 1;
-            if (target == selected) return;
-            if (r != null) r.performClick();
-            setRepeatText();
-        }).show();
-    }
-
-    private int getCheckedIndex(String[] items, android.widget.TextView view) {
-        CharSequence text = view.getText();
-        for (int i = 0; i < items.length; i++) if (items[i].contentEquals(text)) return i;
-        return 0;
     }
 
     private boolean openAudioSetting() {
@@ -244,20 +293,6 @@ public class ControlDialog extends BaseBottomSheetDialog {
             case AudioEffectPreset.CUSTOM -> getString(R.string.audio_mode_custom);
             default -> getString(R.string.audio_mode_original);
         };
-    }
-
-    private static String formatSpeed(float speed) {
-        String s = String.format(Locale.US, "%.2f", speed);
-        if (s.endsWith("00")) s = s.substring(0, s.length() - 3);
-        else if (s.endsWith("0")) s = s.substring(0, s.length() - 1);
-        return s + "x";
-    }
-
-    private void setRepeatText() {
-        TextView r = tv(R.id.repeat);
-        boolean on = r != null && r.isSelected();
-        binding.repeat.setText(getString(on ? R.string.control_on : R.string.control_off));
-        binding.repeat.setSelected(on);
     }
 
     private void setContentVisible() {

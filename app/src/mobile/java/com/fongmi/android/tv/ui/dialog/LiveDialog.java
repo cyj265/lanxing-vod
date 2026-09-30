@@ -1,8 +1,11 @@
 package com.fongmi.android.tv.ui.dialog;
 
 import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.viewbinding.ViewBinding;
@@ -16,13 +19,14 @@ import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
-public class LiveDialog extends BaseAlertDialog implements LiveAdapter.OnClickListener {
+public class LiveDialog extends BaseBottomSheetDialog implements LiveAdapter.OnClickListener {
 
     private DialogLiveBinding binding;
     private LiveListener listener;
     private LiveAdapter adapter;
 
     public static void show(FragmentActivity activity) {
+        for (Fragment f : activity.getSupportFragmentManager().getFragments()) if (f instanceof LiveDialog) return;
         new LiveDialog().show(activity.getSupportFragmentManager(), null);
     }
 
@@ -41,13 +45,8 @@ public class LiveDialog extends BaseAlertDialog implements LiveAdapter.OnClickLi
     }
 
     @Override
-    protected ViewBinding getBinding() {
-        return binding = DialogLiveBinding.inflate(getLayoutInflater());
-    }
-
-    @Override
-    protected MaterialAlertDialogBuilder getBuilder() {
-        return builder().setView(getBinding().getRoot());
+    protected ViewBinding getBinding(@NonNull LayoutInflater inflater, @Nullable ViewGroup container) {
+        return binding = DialogLiveBinding.inflate(inflater, container, false);
     }
 
     @Override
@@ -60,6 +59,11 @@ public class LiveDialog extends BaseAlertDialog implements LiveAdapter.OnClickLi
         if (isFull()) binding.recycler.setMaxHeight(ResUtil.dp2px(264));
         binding.recycler.addItemDecoration(new SpaceItemDecoration(1, 8));
         binding.recycler.post(() -> binding.recycler.scrollToPosition(LiveConfig.getHomeIndex()));
+    }
+
+    @Override
+    protected void initEvent() {
+        binding.close.setOnClickListener(v -> dismiss());
     }
 
     @Override
@@ -100,6 +104,5 @@ public class LiveDialog extends BaseAlertDialog implements LiveAdapter.OnClickLi
     public void onStart() {
         super.onStart();
         if (adapter.getItemCount() == 0) dismiss();
-        else if (ResUtil.isLand(requireContext())) setWidth(0.5f);
     }
 }
