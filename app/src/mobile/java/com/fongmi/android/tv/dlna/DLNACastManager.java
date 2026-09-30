@@ -166,7 +166,11 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
         if (n > 0) {
             DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=" + n + " -> OK, cast list should have devices");
         } else if (DlnaDiag.probeBlockedByEperm) {
-            DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=0 -> PROBE got EPERM: ROM/ColorOS blocks app multicast SEND even with MulticastLock. Fix: grant app 'Nearby devices'(附近的设备) perm in Settings > Apps > 揽星影视 > Permissions; Android 13+ requires NEARBY_WIFI_DEVICES for DLNA cast discovery");
+            if (DlnaDiag.isNearbyGranted(appCtx)) {
+                DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=0 -> PROBE EPERM EVEN THOUGH 'Nearby devices' perm GRANTED. This is a HARD ROM/ColorOS block on app multicast SEND (not fixable by app perm). Options: (1) ColorOS Settings > grant app 'WLAN multicast' sub-perm if present; (2) root + iptables; (3) switch to NsdManager/unicast discovery");
+            } else {
+                DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=0 -> PROBE EPERM and 'Nearby devices' perm NOT granted. Grant it: Settings > Apps > 揽星影视 > Permissions > 附近的设备 = Allow, then retry");
+            }
             showEpermToast();
         } else {
             DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=0 -> multicast not EPERM-blocked; no device replied (router AP-isolation/IGMP, or no renderer on network)");

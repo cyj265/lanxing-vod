@@ -1,6 +1,6 @@
 {
-  "version": "5.6.56",
-  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.56/lanxing-5.6.56-mobile-arm64_v8a.apk",
-  "desc": "投屏组播出接口修正：枚举真实 WiFi 物理接口(wlan0)代替 ColorOS 在 VPN/网络加速下误报的 tun1，避免组播发进隧道导致搜不到局域网设备。5.6.55 已修复 Android13+ 附近的设备权限(EPERM 导致发送被拦)问题。",
+  "version": "5.6.57",
+  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.57/lanxing-5.6.57-mobile-arm64_v8a.apk",
+  "desc": "投屏诊断关键修正：将投屏发现(init)推迟到「附近的设备」权限授予后再启动，使探针真正代表授权态；诊断日志新增 NEARBY_WIFI_DEVICES 授予状态打印，一锤定音区分「权限没给」与「给了仍被 ROM 硬拦」。5.6.56 已修正组播出接口(wlan0 代替 tun1)。",
   "time": "2026-09-30"
 }

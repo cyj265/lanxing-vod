@@ -68,8 +68,10 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
     private final ActivityResultLauncher<String> permLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(),
             granted -> {
-                if (granted) DLNACastManager.get().search();
-                else Notify.show(R.string.cast_perm_nearby_hint);
+                // 无论授予与否都照常启动发现：授予后组播发送才可能被放行；
+                // 拒绝时仍尝试(部分 ROM 不靠该权限拦发送)，只是大概率 EPERM
+                if (!granted) Notify.show(R.string.cast_perm_nearby_hint);
+                startCast();
             });
 
     public CastDialog() {
@@ -124,12 +126,18 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
 
     /** Android 13+ 把 DLNA 投屏发现归到「附近的设备」权限组(NEARBY_WIFI_DEVICES)。
      *  未授权时 ColorOS/部分 ROM 会在内核层掐掉组播发送(sendto EPERM)。
-     *  这里运行时申请；无论授予与否都照常启动发现(授予后主动再搜一次)。 */
+     *  关键：必须在权限授予后再启动发现(init 会触发探针/组播发送)，
+     *  否则探针永远在"未授权"态跑，测不出该权限到底能不能解 EPERM。 */
     private void ensureNearbyPermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
                 && ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.NEARBY_WIFI_DEVICES) != PackageManager.PERMISSION_GRANTED) {
             permLauncher.launch(Manifest.permission.NEARBY_WIFI_DEVICES);
+        } else {
+            startCast();
         }
+    }
+
+    private void startCast() {
         DLNACastManager.get().init(requireActivity());
         DLNACastManager.get().setDeviceListener(this);
     }

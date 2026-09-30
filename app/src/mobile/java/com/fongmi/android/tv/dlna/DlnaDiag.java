@@ -1,6 +1,8 @@
 package com.fongmi.android.tv.dlna;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
+import android.Manifest;
 import android.net.ConnectivityManager;
 import android.net.LinkProperties;
 import android.net.Network;
@@ -8,6 +10,8 @@ import android.net.NetworkCapabilities;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.util.Log;
+
+import androidx.core.content.ContextCompat;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -50,6 +54,19 @@ public final class DlnaDiag {
             File dir = context.getExternalFilesDir(null);
             if (dir != null) sFile = new File(dir, NAME);
         } catch (Throwable ignore) {
+        }
+    }
+
+    /** Android 13+ 的「附近的设备」权限(NEARBY_WIFI_DEVICES)是否已授予。
+     *  这是判断 EPERM 到底是"权限没给"还是"给了仍被 ROM 硬拦"的决定性开关。
+     *  pre-13 不需要该权限，视为已满足。 */
+    public static boolean isNearbyGranted(Context ctx) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return true;
+        try {
+            return ContextCompat.checkSelfPermission(ctx, Manifest.permission.NEARBY_WIFI_DEVICES)
+                    == PackageManager.PERMISSION_GRANTED;
+        } catch (Throwable t) {
+            return false;
         }
     }
 
@@ -185,6 +202,7 @@ public final class DlnaDiag {
             log("probe: DlnaNet not ready (wifiNetwork/Interface null) -> 无法独立判定");
             return;
         }
+        log("probe: NEARBY_WIFI_DEVICES granted=" + isNearbyGranted(context));
         new Thread(() -> {
             boolean sentOk = false;
             try {
