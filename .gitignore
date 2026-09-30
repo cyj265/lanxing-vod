@@ -9,3 +9,9 @@ keystore.properties
 lib-*.aar
 /Release
 /docs
+
+# 本地构建/调试日志（非源码）
+build_verify*.log
+dry.log
+push*.log
+trace*.log

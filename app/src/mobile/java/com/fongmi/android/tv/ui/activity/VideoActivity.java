@@ -968,7 +968,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void onSetting() {
-        ControlDialog.create().parent(mBinding).parse(isUseParse()).player(player()).show(this);
+        ControlDialog.create().parent(mBinding.control.action.getRoot()).parse(isUseParse()).player(player()).show(this);
     }
 
     private void onLock() {

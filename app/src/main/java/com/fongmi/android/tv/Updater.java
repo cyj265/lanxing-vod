@@ -11,21 +11,34 @@ import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.dialog.UpdateDialog;
 import com.fongmi.android.tv.utils.Download;
 import com.fongmi.android.tv.utils.FileUtil;
-import com.fongmi.android.tv.utils.Github;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Task;
 import com.github.catvod.utils.Path;
 
+import org.json.JSONArray;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Updater implements Download.Callback, UpdateListener {
+
+    // 与揽星TV 一致的更新逻辑：查 GitHub Releases(latest)，用构建号(BUILD_NUMBER)判断是否有新版本
+    private static final String RELEASES_URL = "https://api.github.com/repos/cyj265/lanxing-vod/releases/latest";
+    private static final Pattern APK_BUILD = Pattern.compile("v(\\d+)\\.apk$");
+    private static final String[] MIRRORS = {"https://gh-proxy.com/", "https://ghfast.top/", "https://ghproxy.net/"};
 
     private Download download;
     private UpdateDialog dialog;
     private String apkUrl;
+    private String version;
     private boolean retried;
 
     private Updater() {
@@ -52,34 +65,66 @@ public class Updater implements Download.Callback, UpdateListener {
 
     private void doInBackground(FragmentActivity activity) {
         try {
-            JSONObject object = Github.getLatestRelease();
-            if (object == null) return;
-            String tag = object.optString("tag_name");
-            String name = object.optString("name");
-            String desc = object.optString("body");
-            apkUrl = Github.getApkUrl(object);
-            if (apkUrl == null || !isNewer(tag)) return;
-            App.post(() -> show(activity, name, desc));
+            JSONObject release = getLatestRelease();
+            if (release == null) return;
+            apkUrl = release.optString("apk_url", null);
+            version = release.optString("version", "");
+            String desc = release.optString("desc", "");
+            if (apkUrl == null || apkUrl.isEmpty() || version.isEmpty()) return;
+            if (!isNewer(release.optInt("build", 0))) return;
+            App.post(() -> show(activity, version, desc));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    private boolean isNewer(String tag) {
-        String remote = tag.startsWith("v") ? tag.substring(1) : tag;
-        return compare(remote, BuildConfig.VERSION_NAME) > 0;
+    /** 读取最新 Release，解析出版本号/构建号/APK 下载地址；无更新或异常返回 null */
+    private JSONObject getLatestRelease() throws Exception {
+        HttpURLConnection conn = (HttpURLConnection) new URL(RELEASES_URL).openConnection();
+        conn.setConnectTimeout(10000);
+        conn.setReadTimeout(10000);
+        conn.setRequestProperty("User-Agent", "LanXingVod");
+        String body;
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) sb.append(line);
+            body = sb.toString();
+        }
+        JSONObject json = new JSONObject(body);
+        String tag = json.optString("tag_name", "").replaceFirst("^v", "");
+        JSONArray assets = json.optJSONArray("assets");
+        if (assets == null) return null;
+        String url = null;
+        String name = null;
+        for (int i = 0; i < assets.length(); i++) {
+            JSONObject a = assets.getJSONObject(i);
+            if (a.optString("name", "").endsWith(".apk")) {
+                url = a.optString("browser_download_url", "");
+                name = a.optString("name", "");
+                break;
+            }
+        }
+        if (url.isEmpty()) return null;
+        int build = extractBuildNumber(name);
+        JSONObject release = new JSONObject();
+        release.put("version", tag.isEmpty() ? version : tag);
+        release.put("build", build);
+        release.put("apk_url", url);
+        release.put("desc", json.optString("body", ""));
+        return release;
     }
 
-    private int compare(String a, String b) {
-        String[] x = a.split("\\.");
-        String[] y = b.split("\\.");
-        int len = Math.max(x.length, y.length);
-        for (int i = 0; i < len; i++) {
-            int p = i < x.length ? parseInt(x[i]) : 0;
-            int q = i < y.length ? parseInt(y[i]) : 0;
-            if (p != q) return p - q;
-        }
-        return 0;
+    /** APK 文件名形如 lanxing-5.6.66-123-mobile-arm64_v8a.apk → 取 v123.apk 中的 123 */
+    private int extractBuildNumber(String apkName) {
+        if (apkName == null) return 0;
+        Matcher m = APK_BUILD.matcher(apkName);
+        return m.find() ? parseInt(m.group(1)) : 0;
+    }
+
+    private boolean isNewer(int remoteBuild) {
+        // 用构建号判断：即使版本号相同，构建号增加也提示更新
+        return remoteBuild > BuildConfig.BUILD_NUMBER;
     }
 
     private int parseInt(String s) {
@@ -123,9 +168,11 @@ public class Updater implements Download.Callback, UpdateListener {
 
     @Override
     public void error(String msg) {
-        if (!retried && apkUrl != null) {
+        // 直连失败自动换加速中转（与揽星TV 一致：github 链接加 gh-proxy 前缀）
+        if (!retried && apkUrl != null && apkUrl.startsWith("https://github.com/")) {
             retried = true;
-            download = Download.create(Github.getMirrorUrl(apkUrl), getFile());
+            String mirror = MIRRORS[0] + apkUrl;
+            download = Download.create(mirror, getFile());
             download.start(this);
             return;
         }

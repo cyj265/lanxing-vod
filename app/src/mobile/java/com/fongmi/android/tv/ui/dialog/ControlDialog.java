@@ -3,6 +3,7 @@ package com.fongmi.android.tv.ui.dialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -13,7 +14,6 @@ import androidx.viewbinding.ViewBinding;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Parse;
-import com.fongmi.android.tv.databinding.ActivityVideoBinding;
 import com.fongmi.android.tv.databinding.DialogControlBinding;
 import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.player.effect.audio.AudioEffectPreset;
@@ -31,7 +31,7 @@ public class ControlDialog extends BaseBottomSheetDialog {
     private static final int[] AUDIO_MODES = {AudioEffectPreset.OFF, AudioEffectPreset.NATURAL, AudioEffectPreset.SURROUND, AudioEffectPreset.VOCAL, AudioEffectPreset.CINEMA, AudioEffectPreset.BASS, AudioEffectPreset.TREBLE, AudioEffectPreset.POP, AudioEffectPreset.ROCK, AudioEffectPreset.DANCE, AudioEffectPreset.ELECTRONIC, AudioEffectPreset.JAZZ, AudioEffectPreset.CLASSICAL, AudioEffectPreset.CUSTOM};
 
     private DialogControlBinding binding;
-    private ActivityVideoBinding parent;
+    private View parent;   // 底部功能栏根(点播/直播共用，按 id 查找，缺则隐藏对应行)
     private PlayerManager player;
     private boolean parse;
 
@@ -39,7 +39,7 @@ public class ControlDialog extends BaseBottomSheetDialog {
         return new ControlDialog();
     }
 
-    public ControlDialog parent(ActivityVideoBinding parent) {
+    public ControlDialog parent(View parent) {
         this.parent = parent;
         return this;
     }
@@ -65,15 +65,31 @@ public class ControlDialog extends BaseBottomSheetDialog {
         return binding = DialogControlBinding.inflate(inflater, container, false);
     }
 
+    /** 从底部功能栏按 id 取控件（直播/点播布局不同，缺的返回 null） */
+    private @Nullable TextView tv(int id) {
+        View v = parent != null ? parent.findViewById(id) : null;
+        return v instanceof TextView ? (TextView) v : null;
+    }
+
+    private boolean visible(int id) {
+        TextView t = tv(id);
+        return t != null && t.getVisibility() == View.VISIBLE;
+    }
+
     @Override
     protected void initView() {
-        binding.player.setText(parent.control.action.player.getText());
-        binding.decode.setText(parent.control.action.decode.getText());
-        binding.scale.setText(parent.control.action.scale.getText());
+        TextView p = tv(R.id.player);
+        if (p != null) binding.player.setText(p.getText());
+        TextView d = tv(R.id.decode);
+        if (d != null) binding.decode.setText(d.getText());
+        TextView s = tv(R.id.scale);
+        if (s != null) binding.scale.setText(s.getText());
         binding.speed.setText(formatSpeed(SpeedSetting.getPlayback()));
         binding.audio.setText(getAudioModeText(AudioSetting.getPreset()));
-        binding.opening.setText(parent.control.action.opening.getText());
-        binding.ending.setText(parent.control.action.ending.getText());
+        TextView o = tv(R.id.opening);
+        if (o != null) binding.opening.setText(o.getText());
+        TextView e = tv(R.id.ending);
+        if (e != null) binding.ending.setText(e.getText());
         setRepeatText();
         // 动作行（点击执行，无状态值）右侧统一显示箭头
         binding.reset.setText(ACTION_ARROW);
@@ -92,34 +108,40 @@ public class ControlDialog extends BaseBottomSheetDialog {
     protected void initEvent() {
         binding.close.setOnClickListener(v -> dismiss());
         // 选择项：点按弹窗选择，不再点一下切一档
-        binding.player.setOnClickListener(v -> dismiss(parent.control.action.player));
+        binding.player.setOnClickListener(v -> clickAction(R.id.player));
         binding.decode.setOnClickListener(v -> showDecodeDialog());
         binding.scale.setOnClickListener(v -> showScaleDialog());
-        binding.speed.setOnClickListener(v -> dismiss(parent.control.action.speed));
+        binding.speed.setOnClickListener(v -> clickAction(R.id.speed));
         binding.speed.setOnLongClickListener(v -> onSpeedLong());
         binding.audio.setOnClickListener(v -> showAudioDialog());
         binding.audio.setOnLongClickListener(v -> openAudioSetting());
         binding.repeat.setOnClickListener(v -> showRepeatDialog());
-        // 标记项：点击在当前位置设点，长按清除
-        binding.opening.setOnClickListener(v -> click(binding.opening, parent.control.action.opening));
-        binding.opening.setOnLongClickListener(v -> longClick(binding.opening, parent.control.action.opening));
-        binding.ending.setOnClickListener(v -> click(binding.ending, parent.control.action.ending));
-        binding.ending.setOnLongClickListener(v -> longClick(binding.ending, parent.control.action.ending));
+        // 标记项：点击在当前位置设点，长按清除（直播无 opening/ending 时对应行已隐藏）
+        TextView o = tv(R.id.opening);
+        if (o != null) {
+            binding.opening.setOnClickListener(v -> clickAction(R.id.opening));
+            binding.opening.setOnLongClickListener(v -> longClickAction(R.id.opening));
+        }
+        TextView e = tv(R.id.ending);
+        if (e != null) {
+            binding.ending.setOnClickListener(v -> clickAction(R.id.ending));
+            binding.ending.setOnLongClickListener(v -> longClickAction(R.id.ending));
+        }
         // 动作项：转发给底部功能栏对应按钮，整行可点
-        binding.reset.setOnClickListener(v -> dismiss(parent.control.action.reset));
-        binding.track.setOnClickListener(v -> dismiss(parent.control.action.text));
-        binding.danmaku.setOnClickListener(v -> dismiss(parent.control.action.danmaku));
+        binding.reset.setOnClickListener(v -> clickAction(R.id.reset));
+        binding.track.setOnClickListener(v -> clickAction(R.id.text));
+        binding.danmaku.setOnClickListener(v -> clickAction(R.id.danmaku));
         binding.timer.setOnClickListener(v -> onTimer());
-        binding.parse.setOnClickListener(v -> dismiss(parent.control.action.parse));
-        binding.edition.setOnClickListener(v -> dismiss(parent.control.action.edition));
-        binding.chapter.setOnClickListener(v -> dismiss(parent.control.action.chapter));
+        binding.parse.setOnClickListener(v -> clickAction(R.id.parse));
+        binding.edition.setOnClickListener(v -> clickAction(R.id.edition));
+        binding.chapter.setOnClickListener(v -> clickAction(R.id.chapter));
         binding.audioSetting.setOnClickListener(v -> openAudioSetting());
         binding.videoSetting.setOnClickListener(v -> openVideoSetting());
-        binding.rowParse.setOnClickListener(v -> dismiss(parent.control.action.parse));
-        binding.rowEdition.setOnClickListener(v -> dismiss(parent.control.action.edition));
-        binding.rowChapter.setOnClickListener(v -> dismiss(parent.control.action.chapter));
-        binding.rowTrack.setOnClickListener(v -> dismiss(parent.control.action.text));
-        binding.rowDanmaku.setOnClickListener(v -> dismiss(parent.control.action.danmaku));
+        binding.rowParse.setOnClickListener(v -> clickAction(R.id.parse));
+        binding.rowEdition.setOnClickListener(v -> clickAction(R.id.edition));
+        binding.rowChapter.setOnClickListener(v -> clickAction(R.id.chapter));
+        binding.rowTrack.setOnClickListener(v -> clickAction(R.id.text));
+        binding.rowDanmaku.setOnClickListener(v -> clickAction(R.id.danmaku));
         binding.rowTimer.setOnClickListener(v -> onTimer());
     }
 
@@ -139,8 +161,9 @@ public class ControlDialog extends BaseBottomSheetDialog {
         new MaterialAlertDialogBuilder(requireActivity()).setTitle(getString(R.string.setting_decode)).setSingleChoiceItems(items, checked, (dialog, which) -> {
             dialog.dismiss();
             if (which == checked) return;
-            parent.control.action.decode.performClick();
-            binding.decode.setText(parent.control.action.decode.getText());
+            TextView d = tv(R.id.decode);
+            if (d != null) d.performClick();
+            binding.decode.setText(d != null ? d.getText() : items[which]);
         }).show();
     }
 
@@ -175,12 +198,13 @@ public class ControlDialog extends BaseBottomSheetDialog {
 
     private void showRepeatDialog() {
         String[] items = {getString(R.string.control_off), getString(R.string.control_on)};
-        boolean selected = parent.control.action.repeat.isSelected();
+        TextView r = tv(R.id.repeat);
+        boolean selected = r != null && r.isSelected();
         new MaterialAlertDialogBuilder(requireActivity()).setTitle(getString(R.string.setting_repeat)).setSingleChoiceItems(items, selected ? 1 : 0, (dialog, which) -> {
             dialog.dismiss();
             boolean target = which == 1;
             if (target == selected) return;
-            parent.control.action.repeat.performClick();
+            if (r != null) r.performClick();
             setRepeatText();
         }).show();
     }
@@ -230,16 +254,18 @@ public class ControlDialog extends BaseBottomSheetDialog {
     }
 
     private void setRepeatText() {
-        binding.repeat.setText(getString(parent.control.action.repeat.isSelected() ? R.string.control_on : R.string.control_off));
-        binding.repeat.setSelected(parent.control.action.repeat.isSelected());
+        TextView r = tv(R.id.repeat);
+        boolean on = r != null && r.isSelected();
+        binding.repeat.setText(getString(on ? R.string.control_on : R.string.control_off));
+        binding.repeat.setSelected(on);
     }
 
     private void setContentVisible() {
-        boolean parse = this.parse && parent.control.action.parse.getVisibility() == View.VISIBLE;
-        boolean edition = parent.control.action.edition.getVisibility() == View.VISIBLE;
-        boolean chapter = parent.control.action.chapter.getVisibility() == View.VISIBLE;
-        boolean track = parent.control.action.text.getVisibility() == View.VISIBLE || parent.control.action.audio.getVisibility() == View.VISIBLE || parent.control.action.video.getVisibility() == View.VISIBLE;
-        boolean danmaku = parent.control.action.danmaku.getVisibility() == View.VISIBLE;
+        boolean parse = this.parse && visible(R.id.parse);
+        boolean edition = visible(R.id.edition);
+        boolean chapter = visible(R.id.chapter);
+        boolean track = visible(R.id.text) || visible(R.id.audio) || visible(R.id.video);
+        boolean danmaku = visible(R.id.danmaku);
         boolean visible = parse || edition || chapter || track || danmaku;
         binding.groupContent.setVisibility(visible ? View.VISIBLE : View.GONE);
         binding.rowParse.setVisibility(parse ? View.VISIBLE : View.GONE);
@@ -249,20 +275,17 @@ public class ControlDialog extends BaseBottomSheetDialog {
         binding.rowDanmaku.setVisibility(danmaku ? View.VISIBLE : View.GONE);
     }
 
-    private void click(android.widget.TextView view, android.widget.TextView target) {
-        target.performClick();
-        view.setText(target.getText());
-    }
-
-    private boolean longClick(android.widget.TextView view, android.widget.TextView target) {
-        target.performLongClick();
-        view.setText(target.getText());
-        return true;
-    }
-
-    private void dismiss(View view) {
-        App.post(view::performClick, 200);
+    /** 点击播放设置项：触发底部功能栏对应按钮并关闭弹窗（弹窗关闭后功能栏自行刷新文字） */
+    private void clickAction(int id) {
+        TextView t = tv(id);
+        if (t != null) App.post(t::performClick, 200);
         dismiss();
+    }
+
+    private boolean longClickAction(int id) {
+        TextView t = tv(id);
+        if (t != null) t.performLongClick();
+        return true;
     }
 
     public interface Listener {

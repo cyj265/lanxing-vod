@@ -16,13 +16,13 @@
 - **多仓 / 多源聚合**：仓库管理支持多源聚合与线路合集双模式，一键切换、刷新、复制、删除。
 - **首页推荐位**：对接豆瓣榜单、站点推荐、电视榜等 home 数据。
 - **音效模式**：影院 / 重低音 / 3D 环绕 / HiFi / 人声等多档 EQ 预设。
-- **Bugly 上报**与 `update.json` 在线更新检查。
+- **Bugly 上报**与基于 GitHub Releases 的在线更新检查（用构建号判断新版本，逻辑与揽星TV一致）。
 
 > 播放内核**仅使用 ExoPlayer（Media3）**，原 MPV 分支已移除。
 
 ## 开始使用
 
-1. 安装适合设备的 APK：`leanback` 为电视版，`mobile` 为手机版；按设备 ABI 选择 `arm64-v8a` 或 `armeabi-v7a`。最低要求 Android 7.0（API 24）。
+1. 安装适合设备的 APK：`leanback` 为电视版，`mobile` 为手机版；仅提供 64 位 `arm64-v8a`。最低要求 Android 7.0（API 24）。
 2. 在设置中加入自己的配置（兼容 TVBox JSON 接口），格式与字段见[配置范例](https://fongmi.github.io/TV/config/#examples)。
 3. 也可从系统文件管理器打开本地媒体文件，或通过推送入口播放媒体网址。
 

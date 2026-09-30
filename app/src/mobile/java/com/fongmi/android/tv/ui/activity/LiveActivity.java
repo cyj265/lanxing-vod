@@ -62,6 +62,7 @@ import com.fongmi.android.tv.ui.adapter.EpgDataAdapter;
 import com.fongmi.android.tv.ui.adapter.GroupAdapter;
 import com.fongmi.android.tv.ui.custom.CustomKeyDown;
 import com.fongmi.android.tv.ui.dialog.CastDialog;
+import com.fongmi.android.tv.ui.dialog.ControlDialog;
 import com.fongmi.android.tv.ui.dialog.HistoryDialog;
 import com.fongmi.android.tv.ui.dialog.InfoDialog;
 import com.fongmi.android.tv.ui.dialog.LiveDialog;
@@ -189,6 +190,8 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mBinding.control.back.setOnClickListener(view -> onBack());
         mBinding.control.cast.setOnClickListener(view -> onCast());
         mBinding.control.info.setOnClickListener(view -> onInfo());
+        mBinding.control.keep.setOnClickListener(view -> onKeep());
+        mBinding.control.setting.setOnClickListener(view -> onSetting());
         mBinding.control.play.setOnClickListener(view -> checkPlay());
         mBinding.control.next.setOnClickListener(view -> nextChannel());
         mBinding.control.prev.setOnClickListener(view -> prevChannel());
@@ -449,6 +452,20 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
     private void onInfo() {
         InfoDialog.create(player()).show(this);
+    }
+
+    /** 直播竖屏与点播竖屏统一：顶部栏提供「收藏」按钮，切换当前频道收藏 */
+    private void onKeep() {
+        if (mChannel == null) return;
+        boolean exist = Keep.exist(mChannel.getName());
+        Notify.show(exist ? R.string.keep_del : R.string.keep_add);
+        if (exist) delKeep(mChannel);
+        else addKeep(mChannel);
+    }
+
+    /** 直播竖屏与点播竖屏统一：顶部栏「设置」打开播放设置（引擎/解码/比例/倍速等），与点播一致 */
+    private void onSetting() {
+        ControlDialog.create().parent(mBinding.control.action.getRoot()).parse(false).player(player()).show(this);
     }
 
     private void onLock() {

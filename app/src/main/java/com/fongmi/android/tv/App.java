@@ -7,6 +7,7 @@ import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.Settings;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -16,6 +17,7 @@ import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.hook.Hook;
 import com.github.catvod.Init;
 import com.google.gson.Gson;
+import com.tencent.bugly.crashreport.CrashReport;
 
 public class App extends Application implements Application.ActivityLifecycleCallbacks {
 
@@ -83,6 +85,28 @@ public class App extends Application implements Application.ActivityLifecycleCal
         super.onCreate();
         Notify.createChannel();
         registerActivityLifecycleCallbacks(this);
+        if (!BuildConfig.BUGLY_APP_ID.isEmpty()) initBugly();
+    }
+
+    /** 初始化 Bugly 崩溃自动上报（逻辑与揽星TV一致：Android ID 作设备标识，不取 IMEI 等敏感信息） */
+    private void initBugly() {
+        try {
+            String deviceId;
+            try {
+                deviceId = Settings.Secure.getString(getContentResolver(), Settings.Secure.ANDROID_ID);
+            } catch (Exception ignored) {
+                deviceId = "unknown";
+            }
+            CrashReport.UserStrategy strategy = new CrashReport.UserStrategy(getApplicationContext());
+            strategy.setDeviceID(deviceId);
+            strategy.setAppChannel("github");
+            strategy.setAppVersion(BuildConfig.VERSION_NAME);
+            strategy.setAppPackageName(getPackageName());
+            CrashReport.initCrashReport(getApplicationContext(), BuildConfig.BUGLY_APP_ID, false, strategy);
+        } catch (Exception e) {
+            // 初始化失败不影响 App 正常运行
+            e.printStackTrace();
+        }
     }
 
     @Override
