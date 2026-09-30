@@ -130,6 +130,29 @@ jobs:
           overwrite_files: true
           prerelease: true
 
+      - name: 自动校正 update.json（版本号/APK 下载地址/日期，保留 desc）
+        env:
+          VERSION: ${{ steps.ver.outputs.name }}
+        run: |
+          python3 - <<'PY'
+          import json, datetime, os
+          version = os.environ['VERSION']
+          p = 'update.json'
+          with open(p, encoding='utf-8') as f:
+              d = json.load(f)
+          d['version'] = version
+          # CI 实际发版产物名见上方 cp 步骤：lanxing-<version>-mobile-arm64_v8a.apk
+          d['apk'] = "https://github.com/cyj265/lanxing-vod/releases/download/v{0}/lanxing-{0}-mobile-arm64_v8a.apk".format(version)
+          d['time'] = datetime.date.today().isoformat()
+          with open(p, 'w', encoding='utf-8') as f:
+              json.dump(d, f, ensure_ascii=False, indent=2)
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add update.json
+          git commit -m "chore: 同步 update.json 至 ${VERSION} [skip ci]" || echo "update.json 无变化，跳过提交"
+          git push
+
       - name: 清理旧 Release（只清理与本分支同系列，保留 main 分支正式版）
         run: |
           PREFIX="v${{ steps.ver.outputs.prefix }}"

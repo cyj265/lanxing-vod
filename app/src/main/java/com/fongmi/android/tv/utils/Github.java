@@ -23,7 +23,10 @@ public class Github {
         String body = fetch(UPDATE);
         JSONObject json = new JSONObject(body);
         String version = json.optString("version", "");
-        String url = json.optString("url", "");
+        // 兼容两种字段名：当前清单用 "apk"，早期版本用 "url"（5.6.36 引入时）。
+        // 历史上有把字段从 url 改成 apk 却没同步改读取逻辑，导致 url 永远为空、更新检测失效。
+        String url = json.optString("apk", "");
+        if (url.isEmpty()) url = json.optString("url", "");
         String current = BuildConfig.VERSION_NAME;
         if (version.isEmpty() || url.isEmpty()) return null;
         if (compare(version, current) <= 0) return null;

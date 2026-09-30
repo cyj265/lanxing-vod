@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.bean.Device;
@@ -162,8 +163,21 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
         }
         int n = upnpService.getRegistry().getDevices(RENDERER_TYPE).size();
         DlnaDiag.logState(appCtx);
-        DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=" + n
-                + (n == 0 ? " -> 组播仍被 EPERM 拦截(看 REPLAY 中 bindProcessToNetwork 是否=true) 或网络无设备" : " -> 成功，投屏列表应有设备"));
+        if (n > 0) {
+            DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=" + n + " -> OK, cast list should have devices");
+        } else if (DlnaDiag.probeBlockedByEperm) {
+            DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=0 -> PROBE got EPERM: ROM/ColorOS blocks app multicast SEND. Fix: ColorOS Settings > grant app 'WLAN multicast'/'LAN' perm; or adb: appops set com.cyj265.lanxingvod android:multicast_state allow");
+            showEpermToast();
+        } else {
+            DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=0 -> multicast not EPERM-blocked; no device replied (router AP-isolation/IGMP, or no renderer on network)");
+        }
+    }
+
+    private void showEpermToast() {
+        try {
+            Toast.makeText(appCtx, "投屏发现被系统拦截(组播 EPERM)。请在手机设置开启本应用「WLAN 多播 / 局域网」权限，或在电脑执行 adb 命令开启多播(详情见日志)", Toast.LENGTH_LONG).show();
+        } catch (Throwable ignore) {
+        }
     }
 
     public void search() {

@@ -1,6 +1,6 @@
 {
-  "version": "5.6.53",
-  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.53/app-mobile-release.apk",
-  "desc": "投屏组播 EPERM 根治：覆写 jupnp 的 DatagramIO/MulticastReceiver 工厂，对每个 MulticastSocket 调 Network.bindSocket 钉到 WiFi 网络 + setNetworkInterface(wifi)；新增独立探针判定本机组播链路是否通畅",
+  "version": "5.6.54",
+  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.54/lanxing-5.6.54-mobile-arm64_v8a.apk",
+  "desc": "投屏诊断增强：探针确认 ColorOS/Android17 在 CHANGE_WIFI_MULTICAST_STATE 之上仍内核级 EPERM 拦截 app 组播发送；诊断结论/看门狗改 ASCII(避免 logcat 乱码)，检测到 EPERM 时弹 Toast 引导用户在设置放开本应用 WLAN 多播/局域网权限(或 adb appops)。5.6.53 的 Network.bindSocket 修法本身正确，卡点在系统权限闸门",
   "time": "2026-09-30"
 }

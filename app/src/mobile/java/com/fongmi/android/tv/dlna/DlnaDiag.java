@@ -11,6 +11,7 @@ import android.util.Log;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -38,6 +39,8 @@ public final class DlnaDiag {
     private static final long MAX_BYTES = 80_000;
     private static final int MEM_CAP = 400;
     private static File sFile;
+    /** 探针发 M-SEARCH 是否被内核 EPERM 拦截（ColorOS/Android 11+ 的组播权限闸门）。供看门狗判定并弹用户提示。 */
+    public static volatile boolean probeBlockedByEperm = false;
     private static final List<String> MEM = new ArrayList<>();
     private static final SimpleDateFormat SDF = new SimpleDateFormat("MM-dd HH:mm:ss.SSS", Locale.US);
 
@@ -183,6 +186,7 @@ public final class DlnaDiag {
             return;
         }
         new Thread(() -> {
+            boolean sentOk = false;
             try {
                 InetAddress group = InetAddress.getByName("239.255.255.250");
                 MulticastSocket s = new MulticastSocket(null);
@@ -197,6 +201,7 @@ public final class DlnaDiag {
                 String msearch = "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 3\r\nST: ssdp:all\r\n\r\n";
                 byte[] data = msearch.getBytes(StandardCharsets.UTF_8);
                 s.send(new DatagramPacket(data, data.length, group, 1900));
+                sentOk = true;
                 log("probe: M-SEARCH sent OK (group=239.255.255.250:1900)");
 
                 s.setSoTimeout(4000);
@@ -215,9 +220,19 @@ public final class DlnaDiag {
                     }
                 }
                 s.close();
-                log("probe VERDICT: sent=OK gotResponses=" + got + (got > 0 ? " -> 本机组播链路通畅，jupnp 子类化修法应生效" : " -> 4s 内无回应(可能真无设备，或 ROM 仍拦)"));
+                if (got > 0) {
+                    log("probe VERDICT: sent=OK gotResponses=" + got + " -> LINK OK, jupnp subclass fix should work");
+                } else {
+                    log("probe VERDICT: sent=OK gotResponses=0 -> no reply in 4s (no DLNA device, or router AP-isolation/IGMP blocks, or ROM still filters)");
+                }
             } catch (Throwable t) {
-                log("probe FAILED");
+                boolean eperm = (t instanceof IOException) && t.getMessage() != null && t.getMessage().contains("EPERM");
+                if (eperm) {
+                    probeBlockedByEperm = true;
+                    log("probe FAILED: EPERM on SSDP multicast SEND -> ROM/ColorOS blocks app multicast send");
+                } else {
+                    log("probe FAILED" + (sentOk ? " (sent ok, but receive/other exc)" : ""));
+                }
                 log(t);
             }
         }, "dlna-probe").start();
