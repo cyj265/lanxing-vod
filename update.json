@@ -1,6 +1,6 @@
 {
-  "version": "5.6.61",
-  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.61/lanxing-5.6.61-mobile-arm64_v8a.apk",
-  "desc": "投屏根因修复：Android 17(SDK 37+) 起「本地网络保护」强制生效，targetSdk>=37 的应用访问本地网络(SSDP 组播)默认被内核拦截，报 sendto EPERM。dev 分支从上游 FongMi/TV 5.6.3 移植时 targetSdk 被提到 37，而主分支(能投屏)是 30，故同机同网表现为「主分支/OK影视能投、dev 不能」。本次将 targetSdk 降到 36(靠 INTERNET 隐式授权本地网络)，并声明 ACCESS_LOCAL_NETWORK 以备将来升回 37。投屏应恢复正常。",
+  "version": "5.6.62",
+  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.62/lanxing-5.6.62-mobile-arm64_v8a.apk",
+  "desc": "投屏本地网络权限运行时申请(Android 17 官方正解)：5.6.61 将 targetSdk 降到 36 仍搜不到设备，实测证实 ColorOS 的本地网络保护(LNP)门槛比 AOSP 文档更低，targetSdk<=30(main/OK影视) 才隐式放行。本次改回 targetSdk=37，并在 CastDialog 进入投屏时运行时申请 ACCESS_LOCAL_NETWORK(系统弹「本地网络」授权框，点允许即放行 SSDP 组播收发)。这是面向 Android 17 的标准修复，保留全部新特性。",
   "time": "2026-09-30"
 }

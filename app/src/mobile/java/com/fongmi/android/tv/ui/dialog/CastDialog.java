@@ -2,12 +2,15 @@ package com.fongmi.android.tv.ui.dialog;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.view.LayoutInflater;
 import android.view.View;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.media3.common.C;
@@ -61,6 +64,8 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
 
     private final Runnable mEmpty = this::showEmpty;
 
+    private static final String PERM_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK";
+
     public CastDialog() {
         scanTask = new ScanTask(this);
         body = new FormBody.Builder();
@@ -105,15 +110,31 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
     protected void initView() {
         binding.scan.setVisibility(fm ? View.VISIBLE : View.GONE);
         setWidth(0.85f);
-        startCast();
         setRecyclerView();
-        getDevice();
         showLoading();
+        ensureLocalNetworkPermission();
     }
 
     private void startCast() {
         DLNACastManager.get().init(requireActivity());
         DLNACastManager.get().setDeviceListener(this);
+    }
+
+    /** Android 17(API 37) 起「本地网络保护(LNP)」默认拦截 SSDP 组播/mDNS 等本地网络访问，
+     *  未授予 ACCESS_LOCAL_NETWORK 时投屏发现(发/收 M-SEARCH)会被系统掐掉。
+     *  targetSdk>=37 且未授权时弹系统授权框；授权后立即启动发现。低版本(<API36)不受此限制，直接启动。 */
+    private void ensureLocalNetworkPermission() {
+        if (Build.VERSION.SDK_INT >= 36
+                && ContextCompat.checkSelfPermission(requireContext(), PERM_LOCAL_NETWORK) != PackageManager.PERMISSION_GRANTED) {
+            localNetLauncher.launch(PERM_LOCAL_NETWORK);
+        } else {
+            startCastAndLoad();
+        }
+    }
+
+    private void startCastAndLoad() {
+        startCast();
+        getDevice();
     }
 
     @Override
@@ -238,6 +259,13 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
         if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) scanTask.start(result.getData().getStringExtra("address"));
     });
+
+    private final ActivityResultLauncher<String> localNetLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(),
+            granted -> {
+                if (!granted) Notify.show("未授予「本地网络」权限，投屏发现可能被系统拦截；请在 设置→应用→揽星影视→权限 中开启「本地网络」后重试");
+                startCastAndLoad();
+            });
 
     public interface Listener {
 

@@ -5,7 +5,7 @@ media3 = "1.11.0-alpha01-fongmi"
 agp = "9.2.1"
 python = "17.0.0"
 minSdk = "24"
-targetSdk = "36"
+targetSdk = "37"
 compileSdk = "37"
 
 annotation = "1.10.0"
