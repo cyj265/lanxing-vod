@@ -400,14 +400,21 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     }
 
     private void setPanelWidth() {
-        int width = ResUtil.getScreenWidth();
-        // 频道条目已改 match_parent(台名 weight=1 内部省略), 不再溢出, 故三列可铺满整屏无需留黑边。
-        // 分组 0.20 / 频道 0.40 / 节目列用屏宽兜底 = 剩余全部, 严丝合缝填满、零黑边、分类列不再过窄。
-        int groupW = (int) (width * 0.20f);
-        int channelW = (int) (width * 0.40f);
+        int screenW = ResUtil.getScreenWidth();
+        int pad = ResUtil.dp2px(16); // 各列表左右 8dp padding
+        // 分组列: 按最长分类名算宽, 至少 120dp(真机 0.20*屏宽 仅够 2 字, 必须设下限), 至多 1/3 屏宽
+        int groupW = 0;
+        for (int i = 0; i < mGroupAdapter.getItemCount(); i++)
+            groupW = Math.max(groupW, ResUtil.getTextWidth(mGroupAdapter.get(i).getName(), 14) + pad);
+        groupW = Math.max(ResUtil.dp2px(120), Math.min(groupW, screenW / 3));
+        // 频道列: 固定 0.40 屏宽, 但给节目列(EPG)留至少 120dp 底线, 不足时压缩频道列
+        int epgMin = ResUtil.dp2px(120);
+        int channelW = (int) (screenW * 0.40f);
+        if (channelW > screenW - groupW - epgMin) channelW = Math.max(ResUtil.dp2px(120), screenW - groupW - epgMin);
+        // 节目列用剩余宽度兜底, 三列严丝合缝填满整屏、零黑边
         setWidth(mBinding.group, groupW);
         setWidth(mBinding.channel, channelW);
-        setWidth(mBinding.epgData, width - groupW - channelW);
+        setWidth(mBinding.epgData, screenW - groupW - channelW);
     }
 
     private void setPosition(int[] position) {
