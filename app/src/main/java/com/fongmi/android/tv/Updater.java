@@ -44,6 +44,8 @@ public class Updater implements Download.Callback, UpdateListener {
             "https://gh.idayer.com/",
             "https://ghproxy.cfd/"
     };
+    // 单节点无数据超过该时长(毫秒)则自动切换下一个加速节点，防止卡死在假死节点
+    private static final long STALL_TIMEOUT_MS = 15000;
 
     private Download download;
     private UpdateDialog dialog;
@@ -51,6 +53,7 @@ public class Updater implements Download.Callback, UpdateListener {
     private String version;
     private List<String> candidates = new ArrayList<>();
     private int mirrorIndex = 0;
+    private final Runnable stallTask = this::onStall;
 
     private Updater() {
     }
@@ -185,6 +188,30 @@ public class Updater implements Download.Callback, UpdateListener {
         if (candidates.size() > 1) Notify.show("正在" + nameOf(mirrorIndex) + "下载更新…");
         download = Download.create(url, getFile()).tag(nameOf(mirrorIndex));
         download.start(this);
+        armWatchdog();
+    }
+
+    /** 重新计时无数据超时（开始下载或收到进度时调用） */
+    private void armWatchdog() {
+        App.removeCallbacks(stallTask);
+        App.post(stallTask, STALL_TIMEOUT_MS);
+    }
+
+    private void disarmWatchdog() {
+        App.removeCallbacks(stallTask);
+    }
+
+    /** 单节点长时间无数据，自动切换下一个候选；已是最后一个则提示失败 */
+    private void onStall() {
+        if (apkUrl == null || !apkUrl.startsWith("https://github.com/") || mirrorIndex >= candidates.size() - 1) {
+            Notify.show("更新下载超时，请稍后重试");
+            dismiss();
+            return;
+        }
+        Notify.show(nameOf(mirrorIndex) + "无数据，切换" + nameOf(mirrorIndex + 1) + "下载…");
+        if (download != null) download.cancel();
+        mirrorIndex++;
+        startNext();
     }
 
     @Override
@@ -195,6 +222,7 @@ public class Updater implements Download.Callback, UpdateListener {
     }
 
     private void dismiss() {
+        disarmWatchdog();
         try {
             if (dialog != null) dialog.dismiss();
         } catch (Exception ignored) {
@@ -203,11 +231,13 @@ public class Updater implements Download.Callback, UpdateListener {
 
     @Override
     public void progress(int progress) {
+        armWatchdog(); // 收到进度即重置无数据超时
         if (dialog != null) dialog.setProgress(progress);
     }
 
     @Override
     public void error(String msg) {
+        disarmWatchdog();
         // 直连/某加速节点失败，自动切换下一个候选；全部失败才提示
         if (apkUrl != null && apkUrl.startsWith("https://github.com/") && mirrorIndex < candidates.size() - 1) {
             int failed = mirrorIndex;
@@ -222,6 +252,7 @@ public class Updater implements Download.Callback, UpdateListener {
 
     @Override
     public void success(File file) {
+        disarmWatchdog();
         if (!isValidApk(file)) {
             Path.clear(file);
             Notify.show("安装包校验失败，已清理，请重试");
