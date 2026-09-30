@@ -9,6 +9,7 @@
         android:id="@+id/top"
         android:layout_width="match_parent"
         android:layout_height="?attr/actionBarSize"
+        android:background="@drawable/bg_control_top"
         android:gravity="center_vertical"
         android:orientation="horizontal"
         android:paddingStart="4dp"
@@ -39,6 +40,50 @@
                 android:textColor="@color/white"
                 android:textSize="16sp"
                 tools:text="CCTV-4K" />
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end|center_vertical"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/resolution"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFeatureSettings="tnum"
+                    android:textColor="@color/primary"
+                    android:textSize="12sp"
+                    android:visibility="gone"
+                    tools:text="[1920x1080]"
+                    tools:visibility="visible" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/speed"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:fontFeatureSettings="tnum"
+                    android:textColor="#B3FFFFFF"
+                    android:textSize="12sp"
+                    android:visibility="gone"
+                    tools:text="1.2 MB/s"
+                    tools:visibility="visible" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:id="@+id/battery"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:fontFeatureSettings="tnum"
+                    android:textColor="#B3FFFFFF"
+                    android:textSize="12sp"
+                    android:visibility="gone"
+                    tools:text="88%"
+                    tools:visibility="visible" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
 
         </FrameLayout>
 
@@ -129,6 +174,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
+        android:background="@drawable/bg_control_bottom"
         android:orientation="vertical"
         android:paddingBottom="8dp">
 

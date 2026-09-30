@@ -3,9 +3,11 @@ package com.fongmi.android.tv.ui.activity;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.drawable.Drawable;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.DisplayCutout;
@@ -21,6 +23,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.media3.common.C;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.Player;
+import androidx.media3.common.VideoSize;
 import androidx.media3.ui.PlayerSeekView;
 import androidx.media3.ui.PlayerView;
 import androidx.recyclerview.widget.RecyclerView;
@@ -62,10 +65,10 @@ import com.fongmi.android.tv.ui.adapter.EpgDataAdapter;
 import com.fongmi.android.tv.ui.adapter.GroupAdapter;
 import com.fongmi.android.tv.ui.custom.CustomKeyDown;
 import com.fongmi.android.tv.ui.dialog.CastDialog;
-import com.fongmi.android.tv.ui.dialog.ControlDialog;
 import com.fongmi.android.tv.ui.dialog.HistoryDialog;
 import com.fongmi.android.tv.ui.dialog.InfoDialog;
 import com.fongmi.android.tv.ui.dialog.LiveDialog;
+import com.fongmi.android.tv.ui.dialog.LiveSettingDialog;
 import com.fongmi.android.tv.ui.dialog.PassDialog;
 import com.fongmi.android.tv.ui.dialog.PlayerEngineDialog;
 import com.fongmi.android.tv.ui.dialog.SpeedSettingDialog;
@@ -85,8 +88,9 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-public class LiveActivity extends PlaybackActivity implements CustomKeyDown.Listener, Biometric.Callback, PassListener, ConfigListener, LiveListener, GroupAdapter.OnClickListener, ChannelAdapter.OnClickListener, EpgDataAdapter.OnClickListener, CastDialog.Listener, InfoDialog.Listener, LivePlaybackHost {
+public class LiveActivity extends PlaybackActivity implements CustomKeyDown.Listener, Biometric.Callback, PassListener, ConfigListener, LiveListener, GroupAdapter.OnClickListener, ChannelAdapter.OnClickListener, EpgDataAdapter.OnClickListener, CastDialog.Listener, InfoDialog.Listener, LivePlaybackHost, LiveSettingDialog.Listener {
 
     private ActivityLiveBinding mBinding;
     private LiveViewModel mViewModel;
@@ -100,6 +104,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     private Runnable mR2;
     private Runnable mR3;
     private Runnable mR4;
+    private Runnable mR5;
     private List<Group> mHides;
     private Group mGroup;
     private Channel mChannel;
@@ -175,6 +180,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mR2 = this::setTraffic;
         mR3 = this::hideInfo;
         mR4 = this::runLock;
+        mR5 = this::setOsd;
         mPiP = new PiP();
         setRecyclerView();
         setVideoView();
@@ -212,6 +218,11 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mBinding.control.action.decode.setOnClickListener(view -> onDecode());
         mBinding.control.action.speed.setOnLongClickListener(view -> onSpeedLong());
         mBinding.control.action.getRoot().setOnTouchListener(this::onActionTouch);
+        // 竖屏窗口下方的功能行（与点播竖屏 快搜/播放器/投屏/设置 对齐）
+        mBinding.panelConfig.setOnClickListener(view -> onConfig());
+        mBinding.panelLine.setOnClickListener(view -> onLine());
+        mBinding.panelCast.setOnClickListener(view -> onCast());
+        mBinding.panelSetting.setOnClickListener(view -> onSetting());
         mBinding.video.setOnTouchListener((view, event) -> mKeyDown.onTouchEvent(event));
     }
 
@@ -369,6 +380,8 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
             lp.gravity = Gravity.LEFT;
             mBinding.recycler.setLayoutParams(lp);
             mBinding.recycler.setVisibility(View.GONE);
+            mBinding.panelBar.setVisibility(View.GONE);
+            setContainerWidth(ViewGroup.LayoutParams.WRAP_CONTENT);
             setPadding(mBinding.recycler, true);
         } else {
             // 半屏：视频上半屏（16:9 实际高度，从状态栏/挖孔下方开始，与点播播放窗口对齐）、频道列表下半屏
@@ -391,9 +404,18 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
             // 半屏面板贴底部，不涉及顶部挖孔；居中挖孔机型 SafeInsetLeft 会被误报成整块宽度，
             // 不能把挖孔填充当左 padding 用（会把整个列表顶到右边、EPG 溢出屏幕）
             noPadding(mBinding.recycler);
+            mBinding.panelBar.setVisibility(View.VISIBLE);
+            setContainerWidth(ViewGroup.LayoutParams.MATCH_PARENT);
             setPanelWidth();
             setPosition();
         }
+    }
+
+    private void setContainerWidth(int width) {
+        ViewGroup.LayoutParams params = mBinding.listContainer.getLayoutParams();
+        if (params.width == width) return;
+        params.width = width;
+        mBinding.listContainer.setLayoutParams(params);
     }
 
     private int getInsetTop() {
@@ -461,11 +483,12 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         Notify.show(exist ? R.string.keep_del : R.string.keep_add);
         if (exist) delKeep(mChannel);
         else addKeep(mChannel);
+        updateKeepImg();
     }
 
-    /** 直播竖屏与点播竖屏统一：顶部栏「设置」打开播放设置（引擎/解码/比例/倍速等），与点播一致 */
+    /** 直播竖屏与点播竖屏统一：顶部栏「设置」打开直播专属设置（解码/缩放/超时换源/EPG地址） */
     private void onSetting() {
-        ControlDialog.create().parent(mBinding.control.action.getRoot()).parse(false).player(player()).show(this);
+        LiveSettingDialog.create().player(player()).show(this);
     }
 
     private void onLock() {
@@ -633,21 +656,56 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
     private void showControl() {
         if (service() == null || isInPictureInPictureMode()) return;
+        boolean port = isHalfPanel();
         mBinding.control.info.setVisibility(player().isEmpty() ? View.GONE : View.VISIBLE);
-        mBinding.control.cast.setVisibility(player().isEmpty() ? View.GONE : View.VISIBLE);
+        // 竖屏对齐点播：窗口内只留 返回/标题+OSD/信息/收藏/设置/暂停/全屏/进度条，投屏等功能移到窗口下方
+        mBinding.control.cast.setVisibility(port || player().isEmpty() ? View.GONE : View.VISIBLE);
+        mBinding.control.prev.setVisibility(port ? View.GONE : View.VISIBLE);
+        mBinding.control.next.setVisibility(port ? View.GONE : View.VISIBLE);
+        mBinding.control.action.getRoot().setVisibility(port ? View.GONE : View.VISIBLE);
         mBinding.control.right.rotate.setVisibility(isLock() ? View.GONE : View.VISIBLE);
+        mBinding.control.right.lock.setVisibility(port || isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.center.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.bottom.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.back.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.top.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.getRoot().setVisibility(View.VISIBLE);
         setR1Callback();
+        setOsd();
         hideInfo();
     }
 
     private void hideControl() {
         mBinding.control.getRoot().setVisibility(View.GONE);
         App.removeCallbacks(mR1);
+    }
+
+    /** 控制栏右上屏显：分辨率 + 网速 + 电池（与点播竖屏一致），控制栏可见期间每秒刷新 */
+    private void setOsd() {
+        Traffic.setSpeed(mBinding.control.speed);
+        setBattery();
+        if (isVisible(mBinding.control.getRoot())) App.post(mR5, 1000);
+    }
+
+    private void setBattery() {
+        Intent intent = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        if (intent == null) return;
+        int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+        if (level < 0 || scale <= 0) return;
+        mBinding.control.battery.setVisibility(View.VISIBLE);
+        mBinding.control.battery.setText(level * 100 / scale + "%");
+    }
+
+    @Override
+    protected void onSizeChanged(VideoSize size) {
+        boolean hasSize = size != null && size.width > 0 && size.height > 0;
+        if (hasSize) {
+            mBinding.control.resolution.setText("[" + size.width + "x" + size.height + "]");
+            mBinding.control.resolution.setVisibility(View.VISIBLE);
+        } else {
+            mBinding.control.resolution.setVisibility(View.GONE);
+        }
     }
 
     private void showInfo() {
@@ -847,7 +905,9 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
     @Override
     public void startPlayback(Result result, long position, MediaMetadata metadata) {
-        startPlayer(mPlaybackKey = result.getRealUrl(), result, false, getHome().getTimeout(), position, metadata);
+        // 直播设置里配置的超时换源秒数优先，未配置(0)时跟随直播源
+        long timeout = LiveSetting.getTimeout() > 0 ? TimeUnit.SECONDS.toMillis(LiveSetting.getTimeout()) : getHome().getTimeout();
+        startPlayer(mPlaybackKey = result.getRealUrl(), result, false, timeout, position, metadata);
     }
 
     @Override
@@ -872,8 +932,14 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         if (mGroup != null) mGroup.setPosition(mChannelAdapter.setSelected(channel.group(mGroup)));
         mChannel = channel;
         setArtwork();
+        updateKeepImg();
         showInfo();
         hideUI();
+    }
+
+    private void updateKeepImg() {
+        if (mChannel == null) return;
+        mBinding.control.keep.setImageResource(Keep.exist(mChannel.getName()) ? R.drawable.ic_control_keep_on : R.drawable.ic_control_keep_off);
     }
 
     @Override
@@ -999,6 +1065,31 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     public void setConfig(Config config) {
         Config current = LiveConfig.get().getConfig();
         LiveConfig.load(config, getCallback(current));
+    }
+
+    /** 直播设置：画面缩放 */
+    @Override
+    public void onScale(int scale) {
+        setScale(scale);
+    }
+
+    /** 直播设置：EPG地址保存后立即对当前频道生效并刷新节目单 */
+    @Override
+    public void onEpgSaved() {
+        String custom = LiveSetting.getEpg();
+        if (custom.isEmpty()) {
+            // 恢复默认：整体重新加载直播源，让各频道重新按自带 EPG 解析
+            setLive(getHome());
+            return;
+        }
+        for (Group group : getHome().getGroups()) {
+            if (group.getChannel() == null) continue;
+            for (Channel item : group.getChannel()) {
+                item.setEpg(custom.replace("{id}", item.getTvgId()).replace("{name}", item.getTvgName()));
+                item.clearDataList();
+            }
+        }
+        if (mChannel != null) mViewModel.getEpg(mChannel);
     }
 
     private Callback getCallback(Config config) {
@@ -1219,6 +1310,8 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         super.onConfigurationChanged(newConfig);
         Util.hideSystemUI(this);
         applyPanelLayout();
+        // 横竖屏切换后按新方向重新套用控制栏可见性（竖屏隐藏投屏/上下频道等）
+        if (service() != null && isVisible(mBinding.control.getRoot())) showControl();
     }
 
     @Override
@@ -1263,7 +1356,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     @Override
     protected void onDestroy() {
         Source.get().exit();
-        App.removeCallbacks(mR1, mR2, mR3, mR4);
+        App.removeCallbacks(mR1, mR2, mR3, mR4, mR5);
         super.onDestroy();
     }
 }

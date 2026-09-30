@@ -9,6 +9,7 @@ import androidx.annotation.Nullable;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.gson.HeaderAdapter;
+import com.fongmi.android.tv.setting.LiveSetting;
 import com.fongmi.android.tv.utils.Formatters;
 import com.fongmi.android.tv.utils.ImgUtil;
 import com.fongmi.android.tv.utils.ResUtil;
@@ -262,6 +263,11 @@ public class Channel {
         return dataList == null ? Collections.emptyList() : dataList;
     }
 
+    /** 清空已缓存的节目单（EPG 地址变更后强制重新拉取） */
+    public void clearDataList() {
+        if (dataList != null) dataList.clear();
+    }
+
     public void setDataList(List<Epg> list) {
         this.dataList = new ArrayList<>(list);
     }
@@ -355,7 +361,10 @@ public class Channel {
         if (!live.getOrigin().isEmpty() && getOrigin().isEmpty()) setOrigin(live.getOrigin());
         if (!live.getCatchup().isEmpty() && getCatchup().isEmpty()) setCatchup(live.getCatchup());
         if (!live.getReferer().isEmpty() && getReferer().isEmpty()) setReferer(live.getReferer());
-        if (live.getEpg().contains("{") && !getEpg().startsWith("http")) setEpg(live.getEpgApi().replace("{id}", getTvgId()).replace("{name}", getTvgName()).replace("{epg}", getEpg()));
+        // 全局自定义 EPG 优先（直播设置里配置），否则使用直播源自带
+        String epgCustom = LiveSetting.getEpg();
+        if (!epgCustom.isEmpty()) setEpg(epgCustom.replace("{id}", getTvgId()).replace("{name}", getTvgName()));
+        else if (live.getEpg().contains("{") && !getEpg().startsWith("http")) setEpg(live.getEpgApi().replace("{id}", getTvgId()).replace("{name}", getTvgName()).replace("{epg}", getEpg()));
         if (live.getLogo().contains("{") && !getLogo().startsWith("http")) setLogo(live.getLogo().replace("{id}", getTvgId()).replace("{name}", getTvgName()).replace("{logo}", getLogo()));
     }
 

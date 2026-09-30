@@ -481,4 +481,15 @@
     <string name="audio_mode_custom">Custom</string>
     <string name="control_on">On</string>
     <string name="control_off">Off</string>
+    <string name="live_line_button">Line</string>
+    <string name="live_setting_title">Live Settings</string>
+    <string name="live_timeout_change">Timeout Switch</string>
+    <string name="live_epg_address">EPG Address</string>
+    <string name="live_epg_hint">Leave empty to use built-in EPG</string>
+    <string name="live_epg_reset">Reset</string>
+    <string name="live_epg_save">Save</string>
+
+    <string name="live_decode_hard">Hardware</string>
+    <string name="live_decode_soft">Software</string>
+
 </resources>

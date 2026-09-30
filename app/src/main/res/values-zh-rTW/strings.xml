@@ -437,4 +437,15 @@
     </string-array>
 
     <string name="vod_home">首頁</string>
+    <string name="live_line_button">線路</string>
+    <string name="live_setting_title">直播設置</string>
+    <string name="live_timeout_change">超時換源</string>
+    <string name="live_epg_address">EPG地址</string>
+    <string name="live_epg_hint">留空使用直播源自帶EPG</string>
+    <string name="live_epg_reset">恢復默認</string>
+    <string name="live_epg_save">保存</string>
+
+    <string name="live_decode_hard">硬解</string>
+    <string name="live_decode_soft">軟解</string>
+
 </resources>

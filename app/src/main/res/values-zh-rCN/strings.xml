@@ -470,4 +470,15 @@
     <string name="audio_mode_custom">自定义</string>
     <string name="control_on">开</string>
     <string name="control_off">关</string>
+    <string name="live_line_button">线路</string>
+    <string name="live_setting_title">直播设置</string>
+    <string name="live_timeout_change">超时换源</string>
+    <string name="live_epg_address">EPG地址</string>
+    <string name="live_epg_hint">留空使用直播源自带EPG</string>
+    <string name="live_epg_reset">恢复默认</string>
+    <string name="live_epg_save">保存</string>
+
+    <string name="live_decode_hard">硬解</string>
+    <string name="live_decode_soft">软解</string>
+
 </resources>
