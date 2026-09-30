@@ -1,6 +1,6 @@
 {
-  "version": "5.6.65",
-  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.65/lanxing-5.6.65-mobile-arm64_v8a.apk",
-  "desc": "三项优化：1) 直播竖屏播放列表遮挡修复(删 channel 列表 -16dp 偏移、三项宽度比例留 padding 余量、频道名 ellipsize 改 end)；2) 应用图标替换为揽星影视(同步 main 分支自适应图标前景)；3) 缓存清理补 Glide 内存/磁盘缓存释放，清理真正生效。",
+  "version": "5.6.66",
+  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.66/lanxing-5.6.66-mobile-arm64_v8a.apk",
+  "desc": "修复图标 bg_dark 资源缺失导致 #248 构建失败：5.6.65 从 main 同步揽星自适应图标时，ic_launcher.xml 背景引用 @color/bg_dark 而 dev 缺失，aapt 资源链接失败；已在 colors.xml 补 bg_dark(#0E1116)。",
   "time": "2026-09-30"
 }
