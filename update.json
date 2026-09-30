@@ -1,6 +1,6 @@
 {
-  "version": "5.6.63",
-  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.63/lanxing-5.6.63-mobile-arm64_v8a.apk",
-  "desc": "修复投屏『能发现设备但点击报 no scheme was found』：jupnp 3.x 不再自动解析相对 controlURL(如 Macast 返回 AVTransport/action)，发现设备时按 UPnP 规范用设备描述文件 URL 将其补全为绝对地址后再发 SOAP 指令。同机 OK影视(main/jupnp 2.x)能投而揽星不能的最后一个差异点消除。",
+  "version": "5.6.64",
+  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.64/lanxing-5.6.64-mobile-arm64_v8a.apk",
+  "desc": "投屏 search 节流(防 M-SEARCH 洪泛)：连点刷新/设备频繁 NOTIFY 会在 1.5s 内触发多次 search，每次都发 SSDP 组播、空耗电刷网络。DLNACastManager.search() 加 1.5s 最小间隔合并，发现不受影响(设备仍响应首次搜索)。5.6.63 已确认投屏可正常发 SOAP 播放。",
   "time": "2026-09-30"
 }

@@ -40,6 +40,7 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
     private DeviceListener deviceListener;
     private boolean bound;
     private Context appCtx;
+    private long lastSearchMs;
 
     public static DLNACastManager get() {
         return Loader.INSTANCE;
@@ -183,6 +184,14 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
     }
 
     public void search() {
+        long now = System.currentTimeMillis();
+        // 连点刷新会瞬间触发多次 search，jupnp 每次都发 M-SEARCH，造成 SSDP 洪泛(费电/刷网络)。
+        // 合并 1.5s 内的重复请求，发现不受影响(设备仍会响应首次搜索)。
+        if (now - lastSearchMs < 1500) {
+            DlnaDiag.log("search skipped (throttled, " + (now - lastSearchMs) + "ms since last)");
+            return;
+        }
+        lastSearchMs = now;
         DlnaDiag.log("search");
         if (upnpService != null) upnpService.getControlPoint().search(new STAllHeader());
     }

@@ -21,8 +21,8 @@ android {
         applicationId "com.cyj265.lanxingvod"
         minSdk libs.versions.minSdk.get().toInteger()
         targetSdk libs.versions.targetSdk.get().toInteger()
-        versionCode 645
-        versionName "5.6.63"
+        versionCode 646
+        versionName "5.6.64"
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString(), "eventBusIndex": "com.fongmi.android.tv.event.EventIndex"]
