@@ -12,6 +12,7 @@ import androidx.core.content.FileProvider;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.R;
+import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.impl.Callback;
 import com.github.catvod.utils.Path;
 
@@ -218,6 +219,11 @@ public class FileUtil {
 
     public static void clearCache(Callback callback) {
         Task.execute(() -> {
+            try {
+                // 先让 Glide 释放磁盘缓存, 否则运行时它仍握着文件句柄, Path.clear 会静默删除失败
+                Glide.get(App.get()).clearDiskCache();
+            } catch (Throwable ignored) {
+            }
             Path.clear(Path.cache());
             App.post(callback::success);
         });

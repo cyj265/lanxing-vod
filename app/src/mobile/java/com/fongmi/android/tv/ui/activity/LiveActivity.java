@@ -401,9 +401,10 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
     private void setPanelWidth() {
         int width = ResUtil.getScreenWidth();
-        setWidth(mBinding.group, (int) (width * 0.24f));
-        setWidth(mBinding.channel, (int) (width * 0.35f));
-        setWidth(mBinding.epgData, (int) (width * 0.41f));
+        // 三项之和留出各列表 8dp padding(共约 48dp), 否则竖屏会溢出屏宽把 epgData 挤出/分类栏被盖
+        setWidth(mBinding.group, (int) (width * 0.20f));
+        setWidth(mBinding.channel, (int) (width * 0.30f));
+        setWidth(mBinding.epgData, (int) (width * 0.36f));
     }
 
     private void setPosition(int[] position) {

@@ -1,6 +1,6 @@
 {
-  "version": "5.6.64",
-  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.64/lanxing-5.6.64-mobile-arm64_v8a.apk",
-  "desc": "投屏 search 节流(防 M-SEARCH 洪泛)：连点刷新/设备频繁 NOTIFY 会在 1.5s 内触发多次 search，每次都发 SSDP 组播、空耗电刷网络。DLNACastManager.search() 加 1.5s 最小间隔合并，发现不受影响(设备仍响应首次搜索)。5.6.63 已确认投屏可正常发 SOAP 播放。",
+  "version": "5.6.65",
+  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.65/lanxing-5.6.65-mobile-arm64_v8a.apk",
+  "desc": "三项优化：1) 直播竖屏播放列表遮挡修复(删 channel 列表 -16dp 偏移、三项宽度比例留 padding 余量、频道名 ellipsize 改 end)；2) 应用图标替换为揽星影视(同步 main 分支自适应图标前景)；3) 缓存清理补 Glide 内存/磁盘缓存释放，清理真正生效。",
   "time": "2026-09-30"
 }

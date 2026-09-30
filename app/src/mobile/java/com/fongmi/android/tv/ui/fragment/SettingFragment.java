@@ -39,6 +39,7 @@ import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.PermissionUtil;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.bumptech.glide.Glide;
 import com.github.catvod.bean.Doh;
 import com.github.catvod.net.OkHttp;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -259,6 +260,11 @@ public class SettingFragment extends BaseFragment implements ConfigListener, Sit
     }
 
     private void onCache(View view) {
+        try {
+            // 主线程释放 Glide 内存缓存, 否则刚清完又被复用填充
+            Glide.get(requireActivity()).clearMemory();
+        } catch (Throwable ignored) {
+        }
         FileUtil.clearCache(new Callback() {
             @Override
             public void success() {
