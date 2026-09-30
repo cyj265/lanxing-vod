@@ -25,6 +25,8 @@ import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,13 +35,15 @@ public class Updater implements Download.Callback, UpdateListener {
     // 与揽星TV 一致的更新逻辑：查 GitHub Releases(latest)，用构建号(BUILD_NUMBER)判断是否有新版本
     private static final String RELEASES_URL = "https://api.github.com/repos/cyj265/lanxing-vod/releases/latest";
     private static final Pattern APK_BUILD = Pattern.compile("v(\\d+)\\.apk$");
-    private static final String[] MIRRORS = {"https://gh-proxy.com/", "https://ghfast.top/", "https://ghproxy.net/"};
+    // 加速节点：与揽星TV 一致，仅用 gh-proxy.com（直连失败时自动回退到该加速中转）
+    private static final String PROXY = "https://gh-proxy.com/";
 
     private Download download;
     private UpdateDialog dialog;
     private String apkUrl;
     private String version;
-    private boolean retried;
+    private List<String> candidates = new ArrayList<>();
+    private int mirrorIndex = 0;
 
     private Updater() {
     }
@@ -143,7 +147,31 @@ public class Updater implements Download.Callback, UpdateListener {
     @Override
     public void onConfirm(View view) {
         view.setEnabled(false);
-        download = Download.create(apkUrl, getFile());
+        buildCandidates();
+        mirrorIndex = 0;
+        startNext();
+    }
+
+    /** 构建下载候选：GitHub 链接 = 直连 + gh-proxy 加速；其它链接只有一条 */
+    private void buildCandidates() {
+        candidates.clear();
+        if (apkUrl != null && apkUrl.startsWith("https://github.com/")) {
+            candidates.add(apkUrl);          // 直连
+            candidates.add(PROXY + apkUrl);   // 加速（gh-proxy.com）
+        } else {
+            candidates.add(apkUrl);
+        }
+    }
+
+    private void startNext() {
+        if (mirrorIndex >= candidates.size()) {
+            dismiss();
+            return;
+        }
+        String url = candidates.get(mirrorIndex);
+        String name = mirrorIndex == 0 ? "直连" : "加速";
+        if (candidates.size() > 1) Notify.show("正在" + name + "下载更新…");
+        download = Download.create(url, getFile()).tag(name);
         download.start(this);
     }
 
@@ -168,12 +196,11 @@ public class Updater implements Download.Callback, UpdateListener {
 
     @Override
     public void error(String msg) {
-        // 直连失败自动换加速中转（与揽星TV 一致：github 链接加 gh-proxy 前缀）
-        if (!retried && apkUrl != null && apkUrl.startsWith("https://github.com/")) {
-            retried = true;
-            String mirror = MIRRORS[0] + apkUrl;
-            download = Download.create(mirror, getFile());
-            download.start(this);
+        // 与揽星TV 一致：直连失败自动切换下一个候选（加速节点），全部失败才提示
+        if (apkUrl != null && apkUrl.startsWith("https://github.com/") && mirrorIndex < candidates.size() - 1) {
+            mirrorIndex++;
+            Notify.show("直连失败，切换加速节点下载…");
+            startNext();
             return;
         }
         Notify.show(msg);
