@@ -2,6 +2,7 @@ package com.fongmi.android.tv.service;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
+import android.net.LinkProperties;
 import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.wifi.WifiManager;
@@ -9,7 +10,10 @@ import android.os.Build;
 import android.util.Log;
 
 import com.fongmi.android.tv.dlna.DlnaDiag;
+import com.fongmi.android.tv.dlna.DlnaNet;
 import com.fongmi.android.tv.dlna.DLNAServiceConfiguration;
+
+import java.net.NetworkInterface;
 
 import org.jupnp.UpnpServiceConfiguration;
 import org.jupnp.android.AndroidUpnpServiceImpl;
@@ -52,6 +56,8 @@ public class DLNACastService extends AndroidUpnpServiceImpl {
                 upnpService.startup();
                 DlnaDiag.log("service upnp started");
             }
+            // 决定性探针：独立验证「进程绑 WiFi + Network.bindSocket(MulticastSocket)」在本机是否让组播通畅
+            DlnaDiag.probeMulticast(getApplicationContext());
         } catch (Throwable t) {
             DlnaDiag.log("service onCreate FAILED");
             DlnaDiag.log(t);
@@ -67,6 +73,7 @@ public class DLNACastService extends AndroidUpnpServiceImpl {
         super.onDestroy();
         // 恢复进程默认路由（投屏结束，不再劫持全局网络到 WiFi）
         unbindWifiNetwork();
+        DlnaNet.clear();
     }
 
     /** 把进程网络路由绑到活动 WiFi 网络，使 jupnp 的 SSDP 组播能从 WiFi 接口发出（根治 Android 11+ 的 EPERM）。 */
@@ -93,6 +100,17 @@ public class DLNACastService extends AndroidUpnpServiceImpl {
             }
             boolean ok = cm.bindProcessToNetwork(net);
             DlnaDiag.log("bindProcessToNetwork(wifi)=" + ok + " net=" + net);
+            // 同时把 WiFi 的 Network 与 NetworkInterface 交给 DlnaNet，供 jupnp 的 MulticastSocket 子类 bindSocket 使用
+            NetworkInterface ni = null;
+            try {
+                LinkProperties lp = cm.getLinkProperties(net);
+                if (lp != null && lp.getInterfaceName() != null) {
+                    ni = NetworkInterface.getByName(lp.getInterfaceName());
+                }
+            } catch (Throwable ignore) {
+            }
+            DlnaNet.set(net, ni);
+            DlnaDiag.log("DlnaNet set: wifiInterface=" + (ni != null ? ni.getDisplayName() : "null"));
         } catch (Throwable t) {
             DlnaDiag.log("bindWifi FAILED");
             DlnaDiag.log(t);

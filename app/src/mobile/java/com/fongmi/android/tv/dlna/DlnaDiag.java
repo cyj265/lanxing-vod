@@ -2,13 +2,24 @@ package com.fongmi.android.tv.dlna;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
+import android.net.LinkProperties;
 import android.net.Network;
 import android.net.NetworkCapabilities;
+import android.net.wifi.WifiManager;
+import android.os.Build;
 import android.util.Log;
 
 import java.io.File;
 import java.io.FileWriter;
 import java.io.RandomAccessFile;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -123,6 +134,93 @@ public final class DlnaDiag {
     public static File file(Context context) {
         init(context);
         return sFile;
+    }
+
+    /**
+     * 把 jupnp 内部创建的 MulticastSocket 钉到活动 WiFi 网络（Android 11+ 根治组播 EPERM 的关键）。
+     * 在 socket 已创建后调用 Network.bindSocket + setNetworkInterface，任何异常都被吞掉，
+     * 绝不因为我们这层增强导致 jupnp 本身的发送/接收失败。
+     */
+    public static void bindSocketToWifi(DatagramSocket socket, String tag) {
+        if (socket == null) {
+            log(tag + ": socket=null, skip bindSocket");
+            return;
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M && DlnaNet.wifiNetwork != null) {
+            try {
+                DlnaNet.wifiNetwork.bindSocket(socket);
+                log(tag + ": Network.bindSocket(wifi) OK");
+            } catch (Throwable t) {
+                log(tag + ": Network.bindSocket(wifi) FAILED");
+                log(t);
+            }
+        } else {
+            log(tag + ": bindSocket skipped (wifiNetwork=" + (DlnaNet.wifiNetwork != null) + " SDK>=M=" + (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) + ")");
+        }
+        if (DlnaNet.wifiInterface != null) {
+            try {
+                ((MulticastSocket) socket).setNetworkInterface(DlnaNet.wifiInterface);
+                log(tag + ": setNetworkInterface(" + DlnaNet.wifiInterface.getDisplayName() + ") OK");
+            } catch (Throwable t) {
+                log(tag + ": setNetworkInterface FAILED");
+                log(t);
+            }
+        }
+    }
+
+    /**
+     * 决定性探针：完全绕开 jupnp，自己用 WiFi 网络创建一个 MulticastSocket 发 SSDP M-SEARCH 并等回包。
+     * 用于一锤定音判断——在本机/本 ROM 上，「进程绑 WiFi + Network.bindSocket(MulticastSocket)」这套修法
+     * 到底让组播通不通。通 -> 说明 jupnp 子类化修法成立；不通 -> 说明 ROM 级拦了 app 组播(需 appops/NsdManager)。
+     */
+    public static void probeMulticast(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            log("probe: SDK<23, skip");
+            return;
+        }
+        if (!DlnaNet.ready()) {
+            log("probe: DlnaNet not ready (wifiNetwork/Interface null) -> 无法独立判定");
+            return;
+        }
+        new Thread(() -> {
+            try {
+                InetAddress group = InetAddress.getByName("239.255.255.250");
+                MulticastSocket s = new MulticastSocket(null);
+                s.setReuseAddress(true);
+                s.bind(new InetSocketAddress(0));
+                DlnaNet.wifiNetwork.bindSocket(s);
+                if (DlnaNet.wifiInterface != null) s.setNetworkInterface(DlnaNet.wifiInterface);
+                s.setTimeToLive(4);
+                s.joinGroup(new InetSocketAddress(group, 1900), DlnaNet.wifiInterface);
+                log("probe: socket ready, joined group on " + DlnaNet.wifiInterface.getDisplayName());
+
+                String msearch = "M-SEARCH * HTTP/1.1\r\nHOST: 239.255.255.250:1900\r\nMAN: \"ssdp:discover\"\r\nMX: 3\r\nST: ssdp:all\r\n\r\n";
+                byte[] data = msearch.getBytes(StandardCharsets.UTF_8);
+                s.send(new DatagramPacket(data, data.length, group, 1900));
+                log("probe: M-SEARCH sent OK (group=239.255.255.250:1900)");
+
+                s.setSoTimeout(4000);
+                byte[] buf = new byte[4096];
+                int got = 0;
+                long t0 = System.currentTimeMillis();
+                while (System.currentTimeMillis() - t0 < 4000) {
+                    try {
+                        DatagramPacket rp = new DatagramPacket(buf, buf.length);
+                        s.receive(rp);
+                        got++;
+                        String head = new String(buf, 0, Math.min(rp.getLength(), 80), StandardCharsets.UTF_8).replace("\r", " ").replace("\n", " ");
+                        log("probe: GOT RESPONSE #" + got + " from " + rp.getAddress() + " :: " + head);
+                    } catch (SocketTimeoutException e) {
+                        break;
+                    }
+                }
+                s.close();
+                log("probe VERDICT: sent=OK gotResponses=" + got + (got > 0 ? " -> 本机组播链路通畅，jupnp 子类化修法应生效" : " -> 4s 内无回应(可能真无设备，或 ROM 仍拦)"));
+            } catch (Throwable t) {
+                log("probe FAILED");
+                log(t);
+            }
+        }, "dlna-probe").start();
     }
 
     private static void mem(String text) {

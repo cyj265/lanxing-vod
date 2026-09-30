@@ -1,6 +1,6 @@
 {
-  "version": "5.6.52",
-  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.52/app-mobile-release.apk",
-  "desc": "投屏诊断增强：看门狗重放内存缓冲 + 自带网络/绑网状态结论，一次性定性 5.6.51 的 bindProcessToNetwork(wifi) 是否根治 EPERM",
-  "time": "2026-09-29"
+  "version": "5.6.53",
+  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.53/app-mobile-release.apk",
+  "desc": "投屏组播 EPERM 根治：覆写 jupnp 的 DatagramIO/MulticastReceiver 工厂，对每个 MulticastSocket 调 Network.bindSocket 钉到 WiFi 网络 + setNetworkInterface(wifi)；新增独立探针判定本机组播链路是否通畅",
+  "time": "2026-09-30"
 }
