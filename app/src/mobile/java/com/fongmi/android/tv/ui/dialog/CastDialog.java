@@ -1,17 +1,13 @@
 package com.fongmi.android.tv.ui.dialog;
 
 import android.app.Activity;
-import android.Manifest;
 import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.os.Build;
 import android.view.LayoutInflater;
 import android.view.View;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.media3.common.C;
@@ -65,15 +61,6 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
 
     private final Runnable mEmpty = this::showEmpty;
 
-    private final ActivityResultLauncher<String> permLauncher = registerForActivityResult(
-            new ActivityResultContracts.RequestPermission(),
-            granted -> {
-                // 无论授予与否都照常启动发现：授予后组播发送才可能被放行；
-                // 拒绝时仍尝试(部分 ROM 不靠该权限拦发送)，只是大概率 EPERM
-                if (!granted) Notify.show(R.string.cast_perm_nearby_hint);
-                startCast();
-            });
-
     public CastDialog() {
         scanTask = new ScanTask(this);
         body = new FormBody.Builder();
@@ -118,23 +105,10 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
     protected void initView() {
         binding.scan.setVisibility(fm ? View.VISIBLE : View.GONE);
         setWidth(0.85f);
-        ensureNearbyPermission();
+        startCast();
         setRecyclerView();
         getDevice();
         showLoading();
-    }
-
-    /** Android 13+ 把 DLNA 投屏发现归到「附近的设备」权限组(NEARBY_WIFI_DEVICES)。
-     *  未授权时 ColorOS/部分 ROM 会在内核层掐掉组播发送(sendto EPERM)。
-     *  关键：必须在权限授予后再启动发现(init 会触发探针/组播发送)，
-     *  否则探针永远在"未授权"态跑，测不出该权限到底能不能解 EPERM。 */
-    private void ensureNearbyPermission() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU
-                && ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.NEARBY_WIFI_DEVICES) != PackageManager.PERMISSION_GRANTED) {
-            permLauncher.launch(Manifest.permission.NEARBY_WIFI_DEVICES);
-        } else {
-            startCast();
-        }
     }
 
     private void startCast() {

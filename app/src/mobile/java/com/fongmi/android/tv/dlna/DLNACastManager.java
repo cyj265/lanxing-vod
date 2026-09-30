@@ -6,7 +6,6 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.bean.Device;
@@ -41,8 +40,6 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
     private DeviceListener deviceListener;
     private boolean bound;
     private Context appCtx;
-    /** 广播兜底发现节流：避免 onRefresh 连发 3 次 search 起 3 个 UDP 监听线程 */
-    private long lastBcast;
 
     public static DLNACastManager get() {
         return Loader.INSTANCE;
@@ -156,7 +153,6 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
     }
 
     private void checkDevices() {
-        // 把内存缓冲里的全部诊断重放到 logcat 末尾，对抗 ColorOS 把早期行冲掉导致抓不到 bindProcessToNetwork 等关键信息
         DlnaDiag.replay();
         if (upnpService == null) {
             DlnaDiag.logState(appCtx);
@@ -167,48 +163,14 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
         DlnaDiag.logState(appCtx);
         if (n > 0) {
             DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=" + n + " -> OK, cast list should have devices");
-        } else if (DlnaDiag.probeBlockedByEperm) {
-            if (DlnaDiag.isNearbyGranted(appCtx)) {
-                DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=0 -> PROBE EPERM EVEN THOUGH 'Nearby devices' perm GRANTED. This is a HARD ROM/ColorOS block on app multicast SEND (not fixable by app perm). Options: (1) ColorOS Settings > grant app 'WLAN multicast' sub-perm if present; (2) root + iptables; (3) switch to NsdManager/unicast discovery");
-            } else {
-                DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=0 -> PROBE EPERM and 'Nearby devices' perm NOT granted. Grant it: Settings > Apps > 揽星影视 > Permissions > 附近的设备 = Allow, then retry");
-            }
-            showEpermToast();
         } else {
-            DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=0 -> multicast not EPERM-blocked; no device replied (router AP-isolation/IGMP, or no renderer on network)");
-        }
-    }
-
-    private void showEpermToast() {
-        try {
-            Toast.makeText(appCtx, "系统拦截了投屏组播发送(EPERM)。已自动改用广播兜底发现，若仍搜不到：设置→应用→揽星影视→权限→开启「附近的设备」，并到系统设置允许 WLAN 多播", Toast.LENGTH_LONG).show();
-        } catch (Throwable ignore) {
+            DlnaDiag.log("WATCHDOG VERDICT: upnpAttached=true foundMediaRenderer=0 -> 没有设备响应(路由器 AP 隔离/IGMP，或网内无渲染端)；若确认有设备仍搜不到，再排查 ROM 是否拦组播");
         }
     }
 
     public void search() {
         DlnaDiag.log("search");
         if (upnpService != null) upnpService.getControlPoint().search(new STAllHeader());
-        // 并行跑广播兜底发现：当 ROM 硬拦组播发送时，这是唯一能主动搜到设备的应用层路径
-        if (appCtx != null) broadcastDiscover(appCtx);
-    }
-
-    /** 广播兜底发现(绕开组播 EPERM)：收到设备后直接喂进现有列表监听。带 3s 节流。 */
-    private void broadcastDiscover(Context context) {
-        long now = System.currentTimeMillis();
-        if (now - lastBcast < 3000) return;
-        lastBcast = now;
-        DlnaBroadcastDiscovery.run(context.getApplicationContext(), new DlnaBroadcastDiscovery.Callback() {
-            @Override
-            public void onDevice(Device device) {
-                notifyAdded(device);
-            }
-
-            @Override
-            public void onLog(String msg) {
-                DlnaDiag.log(msg);
-            }
-        });
     }
 
     public List<Device> getRegistered() {
