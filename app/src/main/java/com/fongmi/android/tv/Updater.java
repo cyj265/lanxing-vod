@@ -35,8 +35,15 @@ public class Updater implements Download.Callback, UpdateListener {
     // 与揽星TV 一致的更新逻辑：查 GitHub Releases(latest)，用构建号(BUILD_NUMBER)判断是否有新版本
     private static final String RELEASES_URL = "https://api.github.com/repos/cyj265/lanxing-vod/releases/latest";
     private static final Pattern APK_BUILD = Pattern.compile("v(\\d+)\\.apk$");
-    // 加速节点：与揽星TV 一致，仅用 gh-proxy.com（直连失败时自动回退到该加速中转）
-    private static final String PROXY = "https://gh-proxy.com/";
+    // 加速节点：直连优先，失败依次回退到多个主流 GitHub 加速中转（国内常见可用节点）
+    private static final String[] PROXIES = {
+            "https://gh-proxy.com/",
+            "https://ghproxy.net/",
+            "https://ghfast.top/",
+            "https://mirror.ghproxy.com/",
+            "https://gh.idayer.com/",
+            "https://ghproxy.cfd/"
+    };
 
     private Download download;
     private UpdateDialog dialog;
@@ -152,15 +159,21 @@ public class Updater implements Download.Callback, UpdateListener {
         startNext();
     }
 
-    /** 构建下载候选：GitHub 链接 = 直连 + gh-proxy 加速；其它链接只有一条 */
+    /** 构建下载候选：GitHub 链接 = 直连 + 多个加速中转 + kkgithub 域名替换；其它链接只有一条 */
     private void buildCandidates() {
         candidates.clear();
         if (apkUrl != null && apkUrl.startsWith("https://github.com/")) {
-            candidates.add(apkUrl);          // 直连
-            candidates.add(PROXY + apkUrl);   // 加速（gh-proxy.com）
+            candidates.add(apkUrl); // 直连
+            for (String p : PROXIES) candidates.add(p + apkUrl);
+            // kkgithub 域名替换（独立加速线路，非前缀）
+            candidates.add(apkUrl.replaceFirst("https://github\\.com/", "https://kgithub.com/"));
         } else {
             candidates.add(apkUrl);
         }
+    }
+
+    private String nameOf(int idx) {
+        return idx == 0 ? "直连" : "加速" + idx;
     }
 
     private void startNext() {
@@ -169,9 +182,8 @@ public class Updater implements Download.Callback, UpdateListener {
             return;
         }
         String url = candidates.get(mirrorIndex);
-        String name = mirrorIndex == 0 ? "直连" : "加速";
-        if (candidates.size() > 1) Notify.show("正在" + name + "下载更新…");
-        download = Download.create(url, getFile()).tag(name);
+        if (candidates.size() > 1) Notify.show("正在" + nameOf(mirrorIndex) + "下载更新…");
+        download = Download.create(url, getFile()).tag(nameOf(mirrorIndex));
         download.start(this);
     }
 
@@ -196,10 +208,11 @@ public class Updater implements Download.Callback, UpdateListener {
 
     @Override
     public void error(String msg) {
-        // 与揽星TV 一致：直连失败自动切换下一个候选（加速节点），全部失败才提示
+        // 直连/某加速节点失败，自动切换下一个候选；全部失败才提示
         if (apkUrl != null && apkUrl.startsWith("https://github.com/") && mirrorIndex < candidates.size() - 1) {
+            int failed = mirrorIndex;
             mirrorIndex++;
-            Notify.show("直连失败，切换加速节点下载…");
+            Notify.show(nameOf(failed) + "失败，切换" + nameOf(mirrorIndex) + "下载…");
             startNext();
             return;
         }
