@@ -1,6 +1,6 @@
 {
-  "version": "5.6.60",
-  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.60/lanxing-5.6.60-mobile-arm64_v8a.apk",
-  "desc": "投屏发现回归主分支等价实现：5.6.53+ 自作主张把组播 socket 用 Network.bindSocket(wifi) 钉死到某 Network 对象、并在服务 onCreate 里 bindProcessToNetwork，导致 ColorOS 内核层对「应用组播发送」回 EPERM（主分支/影视仓都不钉网络，故正常）。5.6.59 回退 DLNACastService/DLNAServiceConfiguration 到主分支形态（纯原生 jupnp 组播），删除自定义 socket 类与广播兜底，并去掉「附近的设备」运行时弹窗。投屏发现应恢复与主分支一致。",
+  "version": "5.6.61",
+  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.61/lanxing-5.6.61-mobile-arm64_v8a.apk",
+  "desc": "投屏根因修复：Android 17(SDK 37+) 起「本地网络保护」强制生效，targetSdk>=37 的应用访问本地网络(SSDP 组播)默认被内核拦截，报 sendto EPERM。dev 分支从上游 FongMi/TV 5.6.3 移植时 targetSdk 被提到 37，而主分支(能投屏)是 30，故同机同网表现为「主分支/OK影视能投、dev 不能」。本次将 targetSdk 降到 36(靠 INTERNET 隐式授权本地网络)，并声明 ACCESS_LOCAL_NETWORK 以备将来升回 37。投屏应恢复正常。",
   "time": "2026-09-30"
 }

@@ -12,6 +12,11 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE" />
     <uses-permission android:name="android.permission.NEARBY_WIFI_DEVICES" android:usesPermissionFlags="neverForLocation" />
+    <!-- Android 17(SDK 37+) 起「本地网络保护」强制生效：targetSdk>=37 的应用访问本地网络
+         (SSDP 组播/mDNS/广播) 默认被内核拦截(sendto EPERM)，须 ACCESS_LOCAL_NETWORK 权限。
+         本项目 targetSdk 已降到 36，靠 INTERNET 隐式授权即可正常投屏；此声明保留，
+         供将来若需升回 targetSdk 37 时启用（届时还需在运行时申请）。 -->
+    <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
