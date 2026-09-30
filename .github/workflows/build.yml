@@ -67,8 +67,8 @@ jobs:
             VERSION=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)
             BN="${{ github.run_number }}"
             mkdir -p /tmp/lx-release
-            cp "$MOBILE_APK" "/tmp/lx-release/lanxing-${VERSION}-${BN}-mobile-arm64_v8a.apk"
-            cp "$TV_APK" "/tmp/lx-release/lanxing-${VERSION}-${BN}-leanback-arm64_v8a.apk"
+            cp "$MOBILE_APK" "/tmp/lx-release/lanxing-v${BN}.apk"
+            cp "$TV_APK" "/tmp/lx-release/lanxing-tv-v${BN}.apk"
             ls -la /tmp/lx-release
             echo "APK_PATH=/tmp/lx-release" >> $GITHUB_ENV
           else
@@ -127,14 +127,14 @@ jobs:
       - name: 发布 GitHub Release（dev 分支为预发布测试版，不影响对外正式版）
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v${{ steps.ver.outputs.name }}
-          name: 揽星影视 v${{ steps.ver.outputs.name }}
+          tag_name: v${{ steps.ver.outputs.name }}-r${{ github.run_number }}
+          name: 揽星影视 v${{ steps.ver.outputs.name }} (构建 #${{ github.run_number }})
           body: |
-            测试版自动构建发布
+            测试版自动构建发布（预发布）
             更新内容见仓库提交记录
           files: |
-            /tmp/lx-release/lanxing-${{ steps.ver.outputs.name }}-${{ github.run_number }}-mobile-arm64_v8a.apk
-            /tmp/lx-release/lanxing-${{ steps.ver.outputs.name }}-${{ github.run_number }}-leanback-arm64_v8a.apk
+            /tmp/lx-release/lanxing-v${{ github.run_number }}.apk
+            /tmp/lx-release/lanxing-tv-v${{ github.run_number }}.apk
             app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt
             app/build/outputs/mapping/leanbackArm64_v8aRelease/mapping.txt
           generate_release_notes: false

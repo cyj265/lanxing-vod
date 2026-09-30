@@ -32,8 +32,10 @@ import java.util.regex.Pattern;
 
 public class Updater implements Download.Callback, UpdateListener {
 
-    // 与揽星TV 一致的更新逻辑：查 GitHub Releases(latest)，用构建号(BUILD_NUMBER)判断是否有新版本
-    private static final String RELEASES_URL = "https://api.github.com/repos/cyj265/lanxing-vod/releases/latest";
+    // 与揽星TV 一致的更新逻辑：查 GitHub Releases，用构建号(BUILD_NUMBER)判断是否有新版本。
+    // 注意：不能用 /releases/latest —— 该接口默认排除 prerelease，而 dev 构建发布为预发布版会永远返回 404。
+    // 用列表接口(含 prerelease)取最新一条即可。
+    private static final String RELEASES_URL = "https://api.github.com/repos/cyj265/lanxing-vod/releases?per_page=1";
     private static final Pattern APK_BUILD = Pattern.compile("v(\\d+)\\.apk$");
     // 加速节点：直连优先，失败依次回退到多个主流 GitHub 加速中转（国内常见可用节点）
     private static final String[] PROXIES = {
@@ -105,7 +107,9 @@ public class Updater implements Download.Callback, UpdateListener {
             while ((line = reader.readLine()) != null) sb.append(line);
             body = sb.toString();
         }
-        JSONObject json = new JSONObject(body);
+        JSONArray arr = new JSONArray(body);
+        if (arr.length() == 0) return null;
+        JSONObject json = arr.getJSONObject(0);
         String tag = json.optString("tag_name", "").replaceFirst("^v", "");
         JSONArray assets = json.optJSONArray("assets");
         if (assets == null) return null;
@@ -129,7 +133,7 @@ public class Updater implements Download.Callback, UpdateListener {
         return release;
     }
 
-    /** APK 文件名形如 lanxing-5.6.66-123-mobile-arm64_v8a.apk → 取 v123.apk 中的 123 */
+    /** APK 文件名形如 lanxing-v12.apk（与揽星TV 的 iptv-player-v<run>.apk 一致）→ 取 v12.apk 中的 12 */
     private int extractBuildNumber(String apkName) {
         if (apkName == null) return 0;
         Matcher m = APK_BUILD.matcher(apkName);
