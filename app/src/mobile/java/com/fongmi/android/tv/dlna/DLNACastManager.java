@@ -41,6 +41,8 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
     private DeviceListener deviceListener;
     private boolean bound;
     private Context appCtx;
+    /** 广播兜底发现节流：避免 onRefresh 连发 3 次 search 起 3 个 UDP 监听线程 */
+    private long lastBcast;
 
     public static DLNACastManager get() {
         return Loader.INSTANCE;
@@ -179,7 +181,7 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
 
     private void showEpermToast() {
         try {
-            Toast.makeText(appCtx, "投屏发现被系统拦截(组播 EPERM)。请到 设置→应用→揽星影视→权限→开启「附近的设备」，并允许 WLAN 多播(详情见日志)", Toast.LENGTH_LONG).show();
+            Toast.makeText(appCtx, "系统拦截了投屏组播发送(EPERM)。已自动改用广播兜底发现，若仍搜不到：设置→应用→揽星影视→权限→开启「附近的设备」，并到系统设置允许 WLAN 多播", Toast.LENGTH_LONG).show();
         } catch (Throwable ignore) {
         }
     }
@@ -187,6 +189,26 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
     public void search() {
         DlnaDiag.log("search");
         if (upnpService != null) upnpService.getControlPoint().search(new STAllHeader());
+        // 并行跑广播兜底发现：当 ROM 硬拦组播发送时，这是唯一能主动搜到设备的应用层路径
+        if (appCtx != null) broadcastDiscover(appCtx);
+    }
+
+    /** 广播兜底发现(绕开组播 EPERM)：收到设备后直接喂进现有列表监听。带 3s 节流。 */
+    private void broadcastDiscover(Context context) {
+        long now = System.currentTimeMillis();
+        if (now - lastBcast < 3000) return;
+        lastBcast = now;
+        DlnaBroadcastDiscovery.run(context.getApplicationContext(), new DlnaBroadcastDiscovery.Callback() {
+            @Override
+            public void onDevice(Device device) {
+                notifyAdded(device);
+            }
+
+            @Override
+            public void onLog(String msg) {
+                DlnaDiag.log(msg);
+            }
+        });
     }
 
     public List<Device> getRegistered() {

@@ -1,6 +1,6 @@
 {
-  "version": "5.6.57",
-  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.57/lanxing-5.6.57-mobile-arm64_v8a.apk",
-  "desc": "投屏诊断关键修正：将投屏发现(init)推迟到「附近的设备」权限授予后再启动，使探针真正代表授权态；诊断日志新增 NEARBY_WIFI_DEVICES 授予状态打印，一锤定音区分「权限没给」与「给了仍被 ROM 硬拦」。5.6.56 已修正组播出接口(wlan0 代替 tun1)。",
+  "version": "5.6.58",
+  "apk": "https://github.com/cyj265/lanxing-vod/releases/download/v5.6.58/lanxing-5.6.58-mobile-arm64_v8a.apk",
+  "desc": "投屏发现兜底：5.6.57 日志一锤定音——NEARBY_WIFI_DEVICES 已授予仍 EPERM，是 ColorOS 内核硬拦「应用组播发送」(appops 翻不动)。新增广播兜底发现：完全绕开组播，改用广播 SSDP M-SEARCH(255.255.255.255:1900 + WiFi 子网广播)搜设备，收到 LOCATION 后解析 AVTransport 控制地址喂进投屏列表，是组播被拦时的唯一应用层绕行。",
   "time": "2026-09-30"
 }
