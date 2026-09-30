@@ -401,10 +401,13 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
     private void setPanelWidth() {
         int width = ResUtil.getScreenWidth();
-        // 三项之和留出各列表 8dp padding(共约 48dp), 否则竖屏会溢出屏宽; 频道列加宽保证 编号+台标+台名 有足够空间
-        setWidth(mBinding.group, (int) (width * 0.16f));
-        setWidth(mBinding.channel, (int) (width * 0.36f));
-        setWidth(mBinding.epgData, (int) (width * 0.34f));
+        // 频道条目已改 match_parent(台名 weight=1 内部省略), 不再溢出, 故三列可铺满整屏无需留黑边。
+        // 分组 0.20 / 频道 0.40 / 节目列用屏宽兜底 = 剩余全部, 严丝合缝填满、零黑边、分类列不再过窄。
+        int groupW = (int) (width * 0.20f);
+        int channelW = (int) (width * 0.40f);
+        setWidth(mBinding.group, groupW);
+        setWidth(mBinding.channel, channelW);
+        setWidth(mBinding.epgData, width - groupW - channelW);
     }
 
     private void setPosition(int[] position) {
