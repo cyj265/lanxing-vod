@@ -6,7 +6,6 @@
 *.jks
 local.properties
 keystore.properties
-lib-*.aar
 /Release
 /docs
 

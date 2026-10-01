@@ -8,6 +8,9 @@ on:
     branches: [ main, dev-5.6.1 ]
     paths-ignore:
       - 'README.md'
+      # 改忽略规则/文档不会改变 APK 产物，不必白跑一轮构建
+      - '.gitignore'
+      - 'README.md'
   workflow_dispatch:
 
 jobs:
