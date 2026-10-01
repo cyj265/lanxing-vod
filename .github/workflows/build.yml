@@ -161,6 +161,8 @@ jobs:
             **手机版** `lanxing-arm64_v8a-v${{ steps.ver.outputs.name }}.apk`
             **电视版** `lanxing-tv-arm64_v8a-v${{ steps.ver.outputs.name }}.apk`
 
+            系统要求：Android 7.0（API 24）及以上，本版按 API 37（Android 17）的目标 SDK 编译。
+
             5.4.x 老版本：设置里检查更新会直接推到本版，覆盖安装即可，不必卸载。
 
             **界面重做**
@@ -182,7 +184,7 @@ jobs:
             **投屏**
             - 改为自研 SSDP + SOAP 控制栈，可自定义请求头，投有防盗链的视频源成功率更高
             - 设备选择居中弹窗，记住上次设备，投上显示「已连接」绿标
-            - Android 17（一加 / ColorOS）可正常发现设备
+            - 设备搜索按 targetSdk 37 重新适配，本地网络权限改为进投屏才申请，一加 / ColorOS 实测可正常发现设备
             - 组播 EPERM 类问题清理（Wifi 组播锁、搜索节流、关弹窗不再销毁服务栈）
 
             **在线更新**
