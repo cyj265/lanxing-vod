@@ -93,6 +93,17 @@ jobs:
           VERSION=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)
           echo "name=$VERSION" >> $GITHUB_OUTPUT
 
+      # 更新日志直接取本次提交的说明：只写「这次升级解决了什么」，用大白话写，
+      # 别写实现细节（如改了哪个布局、哪个类）。提交信息怎么写，Release 正文就怎么发。
+      - name: 读取更新日志
+        id: notes
+        run: |
+          {
+            echo 'body<<RELEASE_EOF'
+            git log -1 --pretty=%B
+            echo RELEASE_EOF
+          } >> "$GITHUB_OUTPUT"
+
       - name: 上传 Bugly 符号表（mapping，手机版 + 电视版）
         continue-on-error: true
         run: |
@@ -156,6 +167,9 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.name }}
+          # 必须显式锚定到本次构建的 commit：softprops 不传该参数时 GitHub 会用仓库默认分支
+          # （main）建 tag，导致在 dev 分支发布时 tag 指向 main，Release 源码包拿不到本次修复
+          target_commitish: ${{ github.sha }}
           name: 揽星影视 v${{ steps.ver.outputs.name }}
           body: |
             **手机版** `lanxing-arm64_v8a-v${{ steps.ver.outputs.name }}.apk`
@@ -163,38 +177,7 @@ jobs:
 
             系统要求：Android 7.0（API 24）及以上。5.4.x 检查更新可直接覆盖安装。
 
-            **界面重做**
-            - 毛玻璃：Android 12+ 系统级高斯模糊
-            - 底部导航改为悬浮胶囊（图标 + 文字 + 高光描边）
-            - 首页去掉右下角圆按钮，位置让给「继续观看」
-            - 点播 / 直播 / 仓库管理三个弹窗统一从底部弹出
-            - 设置页收紧：音效常用 5 项一行，倍速一行 6 档（0.8/1/1.2/1.5/2/3）
-            - 全应用统一主色（薄荷青绿）
-
-            **新增能力**
-            - 直播半屏播放 + 分类栏加宽，节目单与 EPG 不再截断
-            - 播放页实时网速 + 电池显示
-            - 推荐位豆瓣评分角标，片头片尾跳过、看完一键重播
-            - 多仓库管理（多源聚合 / 线路合集）
-            - 独立「音效调节」弹窗：15 种预设 + 3D 环绕
-            - 画质 / 解码（4 档）/ 画面缩放可调
-
-            **投屏**
-            - 改为自研 SSDP + SOAP 控制栈，支持自定义请求头
-            - 设备选择居中弹窗，记住上次设备，投上显示「已连接」绿标
-            - 设备搜索按 targetSdk 37 重新适配，本地网络权限进投屏时才申请
-
-            **修复**
-            - 平板 / 折叠屏（smallestWidth ≥ 600dp）打开播放页闪退：
-              layout-sw600dp 的 activity_video.xml 少了 6 个按钮（投屏 / 收藏 / 播放引擎 /
-              快捷设置 / 设置 / 海报），而 initEvent() 直接绑定了它们的点击；
-              改为空值安全绑定，大屏设备不再崩溃
-            - media3 预加载对空 MediaItem 建源触发内部空指针（预加载 / 预览页进入即崩）：
-              无效来源不再进入预加载队列，爬虫返回空 mime 时交回 media3 按 uri 自选解码器
-
-            **在线更新**
-            - 按版本号比较，下载走直连 + 加速节点兜底
-            - 手机端只取手机版包，不会再下成电视版
+            ${{ steps.notes.outputs.body }}
           files: |
             /tmp/lx-release/lanxing-arm64_v8a-v${{ steps.ver.outputs.name }}.apk
             /tmp/lx-release/lanxing-tv-arm64_v8a-v${{ steps.ver.outputs.name }}.apk

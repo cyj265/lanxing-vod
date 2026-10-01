@@ -54,6 +54,89 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
 
+            <!-- 平板/折叠屏功能补全：以下 5 个按钮在手机版布局里存在，
+                 原先 sw600dp 缺失导致点击无效（initEvent 已做空安全绑定，不会崩但没反应）。
+                 这里按手机版同一套样式补回，位置贴合横屏观看：收藏胶囊在右上，
+                 快捷/播放引擎/投屏/设置四等分横排贴视频下沿。 -->
+            <androidx.appcompat.widget.AppCompatTextView
+                android:id="@+id/keep_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_marginTop="8dp"
+                android:layout_marginEnd="8dp"
+                android:background="@drawable/shape_keep"
+                android:paddingStart="10dp"
+                android:paddingEnd="10dp"
+                android:paddingTop="4dp"
+                android:paddingBottom="4dp"
+                android:text="@string/keep_add_btn"
+                android:textColor="@color/black"
+                android:textSize="12sp" />
+
+            <androidx.appcompat.widget.LinearLayoutCompat
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:layout_marginStart="8dp"
+                android:layout_marginEnd="8dp"
+                android:layout_marginBottom="16dp"
+                android:orientation="horizontal">
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/quick_btn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/video_quick"
+                    android:textColor="@color/white"
+                    android:textSize="14sp" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/player_btn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/video_player"
+                    android:textColor="@color/white"
+                    android:textSize="14sp" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/cast_btn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/video_cast"
+                    android:textColor="@color/white"
+                    android:textSize="14sp" />
+
+                <androidx.appcompat.widget.AppCompatTextView
+                    android:id="@+id/setting_btn"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center"
+                    android:paddingTop="8dp"
+                    android:paddingBottom="8dp"
+                    android:text="@string/video_setting_btn"
+                    android:textColor="@color/white"
+                    android:textSize="14sp" />
+
+            </androidx.appcompat.widget.LinearLayoutCompat>
+
         </FrameLayout>
 
         <com.google.android.material.textview.MaterialTextView
@@ -155,6 +238,20 @@
                     android:clipToPadding="false"
                     android:orientation="vertical"
                     android:paddingBottom="8dp">
+
+                    <!-- 海报：手机版在信息区顶部，平板信息区是叠在视频上的，
+                         这里放进可滚动信息流开头，位置与手机版对应，不会压住画面 -->
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:id="@+id/poster"
+                        android:layout_width="92dp"
+                        android:layout_height="122dp"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="16dp"
+                        android:background="@drawable/shape_poster"
+                        android:clipToOutline="true"
+                        android:scaleType="centerCrop"
+                        tools:src="@drawable/artwork" />
 
                     <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
