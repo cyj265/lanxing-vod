@@ -3,9 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/bg"
+    android:background="@drawable/shape_sheet"
     android:orientation="vertical"
-    android:paddingTop="12dp"
+    android:paddingTop="16dp"
     android:paddingBottom="12dp">
 
     <androidx.appcompat.widget.LinearLayoutCompat
@@ -631,8 +631,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
                 android:layout_marginBottom="8dp"
-                android:text="@string/group_content"
-                android:textColor="#888888"
+        android:text="@string/group_content"
+        android:textColor="@color/on_surface_variant"
                 android:textSize="12sp"
                 android:visibility="gone"
                 tools:visibility="visible" />
@@ -850,8 +850,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
                 android:layout_marginBottom="8dp"
-                android:text="@string/group_advanced"
-                android:textColor="#888888"
+        android:text="@string/group_advanced"
+        android:textColor="@color/on_surface_variant"
                 android:textSize="12sp" />
 
             <androidx.appcompat.widget.LinearLayoutCompat

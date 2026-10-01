@@ -3,7 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:background="@color/bg"
+    android:background="@drawable/shape_sheet"
     android:orientation="vertical"
     android:paddingTop="16dp"
     android:paddingBottom="16dp">
@@ -58,7 +58,7 @@
                 android:layout_marginBottom="10dp"
                 android:text="@string/setting_decode"
                 android:textColor="?attr/colorOnSurface"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
             <androidx.appcompat.widget.LinearLayoutCompat
@@ -102,7 +102,7 @@
                 android:layout_marginBottom="10dp"
                 android:text="@string/setting_scale"
                 android:textColor="?attr/colorOnSurface"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
             <androidx.appcompat.widget.LinearLayoutCompat
@@ -184,7 +184,7 @@
                 android:layout_marginBottom="10dp"
                 android:text="@string/live_timeout_change"
                 android:textColor="?attr/colorOnSurface"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
             <androidx.appcompat.widget.LinearLayoutCompat
@@ -335,7 +335,7 @@
                 android:layout_marginBottom="10dp"
                 android:text="@string/live_epg_address"
                 android:textColor="?attr/colorOnSurface"
-                android:textSize="16sp"
+                android:textSize="15sp"
                 android:textStyle="bold" />
 
             <com.google.android.material.textfield.TextInputEditText
@@ -348,7 +348,7 @@
                 android:maxLines="3"
                 android:padding="12dp"
                 android:textColor="?attr/colorOnSurface"
-                android:textColorHint="#888888"
+                android:textColorHint="@color/on_surface_variant"
                 android:textSize="13sp" />
 
             <androidx.appcompat.widget.LinearLayoutCompat

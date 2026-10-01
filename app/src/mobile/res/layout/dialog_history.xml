@@ -4,8 +4,9 @@
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
+    android:background="@drawable/shape_sheet"
     android:paddingStart="16dp"
-    android:paddingTop="20dp"
+    android:paddingTop="16dp"
     android:paddingEnd="16dp"
     android:paddingBottom="16dp">
 
@@ -21,8 +22,8 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="@string/repository_manage"
-            android:textColor="#F2FFFFFF"
-            android:textSize="18sp"
+            android:textAppearance="?attr/textAppearanceHeadlineSmall"
+            android:textColor="?attr/colorOnSurface"
             android:textStyle="bold" />
 
         <com.google.android.material.button.MaterialButton

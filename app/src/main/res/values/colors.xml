@@ -27,9 +27,20 @@
     <color name="white_80">#CCFFFFFF</color>
     <color name="white_90">#E6FFFFFF</color>
 
-    <color name="primary">#FFC93E</color>
+    <color name="primary">#1FD6A6</color>
 
     <color name="bg">#121212</color>
     <color name="bg_deep">#0F0F0F</color>
+
+    <!-- ===== 揽星设计语言统一令牌：暗色 + 毛玻璃/圆角表面 + 暖黄强调 ===== -->
+    <color name="accent">@color/primary</color>
+    <color name="surface">#1B1E26</color>
+    <color name="surface_high">#23262F</color>
+    <color name="outline">@color/white_15</color>
+    <color name="outline_variant">@color/white_10</color>
+    <color name="on_surface">@color/white</color>
+    <color name="on_surface_variant">@color/white_60</color>
+    <color name="sheet_bg">@color/surface</color>
+    <color name="nav_bg">#F2121212</color>
 
 </resources>
