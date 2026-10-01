@@ -51,18 +51,18 @@ jobs:
           echo "keyAlias=${{ secrets.LANXING_KEY_ALIAS }}" >> local.properties
           echo "storePassword=${{ secrets.LANXING_STORE_PASSWORD }}" >> local.properties
 
-      - name: 构建 release APK（手机版 + 电视版，均 64 位）
+      - name: 构建 release APK（手机版，64 位）
         env:
           RUN_NUMBER: ${{ github.run_number }}
           BUGLY_APP_ID: ${{ secrets.BUGLY_APP_ID }}
         run: |
           chmod +x gradlew
           set +e
-          ./gradlew :app:assembleMobileArm64_v8aRelease :app:assembleLeanbackArm64_v8aRelease --no-daemon --console=plain > /tmp/gradle-build.log 2>&1
+          # 只构建手机版：电视版(leanback)已停发，构建链与维护重心全在手机版
+          ./gradlew :app:assembleMobileArm64_v8aRelease --no-daemon --console=plain > /tmp/gradle-build.log 2>&1
           code=$?
           MOBILE_APK=$(find app/build/outputs/apk/mobileArm64_v8a/release -name "*.apk" | head -1)
-          TV_APK=$(find app/build/outputs/apk/leanbackArm64_v8a/release -name "*.apk" | head -1)
-          if [ -n "$MOBILE_APK" ] && [ -f "$MOBILE_APK" ] && [ -n "$TV_APK" ] && [ -f "$TV_APK" ]; then
+          if [ -n "$MOBILE_APK" ] && [ -f "$MOBILE_APK" ]; then
             echo "BUILD OK"
             version=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)
             mkdir -p /tmp/lx-release
@@ -71,7 +71,6 @@ jobs:
             # 文件名必须带 arm64：5.4.x 老包的更新逻辑只认「文件名含 arm64 的 apk」，
             # 老用户从 5.4 直接升 5.6 时才能取到下载链接。
             cp "$MOBILE_APK" "/tmp/lx-release/lanxing-arm64_v8a-v${version}.apk"
-            cp "$TV_APK" "/tmp/lx-release/lanxing-tv-arm64_v8a-v${version}.apk"
             ls -la /tmp/lx-release
             echo "APK_PATH=/tmp/lx-release" >> $GITHUB_ENV
           else
@@ -93,18 +92,7 @@ jobs:
           VERSION=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)
           echo "name=$VERSION" >> $GITHUB_OUTPUT
 
-      # 更新日志直接取本次提交的说明：只写「这次升级解决了什么」，用大白话写，
-      # 别写实现细节（如改了哪个布局、哪个类）。提交信息怎么写，Release 正文就怎么发。
-      - name: 读取更新日志
-        id: notes
-        run: |
-          {
-            echo 'body<<RELEASE_EOF'
-            git log -1 --pretty=%B
-            echo RELEASE_EOF
-          } >> "$GITHUB_OUTPUT"
-
-      - name: 上传 Bugly 符号表（mapping，手机版 + 电视版）
+      - name: 上传 Bugly 符号表（mapping，手机版）
         continue-on-error: true
         run: |
           if [ -z "${{ secrets.BUGLY_APP_KEY }}" ]; then
@@ -123,7 +111,8 @@ jobs:
             echo "未找到 buglyqq-upload-symbol.jar，跳过"
             exit 0
           fi
-          for VARIANT in mobileArm64_v8a leanbackArm64_v8a; do
+          # 只传手机版：电视版停发后不再产出 leanback 变体，也不会有同名 mapping 冲突
+          for VARIANT in mobileArm64_v8a; do
             MAP="app/build/outputs/mapping/${VARIANT}Release/mapping.txt"
             if [ -f "$MAP" ]; then
               echo "上传 mapping($VARIANT) v${{ steps.ver.outputs.name }} 到 Bugly..."
@@ -173,16 +162,15 @@ jobs:
           name: 揽星影视 v${{ steps.ver.outputs.name }}
           body: |
             **手机版** `lanxing-arm64_v8a-v${{ steps.ver.outputs.name }}.apk`
-            **电视版** `lanxing-tv-arm64_v8a-v${{ steps.ver.outputs.name }}.apk`
 
             系统要求：Android 7.0（API 24）及以上。5.4.x 检查更新可直接覆盖安装。
+            电视版(leanback)已停止维护并停发：包名签名不变，已装的电视版直接覆盖安装手机版即可，
+            数据与配置全部保留。
 
-            ${{ steps.notes.outputs.body }}
+            更新内容详见仓库提交记录：https://github.com/cyj265/lanxing-vod/commits/${{ github.ref_name }}
           files: |
             /tmp/lx-release/lanxing-arm64_v8a-v${{ steps.ver.outputs.name }}.apk
-            /tmp/lx-release/lanxing-tv-arm64_v8a-v${{ steps.ver.outputs.name }}.apk
             app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt
-            app/build/outputs/mapping/leanbackArm64_v8aRelease/mapping.txt
           generate_release_notes: false
           fail_on_unmatched_files: false
           overwrite_files: true

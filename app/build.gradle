@@ -36,9 +36,13 @@ android {
     flavorDimensions = ["mode", "abi"]
 
     productFlavors {
-        leanback {
-            dimension "mode"
-        }
+        // 电视版(leanback)已停发：实机体验粗糙，维护重心全在手机版。
+        // 这里只注释不动源码——AGP 不再编译 app/src/leanback，零构建开销；
+        // 源码目录完整保留，日后想重启电视版把下面 3 行放回来 + 恢复 workflow
+        // 里的 :app:assembleLeanbackArm64_v8aRelease 即可，不必翻 git 历史。
+        // leanback {
+        //     dimension "mode"
+        // }
         mobile {
             dimension "mode"
         }
@@ -144,8 +148,9 @@ dependencies {
     implementation libs.permissionx
     implementation libs.simple.xml
     implementation libs.textdrawable
-    leanbackImplementation libs.leanback
-    leanbackImplementation libs.androidautosize
+    // 电视版停发，配置随之失效；恢复 flavor 时要一并解开这两行
+    // leanbackImplementation libs.leanback
+    // leanbackImplementation libs.androidautosize
     mobileImplementation libs.biometric
     mobileImplementation libs.zxing.android.embedded
     annotationProcessor libs.room.compiler

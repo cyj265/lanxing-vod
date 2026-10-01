@@ -120,9 +120,9 @@ public class Updater implements Download.Callback, UpdateListener {
             String name = a.optString("name", "");
             if (!name.endsWith(".apk")) continue;
             if (fallback == null) fallback = a.optString("browser_download_url", "");
-            // 每个 release 同时发布手机版(lanxing-v*.apk)与电视版(lanxing-tv-v*.apk)两个包，
+            // 历史 Release 长期同时挂着手机版(lanxing-v*.apk)与电视版(lanxing-tv-v*.apk)两个包，
             // 直接取首个 .apk 会命中电视版（"lanxing-tv" 排在 "lanxing-v" 前），导致手机端总更新成电视包；
-            // 这里优先选不含 tv 的手机版，确实只有电视包时再退回首个。
+            // 电视版已停发，这里始终优先选不含 tv 的手机版，万一只剩电视包也宁可不更新也不下错。
             if (!name.contains("tv")) {
                 url = a.optString("browser_download_url", "");
                 break;
