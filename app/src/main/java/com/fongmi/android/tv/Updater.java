@@ -140,22 +140,24 @@ public class Updater implements Download.Callback, UpdateListener {
     private boolean isNewer(String remoteVersion) {
         // 用版本号(版本号)判断是否有新版本：分段数值比较，如 5.6.9 < 5.6.10
         if (compareVersion(remoteVersion, BuildConfig.VERSION_NAME) <= 0) return false;
-        // 系列过滤：只接收同系列(主+次版本)更新。main 正式版为 5.4.x、dev 为 5.6.x，
-        // 两个分支共用同一个 Releases 频道，若不做系列过滤，一边发版会把另一边用户跨系列误引
-        // （例如另一条线的版本号将来涨到 5.10.x 就会对本机 5.6.x 提示"有更新"）。
-        return sameSeries(remoteVersion, BuildConfig.VERSION_NAME);
+        // 只限制「主版本必须一致」，允许跨次/修正号升级（如 5.4.44 用户可直接升到 5.6.69）。
+        // 不能再用「主+次都相同」的系列过滤：那会把 5.4.x 老用户永久挡在 5.6.x 门外。
+        // 至于两个分支共用 Releases 频道，靠版本号大小比较天然隔离——低版本分支发了新包也不会
+        // 对本机更高版本的用户提示更新（数字更小），无需再靠系列过滤兜底。
+        return sameMajor(remoteVersion, BuildConfig.VERSION_NAME);
     }
 
-    /** 判断两个版本号是否同一系列（主版本 + 次版本相同，修正号可不同） */
-    private boolean sameSeries(String a, String b) {
-        String[] pa = (a == null ? "" : a).split("\\.");
-        String[] pb = (b == null ? "" : b).split("\\.");
-        for (int i = 0; i < 2; i++) {
-            String x = i < pa.length ? pa[i] : "";
-            String y = i < pb.length ? pb[i] : "";
-            if (!x.equals(y)) return false;
+    /** 判断两个版本号主版本是否一致（只比第一段，如 5.4.44 与 5.6.69 同为主版本 5） */
+    private boolean sameMajor(String a, String b) {
+        return majorOf(a) == majorOf(b);
+    }
+
+    private int majorOf(String v) {
+        try {
+            return Integer.parseInt(((v == null ? "" : v).split("\\."))[0].trim());
+        } catch (Exception e) {
+            return -1;
         }
-        return true;
     }
 
     /** 分段数值比较：a>b 返回正数，相等返回 0，a<b 返回负数；任一为空视为相等(不提示) */
