@@ -67,8 +67,11 @@ jobs:
             version=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)
             mkdir -p /tmp/lx-release
             # 命名沿用 main 正式版逻辑：文件名带版本号(不用构建号)，防缓存串版本
-            cp "$MOBILE_APK" "/tmp/lx-release/lanxing-v${version}.apk"
-            cp "$TV_APK" "/tmp/lx-release/lanxing-tv-v${version}.apk"
+            # 命名沿用 5.4.44 的 arm64_v8a 标识 + 版本号（不用构建号，防缓存串版本）。
+            # 文件名必须带 arm64：5.4.x 老包的更新逻辑只认「文件名含 arm64 的 apk」，
+            # 老用户从 5.4 直接升 5.6 时才能取到下载链接。
+            cp "$MOBILE_APK" "/tmp/lx-release/lanxing-arm64_v8a-v${version}.apk"
+            cp "$TV_APK" "/tmp/lx-release/lanxing-tv-arm64_v8a-v${version}.apk"
             ls -la /tmp/lx-release
             echo "APK_PATH=/tmp/lx-release" >> $GITHUB_ENV
           else
@@ -89,7 +92,6 @@ jobs:
         run: |
           VERSION=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)
           echo "name=$VERSION" >> $GITHUB_OUTPUT
-          echo "prefix=$(echo "$VERSION" | sed 's/\.[0-9]*$//')" >> $GITHUB_OUTPUT
 
       - name: 上传 Bugly 符号表（mapping，手机版 + 电视版）
         continue-on-error: true
@@ -124,38 +126,16 @@ jobs:
           done
           echo "Bugly mapping 上传完成"
 
-      - name: 清理同版本号旧 Release（正式版 tag 与历史测试版 -r* 一并清理，避免同版本号重复发布）
-        run: |
-          TAG="v${{ steps.ver.outputs.name }}"
-          echo "本次正式版 tag: ${TAG}"
-          TAGS=$(gh release list --limit 100 --jq '.[].tagName' 2>/dev/null)
-          FOUND="$TAG"
-          for t in $TAGS; do
-            case "$t" in
-              "${TAG}"-r[0-9]*) FOUND="$FOUND $t" ;;
-            esac
-          done
-          for t in $FOUND; do
-            if gh release view "$t" >/dev/null 2>&1; then
-              echo "删除旧 Release: $t"
-              gh release delete "$t" --yes --cleanup-tag 2>/dev/null || true
-            else
-              echo "跳过（不存在）: $t"
-            fi
-          done
-        env:
-          GH_TOKEN: ${{ github.token }}
-
       - name: 发布 GitHub Release（正式版）
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.name }}
           name: 揽星影视 v${{ steps.ver.outputs.name }}
           body: |
-            **手机版** `lanxing-v${{ steps.ver.outputs.name }}.apk`
-            **电视版** `lanxing-tv-v${{ steps.ver.outputs.name }}.apk`
+            **手机版** `lanxing-arm64_v8a-v${{ steps.ver.outputs.name }}.apk`
+            **电视版** `lanxing-tv-arm64_v8a-v${{ steps.ver.outputs.name }}.apk`
 
-            从 5.4.44 直接覆盖安装即可，不必卸载。
+            5.4.x 老版本：设置里检查更新会直接推到本版，覆盖安装即可，不必卸载。
 
             **界面重做**
             - 毛玻璃：Android 12+ 系统级高斯模糊，卡片浮在画面上有质感
@@ -183,27 +163,33 @@ jobs:
             - 检测改用版本号比较，下载走直连 + 6 个加速节点兜底，单节点卡住自动切换
             - 手机端只取手机版包，不会再下成电视版
           files: |
-            /tmp/lx-release/lanxing-v${{ steps.ver.outputs.name }}.apk
-            /tmp/lx-release/lanxing-tv-v${{ steps.ver.outputs.name }}.apk
+            /tmp/lx-release/lanxing-arm64_v8a-v${{ steps.ver.outputs.name }}.apk
+            /tmp/lx-release/lanxing-tv-arm64_v8a-v${{ steps.ver.outputs.name }}.apk
             app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt
             app/build/outputs/mapping/leanbackArm64_v8aRelease/mapping.txt
           generate_release_notes: false
           fail_on_unmatched_files: false
           overwrite_files: true
 
-      # 只清理同系列最早的两个之外的旧 release，始终保留最近 2 个（正式版 + 上一个），main 的 5.4.x 不受影响
-      - name: 清理旧 Release
+      # 发布前先清场（5.4 线已停更、全部并入 5.6）：
+      #   1) 删除所有 5.4.x 老包；2) 删除 -r* 测试版；3) 其余只保留版本号最新的 2 条正式版
+      # 注意：--jq '.[].tagName' 输出裸字符串；若用 --json name --jq 会带引号，导致下面的匹配全部落空
+      - name: 清理旧 Release（只保留最新 2 条正式版）
         run: |
-          PREFIX="v${{ steps.ver.outputs.prefix }}"
-          echo "本次系列: ${PREFIX}.x"
-          # 注意：--jq '.[].tagName' 输出裸字符串；若用 --json name --jq 会带引号，导致下面的行首匹配全部落空
-          tags=$(gh release list --limit 100 --jq '.[].tagName' | grep -E "^${PREFIX}\." | tail -n +3)
-          if [ -z "$tags" ]; then
-            echo "没有需要清理的同系列旧 release"
-          fi
-          for tag in $tags; do
-            echo "删除同系列旧 release: $tag"
-            gh release delete "$tag" --yes --cleanup-tag
+          TAG="v${{ steps.ver.outputs.name }}"
+          ALL=$(gh release list --limit 100 --jq '.[].tagName')
+          KEEP=$(echo "$ALL" | grep -E "^${TAG}$")
+          KEEP="$KEEP$(echo "$ALL" | grep -v -- '-r[0-9]*$' | grep -v -E '^v5\.4\.' | sort -Vr | head -2)"
+          KEEP=$(echo "$KEEP" | sort -u)
+          echo "本次发布: ${TAG}"
+          echo "准备保留: $(echo "$KEEP" | tr '\n' ' ')"
+          for t in $ALL; do
+            if echo "$KEEP" | grep -qx "$t"; then
+              echo "保留: $t"
+            else
+              echo "删除: $t"
+              gh release delete "$t" --yes --cleanup-tag || true
+            fi
           done
         env:
           GH_TOKEN: ${{ github.token }}
