@@ -326,55 +326,67 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         checkId();
     }
 
+    private void setClick(View view, View.OnClickListener listener) {
+        if (view != null) view.setOnClickListener(listener);
+    }
+
+    private void setLongClick(View view, View.OnLongClickListener listener) {
+        if (view != null) view.setOnLongClickListener(listener);
+    }
+
+    private void setTouch(View view, View.OnTouchListener listener) {
+        if (view != null) view.setOnTouchListener(listener);
+    }
+
     @Override
     @SuppressLint("ClickableViewAccessibility")
     protected void initEvent() {
-        mBinding.name.setOnClickListener(view -> onName());
-        mBinding.more.setOnClickListener(view -> onMore());
-        mBinding.keepBtn.setOnClickListener(view -> onKeep());
-        mBinding.actor.setOnClickListener(view -> onActor());
-        mBinding.content.setOnClickListener(view -> onContent());
-        mBinding.reverse.setOnClickListener(view -> onReverse());
-        mBinding.director.setOnClickListener(view -> onDirector());
-        mBinding.quickBtn.setOnClickListener(view -> onName());
-        mBinding.playerBtn.setOnClickListener(view -> onPlayer());
-        mBinding.settingBtn.setOnClickListener(view -> onSetting());
-        mBinding.name.setOnLongClickListener(view -> onChange());
-        mBinding.content.setOnLongClickListener(view -> onCopy());
-        mBinding.control.back.setOnClickListener(view -> onBack());
-        mBinding.castBtn.setOnClickListener(view -> onCast());
-        mBinding.control.info.setOnClickListener(view -> onInfo());
-        mBinding.control.keep.setOnClickListener(view -> onKeep());
-        mBinding.control.play.setOnClickListener(view -> checkPlay());
-        mBinding.control.next.setOnClickListener(view -> checkNext());
-        mBinding.control.prev.setOnClickListener(view -> checkPrev());
-        mBinding.control.setting.setOnClickListener(view -> onSetting());
-        mBinding.control.title.setOnLongClickListener(view -> onChange());
-        mBinding.control.right.lock.setOnClickListener(view -> onLock());
-        mBinding.control.right.rotate.setOnClickListener(view -> onRotate());
-        mBinding.control.danmaku.setOnClickListener(view -> onDanmakuShow());
-        mBinding.control.action.text.setOnClickListener(this::onTrack);
-        mBinding.control.action.audio.setOnClickListener(this::onTrack);
-        mBinding.control.action.video.setOnClickListener(this::onTrack);
-        mBinding.control.action.scale.setOnClickListener(view -> onScale());
-        mBinding.control.action.speed.setOnClickListener(view -> onSpeed());
-        mBinding.control.action.reset.setOnClickListener(view -> onReset());
-        mBinding.control.action.replay.setOnClickListener(view -> onReplay());
-        mBinding.control.action.parse.setOnClickListener(view -> onParse());
-        mBinding.control.action.player.setOnClickListener(view -> onPlayer());
-        mBinding.control.action.decode.setOnClickListener(view -> onDecode());
-        mBinding.control.action.ending.setOnClickListener(view -> onEnding());
-        mBinding.control.action.repeat.setOnClickListener(view -> onRepeat());
-        mBinding.control.action.opening.setOnClickListener(view -> onOpening());
-        mBinding.control.action.danmaku.setOnClickListener(view -> onDanmaku());
-        mBinding.control.action.edition.setOnClickListener(view -> onEdition());
-        mBinding.control.action.chapter.setOnClickListener(view -> onChapter());
-        mBinding.control.action.episodes.setOnClickListener(view -> onEpisodes());
-        mBinding.control.action.speed.setOnLongClickListener(view -> onSpeedLong());
-        mBinding.control.action.ending.setOnLongClickListener(view -> onEndingReset());
-        mBinding.control.action.opening.setOnLongClickListener(view -> onOpeningReset());
-        mBinding.video.setOnTouchListener((view, event) -> mKeyDown.onTouchEvent(event));
-        mBinding.control.action.getRoot().setOnTouchListener(this::onActionTouch);
+        setClick(mBinding.name, view -> onName());
+        setClick(mBinding.more, view -> onMore());
+        setClick(mBinding.keepBtn, view -> onKeep());
+        setClick(mBinding.actor, view -> onActor());
+        setClick(mBinding.content, view -> onContent());
+        setClick(mBinding.reverse, view -> onReverse());
+        setClick(mBinding.director, view -> onDirector());
+        setClick(mBinding.quickBtn, view -> onName());
+        setClick(mBinding.playerBtn, view -> onPlayer());
+        setClick(mBinding.settingBtn, view -> onSetting());
+        setLongClick(mBinding.name, view -> onChange());
+        setLongClick(mBinding.content, view -> onCopy());
+        setClick(mBinding.control.back, view -> onBack());
+        setClick(mBinding.castBtn, view -> onCast());
+        setClick(mBinding.control.info, view -> onInfo());
+        setClick(mBinding.control.keep, view -> onKeep());
+        setClick(mBinding.control.play, view -> checkPlay());
+        setClick(mBinding.control.next, view -> checkNext());
+        setClick(mBinding.control.prev, view -> checkPrev());
+        setClick(mBinding.control.setting, view -> onSetting());
+        setLongClick(mBinding.control.title, view -> onChange());
+        setClick(mBinding.control.right.lock, view -> onLock());
+        setClick(mBinding.control.right.rotate, view -> onRotate());
+        setClick(mBinding.control.danmaku, view -> onDanmakuShow());
+        setClick(mBinding.control.action.text, this::onTrack);
+        setClick(mBinding.control.action.audio, this::onTrack);
+        setClick(mBinding.control.action.video, this::onTrack);
+        setClick(mBinding.control.action.scale, view -> onScale());
+        setClick(mBinding.control.action.speed, view -> onSpeed());
+        setClick(mBinding.control.action.reset, view -> onReset());
+        setClick(mBinding.control.action.replay, view -> onReplay());
+        setClick(mBinding.control.action.parse, view -> onParse());
+        setClick(mBinding.control.action.player, view -> onPlayer());
+        setClick(mBinding.control.action.decode, view -> onDecode());
+        setClick(mBinding.control.action.ending, view -> onEnding());
+        setClick(mBinding.control.action.repeat, view -> onRepeat());
+        setClick(mBinding.control.action.opening, view -> onOpening());
+        setClick(mBinding.control.action.danmaku, view -> onDanmaku());
+        setClick(mBinding.control.action.edition, view -> onEdition());
+        setClick(mBinding.control.action.chapter, view -> onChapter());
+        setClick(mBinding.control.action.episodes, view -> onEpisodes());
+        setLongClick(mBinding.control.action.speed, view -> onSpeedLong());
+        setLongClick(mBinding.control.action.ending, view -> onEndingReset());
+        setLongClick(mBinding.control.action.opening, view -> onOpeningReset());
+        setTouch(mBinding.video, (view, event) -> mKeyDown.onTouchEvent(event));
+        setTouch(mBinding.control.action.getRoot(), this::onActionTouch);
         mBinding.swipeLayout.setOnRefreshListener(this::onSwipeRefresh);
     }
 
@@ -1328,6 +1340,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private void checkKeepImg() {
         boolean kept = Keep.find(getHistoryKey()) != null;
         mBinding.control.keep.setImageResource(kept ? R.drawable.ic_control_keep_on : R.drawable.ic_control_keep_off);
+        if (mBinding.keepBtn == null) return;
         mBinding.keepBtn.setText(kept ? R.string.keep_done_btn : R.string.keep_add_btn);
         mBinding.keepBtn.setSelected(kept);
     }

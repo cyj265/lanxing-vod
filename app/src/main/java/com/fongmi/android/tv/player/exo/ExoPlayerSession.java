@@ -51,6 +51,8 @@ final class ExoPlayerSession {
     }
 
     void preload(MediaItem mediaItem, long startPositionMs) {
+        // 无效 item（无 uri）会让 media3 预加载管理器在建源时内部 NPE，直接在入口挡掉
+        if (mediaItem == null || mediaItem.playbackProperties == null || mediaItem.playbackProperties.uri == null) return;
         PreloadRequest request = new PreloadRequest(mediaItem, Math.max(0, startPositionMs));
         if (request.equals(preloadRequest)) return;
         clearPreload();

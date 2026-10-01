@@ -45,15 +45,17 @@ public final class MediaItemFactory {
     }
 
     private static MediaItem.Builder buildUpon(PlaySpec spec) {
-        return new MediaItem.Builder().setUri(spec.getUri())
+        MediaItem.Builder builder = new MediaItem.Builder().setUri(spec.getUri())
                 .setSubtitleConfigurations(buildSubtitleConfigs(spec.getSubs()))
                 .setDrmConfiguration(buildDrmConfig(spec.getDrm()))
                 .setRequestMetadata(buildRequestMetadata(spec))
                 .setMediaMetadata(spec.getMetadata())
                 .setAdblock(Setting.isAdblock())
-                .setMimeType(spec.getFormat())
                 .setImageDurationMs(15000)
                 .setMediaId(spec.getKey());
+        // 爬虫返回的 format 可能为 null：留空让 media3 按 uri 自动选源，避免出现 null mime 触发的内部 NPE
+        if (!TextUtils.isEmpty(spec.getFormat())) builder.setMimeType(spec.getFormat());
+        return builder;
     }
 
     private static MediaItem.RequestMetadata buildRequestMetadata(PlaySpec spec) {
