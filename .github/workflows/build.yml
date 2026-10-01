@@ -131,17 +131,27 @@ jobs:
         run: |
           set +e
           TAG="v${{ steps.ver.outputs.name }}"
-          ALL=$(gh release list --limit 100 --jq '.[].tagName')
-          OTHERS=$(echo "$ALL" | grep -E '^v[0-9]+\.[0-9]+(\.[0-9]+)?$' | grep -v -E "^${TAG}$" | grep -v -E '^v5\.4\.' | sort -Vr | head -2)
+          # 直接走 REST API：runner 上的 gh CLI 在清理步骤里取不到 release 列表（返回空），会漏删
+          RAW=$(curl -s --max-time 30 -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+                "https://api.github.com/repos/$GITHUB_REPOSITORY/releases?per_page=100")
+          LIST=$(echo "$RAW" | python3 -c "
+import json, sys
+d = json.load(sys.stdin)
+print('\n'.join('%s|%s' % (r['tag_name'], r['id']) for r in d))
+" 2>/dev/null)
+          echo "线上现有: $(echo $LIST | tr ' ' '\n' | wc -l) 条"
+          OTHERS=$(echo "$LIST" | cut -d'|' -f1 | grep -E '^v[0-9]+\.[0-9]+(\.[0-9]+)?$' | grep -v -E "^${TAG}$" | grep -v -E '^v5\.4\.' | sort -Vr | head -2)
           KEEP=$(printf '%s\n%s\n' "$TAG" "$OTHERS")
           echo "本次发布: ${TAG}"
           printf '准备保留: '; printf '%s ' "$KEEP"; echo
-          for t in $ALL; do
+          for row in $LIST; do
+            t=${row%|*}; id=${row#*|}
             if printf '%s\n' "$KEEP" | grep -qx "$t"; then
               echo "保留: $t"
             else
-              echo "删除: $t"
-              gh release delete "$t" --yes --cleanup-tag || echo "删除失败已跳过: $t"
+              echo "删除: $t (id=$id)"
+              curl -s -X DELETE --max-time 30 -H "Authorization: Bearer $GH_TOKEN" -w "  http=%{http_code}\n" \
+                   "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/$id"
             fi
           done
           echo "清理结束"
