@@ -3,8 +3,11 @@ package com.fongmi.android.tv.ui.dialog;
 import android.content.ClipboardManager;
 import android.content.ClipData;
 import android.content.Context;
+import android.view.LayoutInflater;
+import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
 import androidx.recyclerview.widget.ItemTouchHelper;
@@ -21,11 +24,9 @@ import com.fongmi.android.tv.impl.ConfigListener;
 import com.fongmi.android.tv.ui.adapter.ConfigAdapter;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
 import com.fongmi.android.tv.utils.Notify;
-import com.fongmi.android.tv.utils.ResUtil;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.tabs.TabLayout;
 
-public class HistoryDialog extends BaseAlertDialog implements ConfigAdapter.OnClickListener, ConfigListener {
+public class HistoryDialog extends BaseBottomSheetDialog implements ConfigAdapter.OnClickListener, ConfigListener {
 
     private DialogHistoryBinding binding;
     private ConfigListener listener;
@@ -77,13 +78,8 @@ public class HistoryDialog extends BaseAlertDialog implements ConfigAdapter.OnCl
     }
 
     @Override
-    protected ViewBinding getBinding() {
-        return binding = DialogHistoryBinding.inflate(getLayoutInflater());
-    }
-
-    @Override
-    protected MaterialAlertDialogBuilder getBuilder() {
-        return builder().setView(getBinding().getRoot());
+    protected ViewBinding getBinding(@NonNull LayoutInflater inflater, @Nullable ViewGroup container) {
+        return binding = DialogHistoryBinding.inflate(inflater, container, false);
     }
 
     @Override
@@ -203,6 +199,5 @@ public class HistoryDialog extends BaseAlertDialog implements ConfigAdapter.OnCl
     public void onStart() {
         super.onStart();
         if (adapter.getItemCount() == 0) dismiss();
-        else if (ResUtil.isLand(requireContext())) setWidth(0.5f);
     }
 }

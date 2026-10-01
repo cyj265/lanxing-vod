@@ -3,7 +3,11 @@ package com.fongmi.android.tv.ui.dialog;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 import androidx.appcompat.widget.LinearLayoutCompat;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -77,10 +81,22 @@ public class LiveSettingDialog extends BaseBottomSheetDialog {
         binding.save.setOnClickListener(v -> onSave());
     }
 
+    /** 递归收集行内所有胶囊（支持一行/多行嵌套布局） */
+    private static List<TextView> pills(ViewGroup group) {
+        List<TextView> list = new ArrayList<>();
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View child = group.getChildAt(i);
+            if (child instanceof TextView) list.add((TextView) child);
+            else if (child instanceof ViewGroup) list.addAll(pills((ViewGroup) child));
+        }
+        return list;
+    }
+
     private void setRowClick(LinearLayoutCompat row, OnClickListener listener) {
-        for (int i = 0; i < row.getChildCount(); i++) {
+        List<TextView> items = pills(row);
+        for (int i = 0; i < items.size(); i++) {
             int index = i;
-            row.getChildAt(i).setOnClickListener(v -> listener.onClick(row, index));
+            items.get(i).setOnClickListener(v -> listener.onClick(row, index));
         }
     }
 
@@ -113,9 +129,9 @@ public class LiveSettingDialog extends BaseBottomSheetDialog {
     }
 
     private void syncTimeout() {
-        LinearLayoutCompat row = binding.rowTimeout;
+        List<TextView> items = pills(binding.rowTimeout);
         int checked = getTimeoutIndex();
-        for (int i = 0; i < row.getChildCount(); i++) row.getChildAt(i).setSelected(i == checked);
+        for (int i = 0; i < items.size(); i++) items.get(i).setSelected(i == checked);
     }
 
     private int getTimeoutIndex() {

@@ -5,6 +5,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.LinearLayoutCompat;
@@ -151,10 +154,22 @@ public class ControlDialog extends BaseBottomSheetDialog {
         void onClick(LinearLayoutCompat row, int index);
     }
 
+    /** 递归收集行内所有胶囊（支持一行/多行嵌套布局） */
+    private static List<TextView> pills(ViewGroup group) {
+        List<TextView> list = new ArrayList<>();
+        for (int i = 0; i < group.getChildCount(); i++) {
+            View child = group.getChildAt(i);
+            if (child instanceof TextView) list.add((TextView) child);
+            else if (child instanceof ViewGroup) list.addAll(pills((ViewGroup) child));
+        }
+        return list;
+    }
+
     private void setRowClick(LinearLayoutCompat row, RowClick listener) {
-        for (int i = 0; i < row.getChildCount(); i++) {
+        List<TextView> items = pills(row);
+        for (int i = 0; i < items.size(); i++) {
             int index = i;
-            row.getChildAt(i).setOnClickListener(v -> listener.onClick(row, index));
+            items.get(i).setOnClickListener(v -> listener.onClick(row, index));
         }
     }
 
@@ -211,32 +226,36 @@ public class ControlDialog extends BaseBottomSheetDialog {
     private void syncDecode() {
         TextView d = tv(R.id.decode);
         int current = d == null ? -1 : indexOf(ResUtil.getStringArray(R.array.select_decode), d.getText());
-        for (int i = 0; i < binding.rowDecode.getChildCount(); i++) binding.rowDecode.getChildAt(i).setSelected(DECODE_ORDER[i] == current);
+        List<TextView> items = pills(binding.rowDecode);
+        for (int i = 0; i < items.size(); i++) items.get(i).setSelected(DECODE_ORDER[i] == current);
     }
 
     private void syncScale() {
         String[] items = ResUtil.getStringArray(R.array.select_scale);
         TextView s = tv(R.id.scale);
         int current = s == null ? -1 : indexOf(items, s.getText());
-        for (int i = 0; i < binding.rowScale.getChildCount(); i++) {
-            ((TextView) binding.rowScale.getChildAt(i)).setText(items[i]);
-            binding.rowScale.getChildAt(i).setSelected(i == current);
+        List<TextView> pills = pills(binding.rowScale);
+        for (int i = 0; i < pills.size(); i++) {
+            pills.get(i).setText(items[i]);
+            pills.get(i).setSelected(i == current);
         }
     }
 
     private void syncSpeed() {
         float[] presets = SpeedSetting.getPresets();
         float current = SpeedSetting.getPlayback();
-        for (int i = 0; i < binding.rowSpeed.getChildCount() && i < presets.length; i++) {
-            ((TextView) binding.rowSpeed.getChildAt(i)).setText(SpeedSetting.formatValue(presets[i]));
-            binding.rowSpeed.getChildAt(i).setSelected(same(presets[i], current));
+        List<TextView> pills = pills(binding.rowSpeed);
+        for (int i = 0; i < pills.size() && i < presets.length; i++) {
+            pills.get(i).setText(SpeedSetting.formatValue(presets[i]));
+            pills.get(i).setSelected(same(presets[i], current));
         }
     }
 
     private void syncAudio() {
-        for (int i = 0; i < binding.rowAudio.getChildCount() && i < AUDIO_MODES.length; i++) {
-            ((TextView) binding.rowAudio.getChildAt(i)).setText(getAudioModeText(AUDIO_MODES[i]));
-            binding.rowAudio.getChildAt(i).setSelected(AUDIO_MODES[i] == AudioSetting.getPreset());
+        List<TextView> pills = pills(binding.rowAudio);
+        for (int i = 0; i < pills.size() && i < AUDIO_MODES.length; i++) {
+            pills.get(i).setText(getAudioModeText(AUDIO_MODES[i]));
+            pills.get(i).setSelected(AUDIO_MODES[i] == AudioSetting.getPreset());
         }
     }
 

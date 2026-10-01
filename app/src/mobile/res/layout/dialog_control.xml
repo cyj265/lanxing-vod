@@ -5,8 +5,8 @@
     android:layout_height="wrap_content"
     android:background="@color/bg"
     android:orientation="vertical"
-    android:paddingTop="16dp"
-    android:paddingBottom="16dp">
+    android:paddingTop="14dp"
+    android:paddingBottom="14dp">
 
     <androidx.appcompat.widget.LinearLayoutCompat
         android:layout_width="match_parent"
@@ -56,7 +56,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:layout_marginBottom="10dp"
+                android:layout_marginBottom="8dp"
                 android:text="@string/setting_decode"
                 android:textColor="?attr/colorOnSurface"
                 android:textSize="16sp"
@@ -68,35 +68,42 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-<com.google.android.material.textview.MaterialTextView
-    android:layout_width="0dp"
-    android:layout_height="wrap_content"
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1"
-    android:background="@drawable/shape_accent"
-    android:gravity="center"
-    android:paddingTop="10dp"
-    android:paddingBottom="10dp"
-    android:textColor="@color/selector_control"
-    android:textSize="14sp" />
-<com.google.android.material.textview.MaterialTextView
-    android:layout_width="0dp"
-    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-    android:layout_weight="1"
-    android:background="@drawable/shape_accent"
-    android:gravity="center"
-    android:paddingTop="10dp"
-    android:paddingBottom="10dp"
-    android:textColor="@color/selector_control"
-    android:textSize="14sp" />
+                    android:background="@drawable/shape_accent"
+                    android:ellipsize="none"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
+                    android:text="@string/live_decode_hard"
+                    android:textColor="@color/selector_control"
+                    android:textSize="14sp" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/shape_accent"
+                    android:ellipsize="none"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
+                    android:text="@string/live_decode_soft"
+                    android:textColor="@color/selector_control"
+                    android:textSize="14sp" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="10dp"
+                android:layout_marginTop="14dp"
+                android:layout_marginBottom="8dp"
                 android:text="@string/setting_scale"
                 android:textColor="?attr/colorOnSurface"
                 android:textSize="16sp"
@@ -108,68 +115,87 @@
                 android:layout_height="wrap_content"
                 android:orientation="horizontal">
 
-<com.google.android.material.textview.MaterialTextView
-    android:layout_width="0dp"
-    android:layout_height="wrap_content"
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
                     android:layout_weight="1"
-    android:background="@drawable/shape_accent"
-    android:gravity="center"
-    android:paddingTop="10dp"
-    android:paddingBottom="10dp"
-    android:textColor="@color/selector_control"
-    android:textSize="14sp" />
-<com.google.android.material.textview.MaterialTextView
-    android:layout_width="0dp"
-    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-    android:layout_weight="1"
-    android:background="@drawable/shape_accent"
-    android:gravity="center"
-    android:paddingTop="10dp"
-    android:paddingBottom="10dp"
-    android:textColor="@color/selector_control"
-    android:textSize="14sp" />
-<com.google.android.material.textview.MaterialTextView
-    android:layout_width="0dp"
-    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-    android:layout_weight="1"
-    android:background="@drawable/shape_accent"
-    android:gravity="center"
-    android:paddingTop="10dp"
-    android:paddingBottom="10dp"
-    android:textColor="@color/selector_control"
-    android:textSize="14sp" />
-<com.google.android.material.textview.MaterialTextView
-    android:layout_width="0dp"
-    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-    android:layout_weight="1"
-    android:background="@drawable/shape_accent"
-    android:gravity="center"
-    android:paddingTop="10dp"
-    android:paddingBottom="10dp"
-    android:textColor="@color/selector_control"
-    android:textSize="14sp" />
-<com.google.android.material.textview.MaterialTextView
-    android:layout_width="0dp"
-    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-    android:layout_weight="1"
-    android:background="@drawable/shape_accent"
-    android:gravity="center"
-    android:paddingTop="10dp"
-    android:paddingBottom="10dp"
-    android:textColor="@color/selector_control"
-    android:textSize="14sp" />
+                    android:background="@drawable/shape_accent"
+                    android:ellipsize="none"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
+                    android:textColor="@color/selector_control"
+                    android:textSize="14sp"
+                    tools:text="原始" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/shape_accent"
+                    android:ellipsize="none"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
+                    android:textColor="@color/selector_control"
+                    android:textSize="14sp"
+                    tools:text="16:9" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/shape_accent"
+                    android:ellipsize="none"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
+                    android:textColor="@color/selector_control"
+                    android:textSize="14sp"
+                    tools:text="4:3" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/shape_accent"
+                    android:ellipsize="none"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
+                    android:textColor="@color/selector_control"
+                    android:textSize="14sp"
+                    tools:text="填充" />
+
+                <com.google.android.material.textview.MaterialTextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="4dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/shape_accent"
+                    android:ellipsize="none"
+                    android:gravity="center"
+                    android:maxLines="1"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
+                    android:textColor="@color/selector_control"
+                    android:textSize="14sp"
+                    tools:text="裁剪" />
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="10dp"
+                android:layout_marginTop="14dp"
+                android:layout_marginBottom="8dp"
                 android:text="@string/setting_speed"
                 android:textColor="?attr/colorOnSurface"
                 android:textSize="16sp"
@@ -179,119 +205,148 @@
                 android:id="@+id/rowSpeed"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal">
+                android:orientation="vertical">
 
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="0dp"
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="0dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/shape_accent"
+                        android:ellipsize="none"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp"
+                        tools:text="0.5" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/shape_accent"
+                        android:ellipsize="none"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp"
+                        tools:text="0.8" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/shape_accent"
+                        android:ellipsize="none"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp"
+                        tools:text="1.0" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/shape_accent"
+                        android:ellipsize="none"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp"
+                        tools:text="1.2" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
+
+                <androidx.appcompat.widget.LinearLayoutCompat
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
+                    android:layout_marginTop="4dp"
+                    android:orientation="horizontal">
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:background="@drawable/shape_accent"
+                        android:ellipsize="none"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp"
+                        tools:text="1.5" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/shape_accent"
+                        android:ellipsize="none"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp"
+                        tools:text="2.0" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/shape_accent"
+                        android:ellipsize="none"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp"
+                        tools:text="3.0" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/shape_accent"
+                        android:ellipsize="none"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp"
+                        tools:text="5.0" />
+
+                </androidx.appcompat.widget.LinearLayoutCompat>
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 
             <com.google.android.material.textview.MaterialTextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="10dp"
+                android:layout_marginTop="14dp"
+                android:layout_marginBottom="8dp"
                 android:text="@string/setting_audio_mode"
                 android:textColor="?attr/colorOnSurface"
                 android:textSize="16sp"
@@ -309,173 +364,200 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
-                <com.google.android.material.textview.MaterialTextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-    android:layout_marginStart="4dp"
-                    android:background="@drawable/shape_accent"
-                    android:gravity="center"
-                    android:paddingStart="14dp"
-                    android:paddingEnd="14dp"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
-                    android:textColor="@color/selector_control"
-                    android:textSize="14sp" />
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:background="@drawable/shape_accent"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:background="@drawable/shape_accent"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:background="@drawable/shape_accent"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:background="@drawable/shape_accent"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:background="@drawable/shape_accent"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:background="@drawable/shape_accent"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:background="@drawable/shape_accent"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:background="@drawable/shape_accent"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:background="@drawable/shape_accent"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:background="@drawable/shape_accent"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:background="@drawable/shape_accent"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:background="@drawable/shape_accent"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:background="@drawable/shape_accent"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp" />
+
+                    <com.google.android.material.textview.MaterialTextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="4dp"
+                        android:background="@drawable/shape_accent"
+                        android:gravity="center"
+                        android:maxLines="1"
+                        android:paddingStart="14dp"
+                        android:paddingEnd="14dp"
+                        android:paddingTop="9dp"
+                        android:paddingBottom="9dp"
+                        android:textColor="@color/selector_control"
+                        android:textSize="14sp" />
 
                 </androidx.appcompat.widget.LinearLayoutCompat>
             </HorizontalScrollView>
@@ -483,7 +565,7 @@
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="20dp"
+                android:layout_marginTop="14dp"
                 android:orientation="horizontal">
 
                 <com.google.android.material.textview.MaterialTextView
@@ -492,9 +574,11 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:background="@drawable/shape_accent"
+                    android:ellipsize="none"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:maxLines="1"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
                     android:text="@string/setting_opening"
                     android:textColor="@color/selector_control"
                     android:textSize="14sp" />
@@ -506,9 +590,11 @@
                     android:layout_marginStart="4dp"
                     android:layout_weight="1"
                     android:background="@drawable/shape_accent"
+                    android:ellipsize="none"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:maxLines="1"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
                     android:text="@string/setting_ending"
                     android:textColor="@color/selector_control"
                     android:textSize="14sp" />
@@ -520,9 +606,11 @@
                     android:layout_marginStart="4dp"
                     android:layout_weight="1"
                     android:background="@drawable/shape_accent"
+                    android:ellipsize="none"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:maxLines="1"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
                     android:text="@string/setting_repeat"
                     android:textColor="@color/selector_control"
                     android:textSize="14sp" />
@@ -534,9 +622,11 @@
                     android:layout_marginStart="4dp"
                     android:layout_weight="1"
                     android:background="@drawable/shape_accent"
+                    android:ellipsize="none"
                     android:gravity="center"
-                    android:paddingTop="10dp"
-                    android:paddingBottom="10dp"
+                    android:maxLines="1"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
                     android:text="@string/setting_reset"
                     android:textColor="@color/selector_control"
                     android:textSize="14sp" />
@@ -547,7 +637,7 @@
                 android:id="@+id/groupContent"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="14dp"
                 android:layout_marginBottom="8dp"
                 android:text="@string/group_content"
                 android:textColor="#888888"
@@ -581,6 +671,8 @@
                     android:minWidth="72dp"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
                     android:textColor="@color/selector_control"
                     android:textSize="14sp"
                     tools:text="解析" />
@@ -614,6 +706,8 @@
                     android:minWidth="72dp"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
                     android:textColor="@color/selector_control"
                     android:textSize="14sp"
                     tools:text="选集" />
@@ -647,6 +741,8 @@
                     android:minWidth="72dp"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
                     android:textColor="@color/selector_control"
                     android:textSize="14sp"
                     tools:text="选集" />
@@ -680,6 +776,8 @@
                     android:minWidth="72dp"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
                     android:textColor="@color/selector_control"
                     android:textSize="14sp"
                     tools:text="字幕" />
@@ -713,6 +811,8 @@
                     android:minWidth="72dp"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
                     android:textColor="@color/selector_control"
                     android:textSize="14sp"
                     tools:text="弹幕" />
@@ -744,6 +844,8 @@
                     android:minWidth="72dp"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
                     android:textColor="@color/selector_control"
                     android:textSize="14sp"
                     tools:text="定时" />
@@ -754,7 +856,7 @@
                 android:id="@+id/groupAdvanced"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="14dp"
                 android:layout_marginBottom="8dp"
                 android:text="@string/group_advanced"
                 android:textColor="#888888"
@@ -783,6 +885,8 @@
                     android:minWidth="72dp"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
                     android:textColor="@color/selector_control"
                     android:textSize="14sp"
                     tools:text="均衡器" />
@@ -813,6 +917,8 @@
                     android:minWidth="72dp"
                     android:paddingStart="12dp"
                     android:paddingEnd="12dp"
+                    android:paddingTop="9dp"
+                    android:paddingBottom="9dp"
                     android:textColor="@color/selector_control"
                     android:textSize="14sp"
                     tools:text="臻彩" />
