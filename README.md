@@ -82,7 +82,3 @@ APK 按 ABI 分包并输出至 `Release/apk/`。签名不同的 APK 不能直接
 ## 免责声明
 
 本应用仅供学习与个人使用。使用者需自行确保所配置内容来源合法合规，作者不对任何第三方内容负责。
-
-## Star History
-
-[![Star History Chart](https://api.star-history.com/svg?repos=cyj265/lanxing-vod&type=Date)](https://www.star-history.com/#cyj265/lanxing-vod&Date)
