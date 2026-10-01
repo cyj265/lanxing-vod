@@ -126,6 +126,27 @@ jobs:
           done
           echo "Bugly mapping 上传完成"
 
+      - name: 清理旧 Release（只保留最新 2 条正式版）
+        continue-on-error: true
+        run: |
+          set +e
+          TAG="v${{ steps.ver.outputs.name }}"
+          ALL=$(gh release list --limit 100 --jq '.[].tagName')
+          OTHERS=$(echo "$ALL" | grep -E '^v[0-9]+\.[0-9]+(\.[0-9]+)?$' | grep -v -E "^${TAG}$" | grep -v -E '^v5\.4\.' | sort -Vr | head -2)
+          KEEP=$(printf '%s\n%s\n' "$TAG" "$OTHERS")
+          echo "本次发布: ${TAG}"
+          printf '准备保留: '; printf '%s ' "$KEEP"; echo
+          for t in $ALL; do
+            if printf '%s\n' "$KEEP" | grep -qx "$t"; then
+              echo "保留: $t"
+            else
+              echo "删除: $t"
+              gh release delete "$t" --yes --cleanup-tag || echo "删除失败已跳过: $t"
+            fi
+          done
+          echo "清理结束"
+        env:
+          GH_TOKEN: ${{ github.token }}
       - name: 发布 GitHub Release（正式版）
         uses: softprops/action-gh-release@v2
         with:
@@ -173,23 +194,4 @@ jobs:
 
       # 发布前先清场（5.4 线已停更、全部并入 5.6）：
       #   1) 删除所有 5.4.x 老包；2) 删除 -r* 测试版；3) 其余只保留版本号最新的 2 条正式版
-      # 注意：--jq '.[].tagName' 输出裸字符串；若用 --json name --jq 会带引号，导致下面的匹配全部落空
-      - name: 清理旧 Release（只保留最新 2 条正式版）
-        run: |
-          TAG="v${{ steps.ver.outputs.name }}"
-          ALL=$(gh release list --limit 100 --jq '.[].tagName')
-          KEEP=$(echo "$ALL" | grep -E "^${TAG}$")
-          KEEP="$KEEP$(echo "$ALL" | grep -v -- '-r[0-9]*$' | grep -v -E '^v5\.4\.' | sort -Vr | head -2)"
-          KEEP=$(echo "$KEEP" | sort -u)
-          echo "本次发布: ${TAG}"
-          echo "准备保留: $(echo "$KEEP" | tr '\n' ' ')"
-          for t in $ALL; do
-            if echo "$KEEP" | grep -qx "$t"; then
-              echo "保留: $t"
-            else
-              echo "删除: $t"
-              gh release delete "$t" --yes --cleanup-tag || true
-            fi
-          done
-        env:
-          GH_TOKEN: ${{ github.token }}
+      # 注意：清理失败一律不阻断发布（--cleanup-tag 可能因 tag 被引用失败），用 set +e + continue-on-error 兜底
