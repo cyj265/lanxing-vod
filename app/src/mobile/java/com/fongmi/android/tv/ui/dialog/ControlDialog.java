@@ -33,7 +33,11 @@ import com.fongmi.android.tv.utils.Timer;
 public class ControlDialog extends BaseBottomSheetDialog {
 
     private static final String ACTION_ARROW = "›";
-    private static final int[] AUDIO_MODES = {AudioEffectPreset.OFF, AudioEffectPreset.NATURAL, AudioEffectPreset.SURROUND, AudioEffectPreset.VOCAL, AudioEffectPreset.CINEMA, AudioEffectPreset.BASS, AudioEffectPreset.TREBLE, AudioEffectPreset.POP, AudioEffectPreset.ROCK, AudioEffectPreset.DANCE, AudioEffectPreset.ELECTRONIC, AudioEffectPreset.JAZZ, AudioEffectPreset.CLASSICAL, AudioEffectPreset.CUSTOM};
+    /**
+     * 常用音效模式：主设置页只直选高频 5 种（原声/自然/环绕/人声/影院），
+     * 其余（低音/高音/流行/摇滚/舞曲/电子/嘻哈/爵士/古典/自定义）收进「音效调节」弹窗的预设区，避免首页过长。
+     */
+    private static final int[] AUDIO_MODES = {AudioEffectPreset.OFF, AudioEffectPreset.NATURAL, AudioEffectPreset.SURROUND, AudioEffectPreset.VOCAL, AudioEffectPreset.CINEMA};
     /** 胶囊视觉顺序 [硬解, 软解] 对应 select_decode 下标（0=软解 1=硬解） */
     private static final int[] DECODE_ORDER = {1, 0};
 
@@ -108,8 +112,7 @@ public class ControlDialog extends BaseBottomSheetDialog {
         binding.edition.setText(ACTION_ARROW);
         binding.chapter.setText(ACTION_ARROW);
         binding.danmaku.setText(ACTION_ARROW);
-        binding.audioSetting.setText(ACTION_ARROW);
-        binding.videoSetting.setText(ACTION_ARROW);
+        // 音效调节/画质调节按钮自身即名称（布局已写死文字），不覆盖为箭头
         setContentVisible();
     }
 

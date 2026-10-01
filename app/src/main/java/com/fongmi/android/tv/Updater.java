@@ -114,13 +114,21 @@ public class Updater implements Download.Callback, UpdateListener {
         JSONArray assets = json.optJSONArray("assets");
         if (assets == null) return null;
         String url = null;
+        String fallback = null;
         for (int i = 0; i < assets.length(); i++) {
             JSONObject a = assets.getJSONObject(i);
-            if (a.optString("name", "").endsWith(".apk")) {
+            String name = a.optString("name", "");
+            if (!name.endsWith(".apk")) continue;
+            if (fallback == null) fallback = a.optString("browser_download_url", "");
+            // 每个 release 同时发布手机版(lanxing-v*.apk)与电视版(lanxing-tv-v*.apk)两个包，
+            // 直接取首个 .apk 会命中电视版（"lanxing-tv" 排在 "lanxing-v" 前），导致手机端总更新成电视包；
+            // 这里优先选不含 tv 的手机版，确实只有电视包时再退回首个。
+            if (!name.contains("tv")) {
                 url = a.optString("browser_download_url", "");
                 break;
             }
         }
+        if (url == null || url.isEmpty()) url = fallback;
         if (url == null || url.isEmpty()) return null;
         JSONObject release = new JSONObject();
         release.put("version", tag.isEmpty() ? "" : tag);
