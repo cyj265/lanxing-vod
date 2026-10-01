@@ -161,7 +161,7 @@ jobs:
             **手机版** `lanxing-arm64_v8a-v${{ steps.ver.outputs.name }}.apk`
             **电视版** `lanxing-tv-arm64_v8a-v${{ steps.ver.outputs.name }}.apk`
 
-            系统要求：Android 7.0（API 24）及以上，本版按 API 37（Android 17）的目标 SDK 编译。
+            系统要求：Android 7.0（API 24）及以上。
 
             5.4.x 老版本：设置里检查更新会直接推到本版，覆盖安装即可，不必卸载。
 
