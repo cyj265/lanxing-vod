@@ -139,7 +139,23 @@ public class Updater implements Download.Callback, UpdateListener {
 
     private boolean isNewer(String remoteVersion) {
         // 用版本号(版本号)判断是否有新版本：分段数值比较，如 5.6.9 < 5.6.10
-        return compareVersion(remoteVersion, BuildConfig.VERSION_NAME) > 0;
+        if (compareVersion(remoteVersion, BuildConfig.VERSION_NAME) <= 0) return false;
+        // 系列过滤：只接收同系列(主+次版本)更新。main 正式版为 5.4.x、dev 为 5.6.x，
+        // 两个分支共用同一个 Releases 频道，若不做系列过滤，一边发版会把另一边用户跨系列误引
+        // （例如另一条线的版本号将来涨到 5.10.x 就会对本机 5.6.x 提示"有更新"）。
+        return sameSeries(remoteVersion, BuildConfig.VERSION_NAME);
+    }
+
+    /** 判断两个版本号是否同一系列（主版本 + 次版本相同，修正号可不同） */
+    private boolean sameSeries(String a, String b) {
+        String[] pa = (a == null ? "" : a).split("\\.");
+        String[] pb = (b == null ? "" : b).split("\\.");
+        for (int i = 0; i < 2; i++) {
+            String x = i < pa.length ? pa[i] : "";
+            String y = i < pb.length ? pb[i] : "";
+            if (!x.equals(y)) return false;
+        }
+        return true;
     }
 
     /** 分段数值比较：a>b 返回正数，相等返回 0，a<b 返回负数；任一为空视为相等(不提示) */
