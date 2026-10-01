@@ -1,12 +1,12 @@
 # 揽星影视
 
-适用于 Android 手机与 Android TV 的影音应用，基于 [FongMi/TV（影视仓）](https://github.com/FongMi/TV) 二次开发。整合媒体浏览与播放体验，兼容 TVBox（JSON）接口协议，并支持外部配置与 [CatVod](https://github.com/CatVodTVOfficial/CatVodTVJarLoader) Spider 接口扩展。
+适用于 Android 手机与 Android TV 的影音应用，基于 [FongMi/TV](https://github.com/FongMi/TV) 二次开发。整合媒体浏览与播放体验，兼容 TVBox（JSON）接口协议，并支持外部配置与 [CatVod](https://github.com/CatVodTVOfficial/CatVodTVJarLoader) Spider 接口扩展。
 
 **App 本身不内置或提供任何内容来源。** 外部内容需自行配置，也可打开本地媒体文件或推送媒体网址。
 
 ## 项目简介
 
-揽星影视在影视仓内核基础上做了面向手机端的体验改造，主要差异点：
+揽星影视在 FongMi/TV 上游内核基础上做了面向手机端的体验改造，主要差异点：
 
 - **毛玻璃 UI**：播放页、设置页、弹窗等大量采用毛玻璃（Blur）风格。
 - **自定义底部导航 Tab**：首页底部导航可自定义排序与显隐。
@@ -16,13 +16,13 @@
 - **多仓 / 多源聚合**：仓库管理支持多源聚合与线路合集双模式，一键切换、刷新、复制、删除。
 - **首页推荐位**：对接豆瓣榜单、站点推荐、电视榜等 home 数据。
 - **音效模式**：影院 / 重低音 / 3D 环绕 / HiFi / 人声等多档 EQ 预设。
-- **Bugly 上报**与基于 GitHub Releases 的在线更新检查（用构建号判断新版本，逻辑与揽星TV一致）。
+- **Bugly 上报**与基于 GitHub Releases 的在线更新检查（用版本号判断新版本，逻辑与揽星TV一致）。
 
 > 播放内核**仅使用 ExoPlayer（Media3）**，原 MPV 分支已移除。
 
 ## 开始使用
 
-1. 安装适合设备的 APK：`leanback` 为电视版，`mobile` 为手机版；仅提供 64 位 `arm64-v8a`。最低要求 Android 7.0（API 24）。
+1. 安装适合设备的 APK：仅发布手机版 `mobile`，64 位 `arm64-v8a`。最低要求 Android 7.0（API 24）。电视版（`leanback`）已停止维护与分发，已装电视版的用户直接覆盖安装手机版即可，数据与配置保留。
 2. 在设置中加入自己的配置（兼容 TVBox JSON 接口），格式与字段见[配置范例](https://fongmi.github.io/TV/config/#examples)。
 3. 也可从系统文件管理器打开本地媒体文件，或通过推送入口播放媒体网址。
 
@@ -47,14 +47,16 @@
 | [本地 API](https://fongmi.github.io/TV/local/) | 播放控制、推送、文件与同步端点 |
 | [网站维护](website/README.md) | 静态网站构建与 GitHub Pages 发布 |
 
-`app/src/main/` 为共用逻辑，`app/src/leanback/`、`app/src/mobile/` 为各自 UI。模块列表见 [settings.gradle](settings.gradle)，SDK 与依赖版本见 [libs.versions.toml](gradle/libs.versions.toml)。
+`app/src/main/` 为共用逻辑，`app/src/mobile/` 为手机版 UI。模块列表见 [settings.gradle](settings.gradle)，SDK 与依赖版本见 [libs.versions.toml](gradle/libs.versions.toml)。
+
+`app/src/leanback/`（电视版源码）当前**不参与编译**：其 flavor 与依赖在 `app/build.gradle` 中已注释停用，保留目录只是方便日后重启电视版。大屏设备（平板 / 折叠屏，smallestWidth ≥ 600dp）走的是 `app/src/mobile/res/layout-sw600dp/`。
 
 ## Windows 构建
 
 先准备以下环境与文件：
 
 - **JDK 21、Android SDK、Python 3.10**。SDK 平台版本依 `compileSdk` 设置；Python 用于 chaquo 模块。
-- **配套 AAR**：放入 `app/libs/`。`lib-*.aar` 未纳入 Git，单纯 clone 不包含完整播放器依赖。
+- **配套 AAR**：`app/libs/` 内的 5 个 `*-release.aar`（thunder 迅雷下载器 / tvbus / forcetech / jianpian / hook）**已纳入 Git**，clone 下来即可直接构建，无需另外准备。自行新增私有 AAR 时注意别把它们提交上去。
 - **自己的签名文件与 `local.properties`**：在仓库根目录创建下列配置，将所有示例值替换成自己的数据。
 
 ```properties
@@ -69,12 +71,11 @@ storePassword=your-keystore-password
 在仓库根目录以 PowerShell 执行：
 
 ```powershell
-# 电视版
-.\gradlew.bat :app:assembleLeanbackRelease
-
-# 手机版
-.\gradlew.bat :app:assembleMobileRelease
+# 手机版（当前唯一发布的包）
+.\gradlew.bat :app:assembleMobileArm64_v8aRelease
 ```
+
+如需本地编译电视版 `leanback`，需先自行解除 `app/build.gradle` 里 `leanback` flavor 与 `leanbackImplementation` 依赖的注释。
 
 APK 按 ABI 分包并输出至 `Release/apk/`。签名不同的 APK 不能直接覆盖既有安装。网站位于 `website/`，可独立构建，不需编译 Android App。
 
