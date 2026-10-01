@@ -10,6 +10,9 @@ lib-*.aar
 /Release
 /docs
 
+# 本地下载/构建的 APK 产物（非源码，体积大，不要提交）
+/apk/
+
 # 本地构建/调试日志（非源码）
 build_verify*.log
 dry.log
