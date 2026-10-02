@@ -34,8 +34,10 @@ public class Updater implements Download.Callback, UpdateListener {
     // 注：构建号(BUILD_NUMBER)方案已废弃——安装包的 BUILD_NUMBER 取自 CI run_number，与线上
     //     release 的构建号恒相等，无法触发更新；改用版本号后，用户装到更高版本号才会提示更新。
     // 注意：不能用 /releases/latest —— 该接口默认排除 prerelease，而 dev 构建发布为预发布版会永远返回 404。
-    // 用列表接口(含 prerelease)取最新一条即可。
-    private static final String RELEASES_URL = "https://api.github.com/repos/cyj265/lanxing-vod/releases?per_page=1";
+    // 用列表接口(含 prerelease)即可。per_page 取 10 而非 1：main(5.4.x) 与 dev(5.6.x) 共用同一仓库的
+    // Releases，列表按创建时间倒序，main 线若最近发过包会排到最前，取 1 条会让 dev 线用户
+    // 被引导去装另一个分支的包。CI 的清理步骤已把 Release 压到 3 条以内，取 10 条足够覆盖。
+    private static final String RELEASES_URL = "https://api.github.com/repos/cyj265/lanxing-vod/releases?per_page=10";
     // 加速节点：直连优先，失败依次回退到多个主流 GitHub 加速中转（国内常见可用节点）
     private static final String[] PROXIES = {
             "https://gh-proxy.com/",
@@ -93,25 +95,70 @@ public class Updater implements Download.Callback, UpdateListener {
         }
     }
 
-    /** 读取最新 Release，解析出版本号/APK 下载地址；无更新或异常返回 null */
+    /**
+     * 读取本线（主版本相同）最新的 Release，解析出版本号 / APK 下载地址；无更新或异常返回 null。
+     * 国内直连 api.github.com 基本拿不到响应，这里和下载一样做多节点回退：
+     * 先直连，不通就依次换加速节点的 API 前缀代理（只换列表入口，APK 链接本身仍走 buildCandidates 那套）。
+     */
     private JSONObject getLatestRelease() throws Exception {
-        HttpURLConnection conn = (HttpURLConnection) new URL(RELEASES_URL).openConnection();
-        conn.setConnectTimeout(10000);
-        conn.setReadTimeout(10000);
+        Exception last = null;
+        for (String url : releaseCandidates()) {
+            try {
+                JSONObject found = matchOwnLine(fetchReleases(new URL(url), 6000, 12000));
+                if (found != null) return found;
+            } catch (Exception e) {
+                last = e;
+            }
+        }
+        if (last != null) throw last;
+        return null;
+    }
+
+    /** 检查更新的候选入口：API 直连 + 各加速节点前缀代理 */
+    private List<String> releaseCandidates() {
+        List<String> list = new ArrayList<>();
+        list.add(RELEASES_URL);
+        for (String p : PROXIES) list.add(p + RELEASES_URL);
+        return list;
+    }
+
+    private JSONArray fetchReleases(URL url, int connectTimeout, int readTimeout) throws Exception {
+        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        conn.setConnectTimeout(connectTimeout);
+        conn.setReadTimeout(readTimeout);
         conn.setRequestProperty("User-Agent", "LanXingVod");
-        String body;
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
             StringBuilder sb = new StringBuilder();
             String line;
             while ((line = reader.readLine()) != null) sb.append(line);
-            body = sb.toString();
+            return new JSONArray(sb.toString());
         }
-        JSONArray arr = new JSONArray(body);
-        if (arr.length() == 0) return null;
-        JSONObject json = arr.getJSONObject(0);
-        // tag 形如 v5.6.67-r124：去掉前缀 v，再去掉 -r124 等后缀，只留版本号 5.6.67
-        String tag = json.optString("tag_name", "").replaceFirst("^v", "").replaceFirst("-.*$", "");
-        JSONArray assets = json.optJSONArray("assets");
+    }
+
+    /**
+     * 在 Release 列表里挑出主版本与本机相同（本线）的最新一条。
+     * 列表按创建时间倒序，逐条往下找，main(5.4.x) / dev(5.6.x) 共用一个 Releases 频道也不串线。
+     */
+    private JSONObject matchOwnLine(JSONArray arr) throws Exception {
+        for (int i = 0; i < arr.length(); i++) {
+            JSONObject json = arr.getJSONObject(i);
+            // tag 形如 v5.6.67-r124：去掉前缀 v，再去掉 -r124 等后缀，只留版本号 5.6.67
+            String tag = json.optString("tag_name", "").replaceFirst("^v", "").replaceFirst("-.*$", "");
+            if (tag.isEmpty() || !sameMajor(tag, BuildConfig.VERSION_NAME)) continue;
+            String url = pickApk(json);
+            if (url == null) continue;
+            JSONObject release = new JSONObject();
+            release.put("version", tag);
+            release.put("apk_url", url);
+            release.put("desc", json.optString("body", ""));
+            return release;
+        }
+        return null;
+    }
+
+    /** 从一条 Release 的附件里挑手机版 APK 下载地址；挑不到返回 null，宁可不更新也不下错包 */
+    private String pickApk(JSONObject release) throws Exception {
+        JSONArray assets = release.optJSONArray("assets");
         if (assets == null) return null;
         String url = null;
         String fallback = null;
@@ -129,12 +176,7 @@ public class Updater implements Download.Callback, UpdateListener {
             }
         }
         if (url == null || url.isEmpty()) url = fallback;
-        if (url == null || url.isEmpty()) return null;
-        JSONObject release = new JSONObject();
-        release.put("version", tag.isEmpty() ? "" : tag);
-        release.put("apk_url", url);
-        release.put("desc", json.optString("body", ""));
-        return release;
+        return url == null || url.isEmpty() ? null : url;
     }
 
     private boolean isNewer(String remoteVersion) {
