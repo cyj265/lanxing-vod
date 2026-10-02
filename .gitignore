@@ -4,6 +4,10 @@
 .settings
 *build
 *.jks
+# 签名文件一旦入库就永久留在 git 历史里：既泄露私钥，又会让任何人都能签同名包冒充官方更新。
+# 本地 keystore 文件名通常是 *.keystore / *.jks，一律挡在版本库之外；CI 用的是 Secrets 里的临时副本。
+*.keystore
+/lanxing.keystore
 local.properties
 keystore.properties
 /Release
