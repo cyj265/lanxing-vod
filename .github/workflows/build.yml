@@ -170,8 +170,6 @@ jobs:
             **手机版** `lanxing-arm64_v8a-v${{ steps.ver.outputs.name }}.apk`
 
             系统要求：Android 7.0（API 24）及以上。5.4.x 检查更新可直接覆盖安装。
-            电视版(leanback)已停止维护并停发：包名签名不变，已装的电视版直接覆盖安装手机版即可，
-            数据与配置全部保留。
 
             更新内容详见仓库提交记录：https://github.com/cyj265/lanxing-vod/commits/${{ github.ref_name }}
           files: |
