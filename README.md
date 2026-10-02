@@ -45,7 +45,8 @@
 | [配置字典](https://fongmi.github.io/TV/config/) | 配置字段、网络设置与 JSON 示例 |
 | [扩展接口](https://fongmi.github.io/TV/spider/) | Java / Python / JavaScript 示例、方法与返回格式 |
 | [本地 API](https://fongmi.github.io/TV/local/) | 播放控制、推送、文件与同步端点 |
-| [网站维护](website/README.md) | 静态网站构建与 GitHub Pages 发布 |
+
+这四篇是上游通用文档，只讲能力边界，不含揽星自己的改动（投屏、更新检查、上报等）。揽星的更新记录看仓库提交历史，APK 见 [Releases](https://github.com/cyj265/lanxing-vod/releases)。
 
 `app/src/main/` 为共用逻辑，`app/src/mobile/` 为手机版 UI。模块列表见 [settings.gradle](settings.gradle)，SDK 与依赖版本见 [libs.versions.toml](gradle/libs.versions.toml)。
 
