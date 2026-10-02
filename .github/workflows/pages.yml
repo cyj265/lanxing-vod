@@ -3,8 +3,9 @@ name: Publish website to GitHub Pages
 on:
   push:
     # 原写 [fongmi]，但该分支在本仓库从未存在过，推 website 永远不会触发，站点只能靠手动 dispatch。
-    # 改成实际存在的开发线：main(5.4.x 正式) / dev-5.6.1(开发线)，两边更新文档站都能自动发布。
-    branches: [main, dev-5.6.1]
+    # 只留 dev-5.6.1：网站内容只存在于这条分支（main 上还没有 pages.yml 与 website/），
+    # 推 main 根本匹配不到 workflow，列了也是空跑。
+    branches: [dev-5.6.1]
     paths:
       - "website/**"
       - ".github/workflows/pages.yml"
@@ -25,7 +26,9 @@ jobs:
         working-directory: website
     permissions:
       contents: read
-      pages: read
+      # configure-pages 要用 token 查询/写入 Pages 配置，只读会让它在开头就 403 失败
+      pages: write
+      id-token: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
