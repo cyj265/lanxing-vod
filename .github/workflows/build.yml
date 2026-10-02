@@ -8,9 +8,9 @@ on:
     branches: [ main, dev-5.6.1 ]
     paths-ignore:
       - 'README.md'
-      # 改忽略规则/文档不会改变 APK 产物，不必白跑一轮构建
+      # 改忽略规则、文档、文档站都不改变 APK 产物，不必白跑一轮 9 分钟的构建
       - '.gitignore'
-      - 'README.md'
+      - 'website/**'
   workflow_dispatch:
 
 jobs:
@@ -129,7 +129,11 @@ jobs:
           done
           echo "Bugly mapping 上传完成"
 
-      - name: 清理旧 Release（只保留最新 2 条正式版）
+      # 发布前先清场（5.4 线已停更、全部并入 5.6）：
+      #   1) 删除所有 5.4.x 老包；2) 删除 -r* 测试版；3) 本次之外再保留版本号最新的 2 条正式版
+      # 即「本次 + 最近 2 条」共 3 条，给误发留回滚余地，又不至于让 Release 列表无限膨胀。
+      # 注意：清理失败一律不阻断发布（tag 可能被引用），用 set +e + continue-on-error 兜底。
+      - name: 清理旧 Release（保留本次 + 最近 2 条正式版）
         continue-on-error: true
         run: |
           set +e
@@ -177,7 +181,3 @@ jobs:
           generate_release_notes: false
           fail_on_unmatched_files: false
           overwrite_files: true
-
-      # 发布前先清场（5.4 线已停更、全部并入 5.6）：
-      #   1) 删除所有 5.4.x 老包；2) 删除 -r* 测试版；3) 其余只保留版本号最新的 2 条正式版
-      # 注意：清理失败一律不阻断发布（--cleanup-tag 可能因 tag 被引用失败），用 set +e + continue-on-error 兜底
