@@ -1,6 +1,6 @@
 # 揽星影视
 
-适用于 Android 手机与 Android TV 的影音应用，基于 [FongMi/TV](https://github.com/FongMi/TV) 二次开发。整合媒体浏览与播放体验，兼容 TVBox（JSON）接口协议，并支持外部配置与 [CatVod](https://github.com/CatVodTVOfficial/CatVodTVJarLoader) Spider 接口扩展。
+适用于 Android 手机（含平板 / 折叠屏）的影音应用，基于 [FongMi/TV](https://github.com/FongMi/TV) 二次开发。整合媒体浏览与播放体验，兼容 TVBox（JSON）接口协议，并支持外部配置与 [CatVod](https://github.com/CatVodTVOfficial/CatVodTVJarLoader) Spider 接口扩展。
 
 **App 本身不内置或提供任何内容来源。** 外部内容需自行配置，也可打开本地媒体文件或推送媒体网址。
 
@@ -43,7 +43,7 @@
 | --- | --- |
 | [App 功能](https://fongmi.github.io/TV/features/) | 操作与功能介绍（上游通用） |
 | [配置字典](https://fongmi.github.io/TV/config/) | 配置字段、网络设置与 JSON 示例 |
-| [扩展接接](https://fongmi.github.io/TV/spider/) | Java / Python / JavaScript 示例、方法与返回格式 |
+| [扩展接口](https://fongmi.github.io/TV/spider/) | Java / Python / JavaScript 示例、方法与返回格式 |
 | [本地 API](https://fongmi.github.io/TV/local/) | 播放控制、推送、文件与同步端点 |
 | [网站维护](website/README.md) | 静态网站构建与 GitHub Pages 发布 |
 
@@ -77,7 +77,7 @@ storePassword=your-keystore-password
 
 如需本地编译电视版 `leanback`，需先自行解除 `app/build.gradle` 里 `leanback` flavor 与 `leanbackImplementation` 依赖的注释。
 
-APK 按 ABI 分包并输出至 `Release/apk/`。签名不同的 APK 不能直接覆盖既有安装。网站位于 `website/`，可独立构建，不需编译 Android App。
+产物输出到 `app/build/outputs/apk/mobileArm64_v8a/release/`（文件名形如 `揽星影视-mobile-arm64_v8a-<构建号>.apk`）。签名不同的 APK 不能直接覆盖既有安装。网站位于 `website/`，可独立构建，不需编译 Android App。
 
 ## 免责声明
 
