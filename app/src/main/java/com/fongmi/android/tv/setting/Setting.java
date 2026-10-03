@@ -51,6 +51,28 @@ public class Setting {
         Prefers.put("hot", hot);
     }
 
+    /** 上次成功下载 APK 的最快镜像 URL（24h 内有效），空表示无缓存 */
+    public static String getFastMirrorUrl() {
+        String raw = Prefers.getString("fast_mirror");
+        if (raw == null || raw.isEmpty()) return "";
+        // 格式: url|timestamp
+        int idx = raw.lastIndexOf('|');
+        if (idx <= 0) return "";
+        String url = raw.substring(0, idx);
+        try {
+            long ts = Long.parseLong(raw.substring(idx + 1));
+            if (System.currentTimeMillis() - ts > 24L * 3600 * 1000) return "";
+            return url;
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    public static void putFastMirror(String url) {
+        if (url == null || url.isEmpty()) return;
+        Prefers.put("fast_mirror", url + "|" + System.currentTimeMillis());
+    }
+
     public static int getWall() {
         return Math.clamp(Prefers.getInt("wall", 1), MIN_WALL, MAX_WALL);
     }

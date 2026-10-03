@@ -83,7 +83,10 @@ public class Updater implements Download.Callback, UpdateListener {
     private void doInBackground(FragmentActivity activity) {
         try {
             JSONObject release = getLatestRelease();
-            if (release == null) return;
+            if (release == null) {
+                App.post(() -> Notify.show("检查更新失败，请稍后重试"));
+                return;
+            }
             apkUrl = release.optString("apk_url", null);
             version = release.optString("version", "");
             String desc = release.optString("desc", "");
@@ -91,7 +94,7 @@ public class Updater implements Download.Callback, UpdateListener {
             if (!isNewer(version)) return;
             App.post(() -> show(activity, version, desc));
         } catch (Exception e) {
-            e.printStackTrace();
+            App.post(() -> Notify.show("检查更新失败：" + e.getMessage()));
         }
     }
 
@@ -104,7 +107,7 @@ public class Updater implements Download.Callback, UpdateListener {
         Exception last = null;
         for (String url : releaseCandidates()) {
             try {
-                JSONObject found = matchOwnLine(fetchReleases(new URL(url), 6000, 12000));
+                JSONObject found = matchOwnLine(fetchReleases(new URL(url), 4000, 5000));
                 if (found != null) return found;
             } catch (Exception e) {
                 last = e;
@@ -233,8 +236,102 @@ public class Updater implements Download.Callback, UpdateListener {
     public void onConfirm(View view) {
         view.setEnabled(false);
         buildCandidates();
-        mirrorIndex = 0;
-        startNext();
+        // 1) 缓存命中：上次成功下载的镜像在候选列表里，直接 0 延迟开下
+        String cached = Setting.getFastMirrorUrl();
+        if (cached != null && !cached.isEmpty() && candidates.contains(cached)) {
+            mirrorIndex = candidates.indexOf(cached);
+            Notify.show("使用上次的快速线路下载…");
+            startNext();
+            return;
+        }
+        // 2) 未命中：并发探测 32KB 选最快节点（3.5s 预算，先到先得）
+        probeAndStart(view);
+    }
+
+    /** 并发探测各候选节点前 32KB 速率，选最快的开下；全部失败则退回原顺序 */
+    private void probeAndStart(View view) {
+        if (candidates.size() < 2) {
+            mirrorIndex = 0;
+            startNext();
+            return;
+        }
+        Task.submitLarge(() -> {
+            String best = probeBestMirror();
+            App.post(() -> {
+                if (best != null) {
+                    mirrorIndex = candidates.indexOf(best);
+                    if (mirrorIndex < 0) mirrorIndex = 0;
+                    Notify.show("已选最快线路下载…");
+                } else {
+                    mirrorIndex = 0;
+                    Notify.show("线路探测失败，按默认顺序下载…");
+                }
+                startNext();
+            });
+        });
+    }
+
+    /** 并发探测，返回第一个收满 32KB 的 URL；3.5s 内无人收满则按字节数/耗时得分选最快的；全失败返回 null */
+    private String probeBestMirror() {
+        final int PIECE = 32 * 1024;
+        final long BUDGET_MS = 3500;
+        final Object lock = new Object();
+        final String[] firstFull = new String[1];   // 第一个收满 32KB 的 URL
+        final String[] bestPartial = new String[1];  // 未收满但得分最高的 URL
+        final long[] bestScore = new long[1];
+        final long start = System.currentTimeMillis();
+
+        List<Thread> threads = new ArrayList<>();
+        for (final String url : candidates) {
+            Thread t = new Thread(() -> {
+                HttpURLConnection conn = null;
+                try {
+                    long t0 = System.currentTimeMillis();
+                    conn = (HttpURLConnection) new URL(url).openConnection();
+                    conn.setConnectTimeout(2000);
+                    conn.setReadTimeout(3000);
+                    conn.setRequestProperty("User-Agent", "LanXingVod");
+                    conn.setRequestProperty("Range", "bytes=0-" + (PIECE - 1));
+                    java.io.InputStream in = conn.getInputStream();
+                    byte[] buf = new byte[4096];
+                    int total = 0, n;
+                    while ((n = in.read(buf)) != -1) {
+                        total += n;
+                        if (total >= PIECE) break;
+                        if (System.currentTimeMillis() - start > BUDGET_MS) break;
+                    }
+                    in.close();
+                    if (total <= 0) return;
+                    long cost = System.currentTimeMillis() - t0;
+                    if (cost <= 0) cost = 1;
+                    long score = total * 1000 / cost;
+                    synchronized (lock) {
+                        if (total >= PIECE && firstFull[0] == null) {
+                            firstFull[0] = url; // 先到先得，立刻胜出
+                        }
+                        if (score > bestScore[0]) {
+                            bestScore[0] = score;
+                            bestPartial[0] = url;
+                        }
+                    }
+                } catch (Exception ignored) {
+                } finally {
+                    if (conn != null) conn.disconnect();
+                }
+            });
+            t.setDaemon(true);
+            threads.add(t);
+            t.start();
+        }
+        // 等先到先得胜出，或预算到期
+        while (System.currentTimeMillis() - start < BUDGET_MS) {
+            synchronized (lock) { if (firstFull[0] != null) break; }
+            try { Thread.sleep(50); } catch (InterruptedException e) { break; }
+        }
+        synchronized (lock) {
+            if (firstFull[0] != null) return firstFull[0];
+            return bestPartial[0]; // 没人收满，退而求其次选得分最高的
+        }
     }
 
     /** 构建下载候选：GitHub 链接 = 直连 + 多个加速中转 + kkgithub 域名替换；其它链接只有一条 */
@@ -251,7 +348,21 @@ public class Updater implements Download.Callback, UpdateListener {
     }
 
     private String nameOf(int idx) {
-        return idx == 0 ? "直连" : "加速" + idx;
+        if (idx < 0 || idx >= candidates.size()) return "节点" + idx;
+        return hostOf(candidates.get(idx));
+    }
+
+    /** 从 URL 提取 host 作为节点名（避免重排后"加速N"索引错乱） */
+    private String hostOf(String url) {
+        try {
+            String s = url.replaceFirst("^https?://", "");
+            int slash = s.indexOf('/');
+            if (slash > 0) s = s.substring(0, slash);
+            if (s.startsWith("github.com")) return "直连";
+            return s;
+        } catch (Exception e) {
+            return "节点";
+        }
     }
 
     private void startNext() {
@@ -340,6 +451,12 @@ public class Updater implements Download.Callback, UpdateListener {
             dismiss();
             return;
         }
+        // 记录这次成功下载用的镜像，24h 内下次更新可 0 延迟直通
+        try {
+            if (mirrorIndex >= 0 && mirrorIndex < candidates.size()) {
+                Setting.putFastMirror(candidates.get(mirrorIndex));
+            }
+        } catch (Exception ignored) {}
         FileUtil.openFile(file);
         dismiss();
     }
