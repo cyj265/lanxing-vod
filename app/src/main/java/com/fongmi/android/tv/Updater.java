@@ -56,6 +56,7 @@ public class Updater implements Download.Callback, UpdateListener {
     private String version;
     private List<String> candidates = new ArrayList<>();
     private int mirrorIndex = 0;
+    private boolean forced = false;
     private final Runnable stallTask = this::onStall;
 
     private Updater() {
@@ -70,6 +71,7 @@ public class Updater implements Download.Callback, UpdateListener {
     }
 
     public Updater force() {
+        forced = true;
         Notify.show(R.string.update_check);
         Setting.putUpdate(true);
         return this;
@@ -84,7 +86,7 @@ public class Updater implements Download.Callback, UpdateListener {
         try {
             JSONObject release = getLatestRelease();
             if (release == null) {
-                App.post(() -> Notify.show("检查更新失败，请稍后重试"));
+                if (forced) App.post(() -> Notify.show("检查更新失败，请稍后重试"));
                 return;
             }
             apkUrl = release.optString("apk_url", null);
@@ -94,7 +96,7 @@ public class Updater implements Download.Callback, UpdateListener {
             if (!isNewer(version)) return;
             App.post(() -> show(activity, version, desc));
         } catch (Exception e) {
-            App.post(() -> Notify.show("检查更新失败：" + e.getMessage()));
+            if (forced) App.post(() -> Notify.show("检查更新失败，请稍后重试"));
         }
     }
 
@@ -236,11 +238,10 @@ public class Updater implements Download.Callback, UpdateListener {
     public void onConfirm(View view) {
         view.setEnabled(false);
         buildCandidates();
-        // 1) 缓存命中：上次成功下载的镜像在候选列表里，直接 0 延迟开下
+        // 1) 缓存命中：上次成功下载的镜像在候选列表里，直接 0 延迟开下（不弹 Toast，避免和 startNext 的提示重复）
         String cached = Setting.getFastMirrorUrl();
         if (cached != null && !cached.isEmpty() && candidates.contains(cached)) {
             mirrorIndex = candidates.indexOf(cached);
-            Notify.show("使用上次的快速线路下载…");
             startNext();
             return;
         }
@@ -248,7 +249,7 @@ public class Updater implements Download.Callback, UpdateListener {
         probeAndStart(view);
     }
 
-    /** 并发探测各候选节点前 32KB 速率，选最快的开下；全部失败则退回原顺序 */
+    /** 并发探测各候选节点前 32KB 速率，选最快的开下；全部失败则跳过直连从第一个代理起步 */
     private void probeAndStart(View view) {
         if (candidates.size() < 2) {
             mirrorIndex = 0;
@@ -256,19 +257,39 @@ public class Updater implements Download.Callback, UpdateListener {
             return;
         }
         Task.submitLarge(() -> {
-            String best = probeBestMirror();
+            String best;
+            try {
+                best = probeBestMirror();
+            } catch (Exception e) {
+                best = null;
+            }
+            final String b = best;
             App.post(() -> {
-                if (best != null) {
-                    mirrorIndex = candidates.indexOf(best);
-                    if (mirrorIndex < 0) mirrorIndex = 0;
-                    Notify.show("已选最快线路下载…");
-                } else {
-                    mirrorIndex = 0;
-                    Notify.show("线路探测失败，按默认顺序下载…");
+                try {
+                    if (b != null) {
+                        mirrorIndex = candidates.indexOf(b);
+                        if (mirrorIndex < 0) mirrorIndex = firstProxyIndex();
+                    } else {
+                        // 全失败：跳过国内必挂的直连，从第一个代理起步
+                        mirrorIndex = firstProxyIndex();
+                    }
+                    startNext();
+                } catch (Exception e) {
+                    // 最后兜底：防止按钮永久锁死
+                    try { view.setEnabled(true); } catch (Exception ignored) {}
+                    dismiss();
                 }
-                startNext();
             });
         });
+    }
+
+    /** 第一个非 github.com 直连的候选索引（国内直连基本不通，失败时跳过它） */
+    private int firstProxyIndex() {
+        for (int i = 0; i < candidates.size(); i++) {
+            String u = candidates.get(i);
+            if (u != null && !u.startsWith("https://github.com/")) return i;
+        }
+        return 0;
     }
 
     /** 并发探测，返回第一个收满 32KB 的 URL；3.5s 内无人收满则按字节数/耗时得分选最快的；全失败返回 null */
