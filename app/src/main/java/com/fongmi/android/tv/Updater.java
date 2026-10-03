@@ -96,6 +96,8 @@ public class Updater implements Download.Callback, UpdateListener {
             if (!isNewer(version)) return;
             App.post(() -> show(activity, version, desc));
         } catch (Exception e) {
+            // 自动检查路径(非 forced)静默，但必须留日志，否则"为什么没提示更新"无从排查
+            e.printStackTrace();
             if (forced) App.post(() -> Notify.show("检查更新失败，请稍后重试"));
         }
     }
@@ -239,11 +241,16 @@ public class Updater implements Download.Callback, UpdateListener {
         view.setEnabled(false);
         buildCandidates();
         // 1) 缓存命中：上次成功下载的镜像在候选列表里，直接 0 延迟开下（不弹 Toast，避免和 startNext 的提示重复）
-        String cached = Setting.getFastMirrorUrl();
-        if (cached != null && !cached.isEmpty() && candidates.contains(cached)) {
-            mirrorIndex = candidates.indexOf(cached);
-            startNext();
-            return;
+        // 缓存按 host 匹配，不能比整条 URL：apkUrl 每次发版都变（文件名与 tag 都带版本号），
+        // 整条 URL 比对会导致升级到新版本时缓存永远命中不了，每次都要白等一轮探测。
+        String cachedHost = Setting.getFastMirrorUrl();
+        if (cachedHost != null && !cachedHost.isEmpty()) {
+            int hit = indexOfHost(cachedHost);
+            if (hit >= 0) {
+                mirrorIndex = hit;
+                startNext();
+                return;
+            }
         }
         // 2) 未命中：并发探测 32KB 选最快节点（3.5s 预算，先到先得）
         probeAndStart(view);
@@ -256,11 +263,13 @@ public class Updater implements Download.Callback, UpdateListener {
             startNext();
             return;
         }
+        Notify.show("正在测速选择最快线路…");
         Task.submitLarge(() -> {
             String best;
             try {
                 best = probeBestMirror();
             } catch (Exception e) {
+                e.printStackTrace();
                 best = null;
             }
             final String b = best;
@@ -281,6 +290,15 @@ public class Updater implements Download.Callback, UpdateListener {
                 }
             });
         });
+    }
+
+    /** 在候选里找 host 与缓存一致的那条；没命中返回 -1。缓存只存 host，跨版本升级才依然有效 */
+    private int indexOfHost(String host) {
+        if (host == null || host.isEmpty()) return -1;
+        for (int i = 0; i < candidates.size(); i++) {
+            if (host.equals(hostOf(candidates.get(i)))) return i;
+        }
+        return -1;
     }
 
     /** 第一个非 github.com 直连的候选索引（国内直连基本不通，失败时跳过它） */
@@ -472,10 +490,11 @@ public class Updater implements Download.Callback, UpdateListener {
             dismiss();
             return;
         }
-        // 记录这次成功下载用的镜像，24h 内下次更新可 0 延迟直通
+        // 记录这次成功下载用的镜像，24h 内下次更新可 0 延迟直通。
+        // 只存 host 而非完整 URL：完整 URL 含版本号，下次升级就对不上了。
         try {
             if (mirrorIndex >= 0 && mirrorIndex < candidates.size()) {
-                Setting.putFastMirror(candidates.get(mirrorIndex));
+                Setting.putFastMirror(hostOf(candidates.get(mirrorIndex)));
             }
         } catch (Exception ignored) {}
         FileUtil.openFile(file);
