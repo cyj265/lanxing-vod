@@ -247,7 +247,10 @@ public class Updater implements Download.Callback, UpdateListener {
         if (cachedHost != null && !cachedHost.isEmpty()) {
             int hit = indexOfHost(cachedHost);
             if (hit >= 0) {
-                mirrorIndex = hit;
+                // 命中缓存不探测（省下 3.5s），但顺序仍是 buildCandidates 的原始顺序，
+                // 中途卡死时会盲切到"下一位"。这里零成本地重排一次：把国内基本必挂的
+                // github.com 直连挪到末尾，好让切换先落到加速节点上。
+                reorderAround(candidates.get(hit));
                 startNext();
                 return;
             }
@@ -256,7 +259,12 @@ public class Updater implements Download.Callback, UpdateListener {
         probeAndStart(view);
     }
 
-    /** 并发探测各候选节点前 32KB 速率，选最快的开下；全部失败则跳过直连从第一个代理起步 */
+    /**
+     * 并发探测各候选节点前 32KB 速率，把候选按实测速度重排后从最快的开下；
+     * 全部失败则跳过国内必挂的直连、从第一个代理起步。
+     * 重排的意义不只是"本次用最快的"：下载中途卡死(onStall)或报错(error)时，
+     * 顺序切换到的就是实测第二快的，而不是原来那个凭运气排在下一位的节点。
+     */
     private void probeAndStart(View view) {
         if (candidates.size() < 2) {
             mirrorIndex = 0;
@@ -265,19 +273,19 @@ public class Updater implements Download.Callback, UpdateListener {
         }
         Notify.show("正在测速选择最快线路…");
         Task.submitLarge(() -> {
-            String best;
+            List<String> ranked;
             try {
-                best = probeBestMirror();
+                ranked = probeRanked();
             } catch (Exception e) {
                 e.printStackTrace();
-                best = null;
+                ranked = null;
             }
-            final String b = best;
+            final List<String> r = ranked;
             App.post(() -> {
                 try {
-                    if (b != null) {
-                        mirrorIndex = candidates.indexOf(b);
-                        if (mirrorIndex < 0) mirrorIndex = firstProxyIndex();
+                    if (r != null && !r.isEmpty()) {
+                        candidates = new ArrayList<>(r);
+                        mirrorIndex = 0;
                     } else {
                         // 全失败：跳过国内必挂的直连，从第一个代理起步
                         mirrorIndex = firstProxyIndex();
@@ -301,6 +309,25 @@ public class Updater implements Download.Callback, UpdateListener {
         return -1;
     }
 
+    /**
+     * 无实测数据时的保守重排：把当前要用的节点放第一，其余非直连节点保持原顺序，
+     * github.com 直连挪到末尾（国内基本连不通，别让切换先落到它身上）。
+     */
+    private void reorderAround(String current) {
+        List<String> out = new ArrayList<>();
+        if (current != null) out.add(current);
+        for (String u : candidates) {
+            if (u.equals(current) || u.startsWith("https://github.com/")) continue;
+            out.add(u);
+        }
+        for (String u : candidates) {
+            if (u.equals(current) || !u.startsWith("https://github.com/")) continue;
+            out.add(u);
+        }
+        candidates = out;
+        mirrorIndex = 0;
+    }
+
     /** 第一个非 github.com 直连的候选索引（国内直连基本不通，失败时跳过它） */
     private int firstProxyIndex() {
         for (int i = 0; i < candidates.size(); i++) {
@@ -310,18 +337,32 @@ public class Updater implements Download.Callback, UpdateListener {
         return 0;
     }
 
-    /** 并发探测，返回第一个收满 32KB 的 URL；3.5s 内无人收满则按字节数/耗时得分选最快的；全失败返回 null */
-    private String probeBestMirror() {
+    /**
+     * 并发探测所有候选节点的前 32KB，返回按实测速度降序排列的完整候选列表（失败节点排末尾）；
+     * 一个节点都没通则返回 null。
+     * 探测结果同时打进 logcat，日后调整 PROXIES 列表有据可依。
+     */
+    private List<String> probeRanked() {
         final int PIECE = 32 * 1024;
         final long BUDGET_MS = 3500;
+        // 首个节点收满后再多等一会儿，让其余节点有机会上报得分。没有这段宽限，最快的节点
+        // 常在 200ms 内就胜出，其余节点全部来不及上报，排出来的顺序几乎等于原顺序，
+        // 后续 onStall 切换就又变回盲切了。
+        final long GRACE_MS = 800;
+        final int n = candidates.size();
+        final List<String> order = new ArrayList<>(candidates);
+        final long[] bytes = new long[n];
+        final long[] cost = new long[n];
+        final boolean[] done = new boolean[n];
         final Object lock = new Object();
-        final String[] firstFull = new String[1];   // 第一个收满 32KB 的 URL
-        final String[] bestPartial = new String[1];  // 未收满但得分最高的 URL
-        final long[] bestScore = new long[1];
+        final String[] winner = new String[1];  // 第一个收满 32KB 的 URL
+        final long[] winnerAt = new long[1];
         final long start = System.currentTimeMillis();
 
         List<Thread> threads = new ArrayList<>();
-        for (final String url : candidates) {
+        for (int i = 0; i < n; i++) {
+            final int idx = i;
+            final String url = order.get(i);
             Thread t = new Thread(() -> {
                 HttpURLConnection conn = null;
                 try {
@@ -333,24 +374,20 @@ public class Updater implements Download.Callback, UpdateListener {
                     conn.setRequestProperty("Range", "bytes=0-" + (PIECE - 1));
                     java.io.InputStream in = conn.getInputStream();
                     byte[] buf = new byte[4096];
-                    int total = 0, n;
-                    while ((n = in.read(buf)) != -1) {
-                        total += n;
+                    int total = 0, r;
+                    while ((r = in.read(buf)) != -1) {
+                        total += r;
                         if (total >= PIECE) break;
                         if (System.currentTimeMillis() - start > BUDGET_MS) break;
                     }
                     in.close();
-                    if (total <= 0) return;
-                    long cost = System.currentTimeMillis() - t0;
-                    if (cost <= 0) cost = 1;
-                    long score = total * 1000 / cost;
                     synchronized (lock) {
-                        if (total >= PIECE && firstFull[0] == null) {
-                            firstFull[0] = url; // 先到先得，立刻胜出
-                        }
-                        if (score > bestScore[0]) {
-                            bestScore[0] = score;
-                            bestPartial[0] = url;
+                        bytes[idx] = total;
+                        cost[idx] = Math.max(1, System.currentTimeMillis() - t0);
+                        done[idx] = true;
+                        if (total >= PIECE && winner[0] == null) {
+                            winner[0] = url; // 先到先得
+                            winnerAt[0] = System.currentTimeMillis();
                         }
                     }
                 } catch (Exception ignored) {
@@ -362,15 +399,42 @@ public class Updater implements Download.Callback, UpdateListener {
             threads.add(t);
             t.start();
         }
-        // 等先到先得胜出，或预算到期
+        // 等胜出者出现并过完宽限期，或预算到期
         while (System.currentTimeMillis() - start < BUDGET_MS) {
-            synchronized (lock) { if (firstFull[0] != null) break; }
+            synchronized (lock) {
+                if (winner[0] != null && System.currentTimeMillis() - winnerAt[0] >= GRACE_MS) break;
+            }
             try { Thread.sleep(50); } catch (InterruptedException e) { break; }
         }
         synchronized (lock) {
-            if (firstFull[0] != null) return firstFull[0];
-            return bestPartial[0]; // 没人收满，退而求其次选得分最高的
+            boolean any = false;
+            for (int i = 0; i < n; i++) if (done[i] && bytes[i] > 0) { any = true; break; }
+            if (!any) return null;
+            return rank(order, bytes, cost, done, winner[0]);
         }
+    }
+
+    /** 排序：胜出节点第一，其余按 字节数/耗时 降序，失败或无数据的按原顺序排末尾 */
+    private List<String> rank(List<String> order, long[] bytes, long[] cost, boolean[] done, String winner) {
+        List<Integer> scored = new ArrayList<>();
+        List<Integer> failed = new ArrayList<>();
+        for (int i = 0; i < order.size(); i++) {
+            if (done[i] && bytes[i] > 0) scored.add(i);
+            else failed.add(i);
+        }
+        scored.sort((a, b) -> Long.compare(bytes[b] * 1000 / cost[b], bytes[a] * 1000 / cost[a]));
+        List<String> out = new ArrayList<>();
+        for (int i : scored) {
+            android.util.Log.d("Updater", "probe " + hostOf(order.get(i)) + " " + bytes[i] + "B/" + cost[i] + "ms");
+            if (order.get(i).equals(winner)) continue;
+            out.add(order.get(i));
+        }
+        if (winner != null) out.add(0, winner); // 先到先得的胜出者置顶
+        for (int i : failed) {
+            android.util.Log.d("Updater", "probe " + hostOf(order.get(i)) + " unreachable");
+            out.add(order.get(i));
+        }
+        return out;
     }
 
     /** 构建下载候选：GitHub 链接 = 直连 + 多个加速中转 + kkgithub 域名替换；其它链接只有一条 */

@@ -21,8 +21,8 @@ android {
         applicationId "com.cyj265.lanxingvod"
         minSdk libs.versions.minSdk.get().toInteger()
         targetSdk libs.versions.targetSdk.get().toInteger()
-        versionCode 658
-        versionName "5.6.76"
+        versionCode 659
+        versionName "5.6.77"
         // Bugly AppID 不硬编码到源码：local.properties > 环境变量 BUGLY_APP_ID > 空（空则不上报）
         def buglyAppId = localProps['bugly.appId'] ?: System.getenv('BUGLY_APP_ID') ?: ""
         buildConfigField "String", "BUGLY_APP_ID", "\"${buglyAppId}\""
