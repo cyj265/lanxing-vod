@@ -16,8 +16,8 @@ android {
         minSdk 30
         //noinspection ExpiredTargetSdkVersion
         targetSdk 30
-        versionCode 584
-        versionName "5.4.44"
+        versionCode 585
+        versionName "5.4.45"
         // 5.4.44: 修复投屏崩溃 #3007，DLNA迁移jupnp，CI自动上传mapping到Bugly
         javaCompileOptions {
             annotationProcessorOptions {

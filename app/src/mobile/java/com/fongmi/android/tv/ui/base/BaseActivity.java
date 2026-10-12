@@ -103,8 +103,8 @@ public abstract class BaseActivity extends AppCompatActivity {
                 getWindow().setStatusBarContrastEnforced(false);
                 getWindow().setNavigationBarContrastEnforced(false);
             }
-        } catch (Exception e) {
-            // 部分设备 EdgeToEdge 兼容性问题，降级为传统状态栏，不影响启动
+        } catch (Throwable e) {
+            // 部分设备 EdgeToEdge 兼容性问题（含 NoSuchMethodError），降级为传统状态栏，不影响启动
         }
     }
 
