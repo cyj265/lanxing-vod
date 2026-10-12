@@ -431,10 +431,34 @@ public class Updater implements Download.Callback, UpdateListener {
         return out;
     }
 
-    /** 构建下载候选：Gitee/GitHub 直链均为单候选（加速节点已移除）；失败即提示，重试检查更新可自动换源 */
+    /** 构建下载候选：Gitee 主源 + GitHub 直连兜底，双候选互为备份（加速节点已移除）。
+     *  两源的文件名与 tag 完全一致（vX.Y.Z + lanxing-arm64_v8a-vX.Y.Z.apk），
+     *  从任一侧 URL 解析出 tag+文件名即可拼出另一侧同构链接。
+     *  解析失败时退化为单候选（保底原链接）。 */
     private void buildCandidates() {
         candidates.clear();
-        candidates.add(apkUrl);
+        if (apkUrl != null) candidates.add(apkUrl);
+        String twin = twinUrl(apkUrl);
+        if (twin != null && !candidates.contains(twin)) candidates.add(twin);
+    }
+
+    /** 从任意一侧的 releases/download 链接，拼出另一侧的同构链接；解析失败返回 null */
+    private String twinUrl(String url) {
+        if (url == null) return null;
+        try {
+            java.util.regex.Matcher m = java.util.regex.Pattern
+                    .compile("https?://[^/]+/([^/]+)/([^/]+)/releases/download/([^/]+)/([^/]+)")
+                    .matcher(url);
+            if (!m.matches()) return null;
+            String owner = m.group(1);
+            String repo = m.group(2);
+            String tag = m.group(3);
+            String name = m.group(4);
+            String base = url.startsWith("https://gitee.com/") ? "https://github.com/" : "https://gitee.com/";
+            return base + owner + "/" + repo + "/releases/download/" + tag + "/" + name;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String nameOf(int idx) {
@@ -479,7 +503,7 @@ public class Updater implements Download.Callback, UpdateListener {
 
     /** 单节点长时间无数据，自动切换下一个候选；已是最后一个则提示失败 */
     private void onStall() {
-        if (apkUrl == null || !apkUrl.startsWith("https://github.com/") || mirrorIndex >= candidates.size() - 1) {
+        if (mirrorIndex >= candidates.size() - 1) {
             Notify.show("更新下载超时，请稍后重试");
             dismiss();
             return;
@@ -514,8 +538,9 @@ public class Updater implements Download.Callback, UpdateListener {
     @Override
     public void error(String msg) {
         disarmWatchdog();
-        // 直连/某加速节点失败，自动切换下一个候选；全部失败才提示
-        if (apkUrl != null && apkUrl.startsWith("https://github.com/") && mirrorIndex < candidates.size() - 1) {
+        // 当前候选失败，自动切换下一个候选；全部失败才提示
+        // （Gitee 主源失败会自动换 GitHub 直连兜底，不再锁死 github.com 前缀）
+        if (mirrorIndex < candidates.size() - 1) {
             int failed = mirrorIndex;
             mirrorIndex++;
             Notify.show(nameOf(failed) + "失败，切换" + nameOf(mirrorIndex) + "下载…");

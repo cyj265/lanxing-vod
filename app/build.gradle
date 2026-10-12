@@ -77,6 +77,21 @@ android {
         }
     }
 
+    // APK 瘦身（2026-10-12，第一层）：
+    // A) useLegacyPackaging=true：so 从 stored（未压缩）改为压缩进 APK，下载体积省 ~18MB（lib 31.05MB
+    //    实测全部 stored）。代价：设备安装后多占 ~18MB、首装解压略慢——直接分发不走 Play，下载侧瓶颈，
+    //    交换划算。逆官方推荐方向，已知悉。
+    // C) exclude org/bouncycastle/pqc/**：BouncyCastle 后量子签名数据表（picnic 1.22MB），代码 0 引用。
+    //    NewPipeExtractor 保留（YouTube.java / NewPipeImpl.java 真实引用，删依赖会废 YouTube 解析）。
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+        resources {
+            excludes += ['org/bouncycastle/pqc/**']
+        }
+    }
+
     configurations.configureEach {
         exclude group: 'stax', module: 'stax-api'
         exclude group: 'xpp3', module: 'xpp3'

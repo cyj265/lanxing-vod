@@ -179,61 +179,68 @@ jobs:
           fail_on_unmatched_files: false
           overwrite_files: true
 
-      # 上传到 Gitee Release（App 内更新主源）：APK。
-      # 只在主力线 dev-5.6.1 执行。Gitee API v5：先按 tag 查 release，没有则创建，再上传附件。
-      # 注意：GitHub runner（美国）跨洋上传 60MB 到 Gitee 实测极慢（>40 分钟仍未完成），
-      # 故本步骤 continue-on-error：失败不红 CI，由 tools/gitee-upload.ps1 本地脚本兜底补传
-      # （用户本地上传秒级完成）。未配置 GITEE_TOKEN 则跳过（warning）。
-      - name: 上传 Gitee Release（APK）
-        if: github.ref_name == 'dev-5.6.1'
-        continue-on-error: true
+      # ═══ Gitee 更新源（App 内更新主源，国内直连 ~2MB/s）═══
+      # APK 瘦身（so 压缩 + 砍 v7a + 去 pqc）后体积约 44MB，GitHub runner（美国）跨洋 multipart 上传
+      # 由原先的 300s 超时提到 600s 再试：能过即全自动；不过则本步骤标红（宁红勿静默），
+      # 日志给出本地补传命令兜底。Gitee 与 GitHub 的 tag/文件名同构，App 端双候选可互相回退。
+      - name: 上传 Gitee Release（APK 附件，自动）
         env:
-          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          GT: ${{ secrets.GITEE_TOKEN }}
         run: |
           set -e
-          if [ -z "$GITEE_TOKEN" ]; then
-            echo "::warning::未配置 Gitee Token（GITEE_TOKEN），跳过 Gitee 上传"
-            exit 0
-          fi
+          if [ -z "$GT" ]; then echo "未配置 GITEE_TOKEN，跳过 Gitee 上传（App 内更新源将缺附件，请尽快配置）"; exit 0; fi
           VERSION="${{ steps.ver.outputs.name }}"
-          APK="/tmp/lx-release/lanxing-arm64_v8a-v${VERSION}.apk"
           TAG="v${VERSION}"
+          NAME="lanxing-arm64_v8a-v${VERSION}.apk"
+          APK="/tmp/lx-release/${NAME}"
           API="https://gitee.com/api/v5/repos/cyj265/lanxing-vod"
-          # 0) 空仓库先初始化：创建 README 让 master 分支存在（Gitee 创建 Release 必须指定
-          #    target_commitish，空仓库没有 commit 会报 target_commitish is missing）；
-          #    文件已存在则忽略错误继续。
-          README=$(python3 -c "import base64; print(base64.b64encode('揽星影视 App 更新源（GitHub Actions 自动维护）'.encode('utf-8')).decode())")
-          curl -sS --max-time 60 -X POST "${API}/contents/README.md?access_token=${GITEE_TOKEN}" \
-            -H "Content-Type: application/json" \
-            -d "{\"content\":\"${README}\",\"message\":\"init(ci): update source bootstrap\"}" || true
-          # 1) 按 tag 查已有 release；没有则创建
-          LIST=$(curl -sS --max-time 60 "${API}/releases?per_page=100&access_token=${GITEE_TOKEN}" || true)
-          REL_ID=$(echo "$LIST" | python3 -c "import json,sys; d=json.load(sys.stdin); print(next((r['id'] for r in d if r.get('tag_name')=='$TAG'), ''))" 2>/dev/null || echo "")
-          if [ -z "$REL_ID" ]; then
-            BODY=$(python3 -c "import json; print(json.dumps({'tag_name':'$TAG','target_commitish':'master','name':'揽星影视 $TAG','body':'手机版 lanxing-arm64_v8a-v$VERSION.apk','prerelease':False}))")
-            REL=$(curl -sS --max-time 60 -X POST "${API}/releases?access_token=${GITEE_TOKEN}" \
-              -H "Content-Type: application/json" -d "$BODY" || true)
-            REL_ID=$(echo "$REL" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('id',''))" 2>/dev/null || echo "")
+          [ -f "$APK" ] || { echo "::error::APK 不存在 $APK"; exit 1; }
+          echo "Gitee upload: ${NAME} ($(du -h "$APK" | cut -f1))"
+          # 1) 查/建 release（Gitee API 认证额度 5000/h，token 调用无匿名限流问题）
+          LIST=$(curl -sS --max-time 60 "$API/releases?per_page=100&access_token=$GT")
+          RELID=$(echo "$LIST" | python3 -c "import json,sys; d=json.load(sys.stdin); print(next((r['id'] for r in d if r['tag_name']=='$TAG'), ''))")
+          if [ -z "$RELID" ]; then
+            echo "创建 Gitee release $TAG ..."
+            BODY=$(python3 -c "import json; print(json.dumps({'tag_name':'$TAG','target_commitish':'master','name':'揽星影视 $TAG','body':'**手机版** \`$NAME\`\n\n系统要求：Android 7.0（API 24）及以上。5.4.x 检查更新可直接覆盖安装。\n\n更新内容详见 GitHub 仓库提交记录。','prerelease':False}))")
+            RESP=$(curl -sS --max-time 60 -X POST "$API/releases?access_token=$GT" -H "Content-Type: application/json" -d "$BODY")
+            RELID=$(echo "$RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))")
           fi
-          echo "Gitee release id=$REL_ID tag=$TAG"
-          if [ -z "$REL_ID" ]; then
-            echo "::error::Gitee Release 创建失败: $(echo ${REL:-$LIST} | head -c 300)"
-            exit 1
-          fi
-          # 2) 附件已存在则跳过（CI 重跑不重复传），否则上传 APK（multipart）
-          ATTS=$(curl -sS --max-time 60 "${API}/releases/${REL_ID}/attach_files?access_token=${GITEE_TOKEN}" || true)
-          HAS=$(echo "$ATTS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(any(a.get('name')=='lanxing-arm64_v8a-v$VERSION.apk' for a in d))" 2>/dev/null || echo "false")
-          if [ "$HAS" = "True" ]; then
-            echo "APK 附件已存在，跳过上传"
-          else
-            code=$(curl -sS --max-time 300 --connect-timeout 60 --retry 1 --retry-delay 5 \
-              -o /tmp/gitee-apk.resp -w "%{http_code}" \
-              -X POST "${API}/releases/${REL_ID}/attach_files?access_token=${GITEE_TOKEN}" \
-              -F "file=@${APK}")
-            echo "APK 上传 HTTP=$code"
-            if [ "$code" != "200" ] && [ "$code" != "201" ]; then
-              echo "::warning::APK 上传 Gitee 失败（HTTP=$code，跨洋慢），可稍后运行 tools/gitee-upload.ps1 补传: $(head -c 200 /tmp/gitee-apk.resp)"
-              exit 0
+          [ -n "$RELID" ] || { echo "::error::创建 Gitee release 失败"; exit 1; }
+          echo "Gitee release id=$RELID"
+          # 2) 附件已存在则跳过
+          ATTS=$(curl -sS --max-time 60 "$API/releases/$RELID/attach_files?access_token=$GT")
+          HAS=$(echo "$ATTS" | python3 -c "import json,sys; d=json.load(sys.stdin); print('yes' if any(a['name']=='$NAME' for a in d) else 'no')")
+          if [ "$HAS" = "yes" ]; then echo "附件已存在，跳过上传"; else
+            # 3) multipart 上传（600s 上限；瘦身后 ~44MB，若仍超时本步骤红并提示本地补传）
+            CODE=$(curl -sS --max-time 600 --connect-timeout 30 -o /tmp/gitee-upload.resp -w "%{http_code}" \
+              -X POST "$API/releases/$RELID/attach_files?access_token=$GT" -F "file=@$APK" || echo "curl-fail")
+            echo "Upload HTTP=$CODE"
+            if [ "$CODE" = "200" ] || [ "$CODE" = "201" ]; then
+              echo "OK: https://gitee.com/cyj265/lanxing-vod/releases/download/$TAG/$NAME"
+            else
+              echo "::error::Gitee 上传失败(HTTP=$CODE)。跨洋仍超时请本地补传一次："
+              echo "::error::  powershell -ExecutionPolicy Bypass -File tools\gitee-upload.ps1 -Version ${VERSION}"
+              cat /tmp/gitee-upload.resp 2>/dev/null | head -5 || true
+              exit 1
             fi
           fi
-          echo "Gitee 更新源已更新：https://gitee.com/cyj265/lanxing-vod/releases/download/${TAG}/lanxing-arm64_v8a-v${VERSION}.apk"
+          # 4) 清理 Gitee 旧 release（保留本次 + 最新 1 条其他正式版，共 2 条；5.4.x 保留）
+          python3 - "$API" "$GT" "$TAG" <<'EOF'
+import json,sys,urllib.request
+api,gt,tag=sys.argv[1],sys.argv[2],sys.argv[3]
+d=json.load(urllib.request.urlopen(f"{api}/releases?per_page=100&access_token={gt}",timeout=60))
+keep=[tag]
+for r in sorted(d,key=lambda x:x.get('created_at',''),reverse=True):
+    t=r['tag_name']
+    if t.startswith('v') and not t.startswith('v5.4.') and t not in keep:
+        keep.append(t)
+    if len(keep)>=2: break
+for r in d:
+    if r['tag_name'] not in keep:
+        try:
+            urllib.request.urlopen(urllib.request.Request(f"{api}/releases/{r['id']}?access_token={gt}",method='DELETE'),timeout=30)
+            print("deleted", r['tag_name'])
+        except Exception as e:
+            print("skip delete", r['tag_name'], e)
+print("keep:", keep)
+EOF

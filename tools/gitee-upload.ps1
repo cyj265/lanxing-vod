@@ -17,7 +17,6 @@ if (-not $Token) {
 $Owner = "cyj265"
 $Repo = "lanxing-vod"
 $Api = "https://gitee.com/api/v5/repos/$Owner/$Repo"
-$GithubApi = "https://api.github.com/repos/$Owner/$Repo"
 
 # 1) resolve APK path and tag
 $Tag = ""
@@ -28,20 +27,23 @@ if ($ApkPath -ne "") {
     if ($Version -ne "") { $Tag = "v$Version" }
     if ($Tag -eq "") { Write-Host "ERROR: cannot detect version from filename, use -Version"; exit 1 }
 } else {
-    Write-Host "Fetching latest release from GitHub ..."
-    if ($Version -ne "") {
-        $Rel = Invoke-RestMethod -Uri "$GithubApi/releases/tags/v$Version" -Headers @{ "User-Agent" = "LanXingVod" }
+    # Do NOT call api.github.com (anonymous rate limit). Use release direct-link download.
+    # Version: explicit -Version, or parse the latest tag from releases.atom (no API limit).
+    if ($Version -eq "") {
+        Write-Host "Fetching latest version from GitHub releases.atom ..."
+        $Atom = (Invoke-WebRequest -Uri "https://github.com/$Owner/$Repo/releases.atom" -UseBasicParsing).Content
+        [xml]$X = $Atom
+        $Tag = $X.feed.entry[0].title
+        if ($Tag -match "v(\d+\.\d+\.\d+)") { $Tag = $Matches[0] }
     } else {
-        $Rels = Invoke-RestMethod -Uri "$GithubApi/releases?per_page=10" -Headers @{ "User-Agent" = "LanXingVod" }
-        $Rel = $Rels | Where-Object { $_.assets.name -match "lanxing-arm64_v8a-v.*\.apk$" } | Select-Object -First 1
+        $Tag = "v$Version"
     }
-    if (-not $Rel) { Write-Host "ERROR: no APK release found on GitHub"; exit 1 }
-    $Asset = $Rel.assets | Where-Object { $_.name -match "lanxing-arm64_v8a-v.*\.apk$" } | Select-Object -First 1
-    if (-not $Asset) { Write-Host "ERROR: no APK asset in release $($Rel.tag_name)"; exit 1 }
-    $Tag = $Rel.tag_name
-    $ApkPath = Join-Path $env:TEMP $Asset.name
-    Write-Host "Downloading $($Asset.browser_download_url) ..."
-    Invoke-WebRequest -Uri $Asset.browser_download_url -OutFile $ApkPath -UseBasicParsing
+    $Ver2 = $Tag.TrimStart("v")
+    $Name = "lanxing-arm64_v8a-v$Ver2.apk"
+    $Url = "https://github.com/$Owner/$Repo/releases/download/$Tag/$Name"
+    $ApkPath = Join-Path $env:TEMP $Name
+    Write-Host "Downloading $Url ..."
+    Invoke-WebRequest -Uri $Url -OutFile $ApkPath -UseBasicParsing
 }
 $Ver = $Tag.TrimStart("v")
 $Name = Split-Path $ApkPath -Leaf
@@ -54,7 +56,7 @@ $List = curl.exe -sS --max-time 60 "$Api/releases?per_page=100&access_token=$Tok
 $RelId = ($List | ConvertFrom-Json | Where-Object { $_.tag_name -eq $Tag } | Select-Object -First 1).id
 if (-not $RelId) {
     Write-Host "Creating Gitee release $Tag ..."
-    $Body = @{ tag_name = $Tag; target_commitish = "master"; name = "lanxing-vod $Tag"; body = "Mobile APK lanxing-arm64_v8a-v$Ver.apk"; prerelease = $false } | ConvertTo-Json -Compress
+    $Body = @{ tag_name = $Tag; target_commitish = "master"; name = "揽星影视 $Tag"; body = "**手机版** ``lanxing-arm64_v8a-v$Ver.apk```n`n系统要求：Android 7.0（API 24）及以上。5.4.x 检查更新可直接覆盖安装。`n`n更新内容详见 GitHub 仓库提交记录。"; prerelease = $false } | ConvertTo-Json -Compress
     $Resp = curl.exe -sS --max-time 60 -X POST "$Api/releases?access_token=$Token" -H "Content-Type: application/json" -d $Body
     $RelId = ($Resp | ConvertFrom-Json).id
 }
