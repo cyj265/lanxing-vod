@@ -425,8 +425,13 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
     private int getInsetTop() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return 0;
-        DisplayCutout cutout = ResUtil.getDisplay(this).getCutout();
-        return cutout == null ? 0 : cutout.getSafeInsetTop();
+        try {
+            DisplayCutout cutout = ResUtil.getDisplay(this).getCutout();
+            return cutout == null ? 0 : cutout.getSafeInsetTop();
+        } catch (Throwable e) {
+            // 个别 ROM 谎报版本/框架缺 getCutout 方法，降级为 0，不影响直播页布局
+            return 0;
+        }
     }
 
     private void setPanelWidth() {

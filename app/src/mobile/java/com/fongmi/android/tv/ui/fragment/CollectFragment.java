@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.ui.fragment;
 
 import android.os.Bundle;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -136,7 +137,7 @@ public class CollectFragment extends BaseFragment implements
         mLines.clear();
         // 搜索左栏只显示当前正在使用的源，避免把用户添加的全部源都列出来影响体验。
         Config current = VodConfig.get().getConfig();
-        if (current != null && !current.getUrl().isEmpty()) mLines.add(current);
+        if (current != null && !TextUtils.isEmpty(current.getUrl())) mLines.add(current);
         // 兜底：当前配置为空时用数据库中最近一个点播配置，避免搜索页无线路。
         if (mLines.isEmpty()) mLines.addAll(AppDatabase.get().getConfigDao().findByType(0));
     }
@@ -146,7 +147,7 @@ public class CollectFragment extends BaseFragment implements
         List<Config> order = new ArrayList<>();
 
         Config current = VodConfig.get().getConfig();
-        if (current != null && !current.getUrl().isEmpty()) {
+        if (current != null && !TextUtils.isEmpty(current.getUrl())) {
             moveConfig(source, order, current.getUrl());
         }
 

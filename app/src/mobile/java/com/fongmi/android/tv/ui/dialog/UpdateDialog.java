@@ -38,7 +38,13 @@ public class UpdateDialog extends BaseAlertDialog {
     }
 
     public UpdateDialog show(FragmentActivity activity) {
-        show(activity.getSupportFragmentManager(), null);
+        // 更新检查在异步线程，回调时 Activity 可能已保存状态/销毁，直接 show 会抛 IllegalStateException
+        if (activity == null || activity.isFinishing() || activity.isDestroyed()) return this;
+        try {
+            show(activity.getSupportFragmentManager(), null);
+        } catch (IllegalStateException ignored) {
+            // 状态已保存，放弃本次弹窗，避免崩溃
+        }
         return this;
     }
 

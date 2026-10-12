@@ -101,10 +101,14 @@ public abstract class BaseActivity extends AppCompatActivity {
     }
 
     private void enableEdgeToEdge() {
-        EdgeToEdge.enable(this, SystemBarStyle.dark(Color.TRANSPARENT), SystemBarStyle.dark(Color.TRANSPARENT));
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            getWindow().setStatusBarContrastEnforced(false);
-            getWindow().setNavigationBarContrastEnforced(false);
+        try {
+            EdgeToEdge.enable(this, SystemBarStyle.dark(Color.TRANSPARENT), SystemBarStyle.dark(Color.TRANSPARENT));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                getWindow().setStatusBarContrastEnforced(false);
+                getWindow().setNavigationBarContrastEnforced(false);
+            }
+        } catch (Throwable e) {
+            // 部分设备/ROM 的 EdgeToEdge 兼容性问题（含 NoSuchMethodError），降级为传统状态栏，不影响启动
         }
     }
 
