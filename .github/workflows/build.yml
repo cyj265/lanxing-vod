@@ -202,7 +202,7 @@ jobs:
           README=$(python3 -c "import base64; print(base64.b64encode('揽星影视 App 更新源（GitHub Actions 自动维护）'.encode('utf-8')).decode())")
           curl -sS --max-time 60 -X POST "${API}/contents/README.md?access_token=${GITEE_TOKEN}" \
             -H "Content-Type: application/json" \
-            -d "{\"content\":\"${README}\"}" || true
+            -d "{\"content\":\"${README}\",\"message\":\"init(ci): update source bootstrap\"}" || true
           # 1) 按 tag 查已有 release；没有则创建
           LIST=$(curl -sS --max-time 60 "${API}/releases?per_page=100&access_token=${GITEE_TOKEN}" || true)
           REL_ID=$(echo "$LIST" | python3 -c "import json,sys; d=json.load(sys.stdin); print(next((r['id'] for r in d if r.get('tag_name')=='$TAG'), ''))" 2>/dev/null || echo "")
