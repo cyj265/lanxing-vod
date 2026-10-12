@@ -212,7 +212,10 @@ jobs:
           PYEOF
           echo "version.json: $(cat /tmp/lx-release/version.json)"
           # 又拍 REST API：PUT 上传（v0.api.upyun.com 智能选路），Basic 认证
-          code=$(curl -sS --max-time 180 -u "${UPYUN_OPERATOR}:${UPYUN_PASSWORD}" \
+          # GitHub runner 在美国、又拍云在国内：跨洋上传 60MB 曾 180s 超时(exit 28)，
+          # 故超时加大到 15 分钟 + 失败重试 3 次，避免偶发慢链路直接打红。
+          code=$(curl -sS --max-time 900 --connect-timeout 60 --retry 3 --retry-all-errors --retry-delay 5 \
+            -u "${UPYUN_OPERATOR}:${UPYUN_PASSWORD}" \
             -o /tmp/upyun-apk.resp -w "%{http_code}" \
             -T "$APK" "https://v0.api.upyun.com/${UPYUN_BUCKET}/lanxing-arm64_v8a-v${VERSION}.apk")
           echo "APK 上传 HTTP=$code"
@@ -220,7 +223,8 @@ jobs:
             echo "::error::APK 上传又拍云失败（HTTP=$code）: $(cat /tmp/upyun-apk.resp)"
             exit 1
           fi
-          code=$(curl -sS --max-time 30 -u "${UPYUN_OPERATOR}:${UPYUN_PASSWORD}" \
+          code=$(curl -sS --max-time 120 --connect-timeout 30 --retry 3 --retry-all-errors --retry-delay 5 \
+            -u "${UPYUN_OPERATOR}:${UPYUN_PASSWORD}" \
             -o /tmp/upyun-ver.resp -w "%{http_code}" \
             -T /tmp/lx-release/version.json "https://v0.api.upyun.com/${UPYUN_BUCKET}/version.json")
           echo "version.json 上传 HTTP=$code"
