@@ -39,9 +39,11 @@ public class Updater implements Download.Callback, UpdateListener {
     // 被引导去装另一个分支的包。CI 的清理步骤已把 Release 压到 3 条以内，取 10 条足够覆盖。
     private static final String RELEASES_URL = "https://api.github.com/repos/cyj265/lanxing-vod/releases?per_page=10";
     // 又拍云更新源（App 内更新主源）：国内直连，version.json 为 CI 每次发版时上传的轻量清单
-    // （几 KB），检查更新先走它；失败或拿不到版本再回退 GitHub 多节点。下载走存储直连域名
-    // lanxing-vod.b0.aicdn.com：云存储只有存储容量费，流出流量免费，月成本约 0 元。
-    private static final String UPYUN_VERSION_URL = "https://lanxing-vod.b0.aicdn.com/version.json";
+    // （几 KB），检查更新先走它；失败或拿不到版本再回退 GitHub 多节点。下载走 CDN 测试域名
+    // 服务名.test.upcdn.net 的 HTTP：测试域名免备案默认可用；实测 HTTPS 只支持老旧 TLS
+    // （Chrome/Android 9+ 拒连），b0.aicdn.com 存储直连 HTTP 被未备案拦截，故统一用 HTTP
+    // （App 已开 usesCleartextTraffic）。
+    private static final String UPYUN_VERSION_URL = "http://lanxing-vod.test.upcdn.net/version.json";
     // 加速节点：直连优先，失败依次回退到多个主流 GitHub 加速中转（国内常见可用节点）
     private static final String[] PROXIES = {
             "https://gh-proxy.com/",

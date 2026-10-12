@@ -182,7 +182,9 @@ jobs:
       # 上传到又拍云（App 内更新主源）：APK + version.json。
       # 只在当前主力线 dev-5.6.1 执行——version.json 只允许写 5.6.x 最新版本，
       # 否则 main(5.4.x) 发版会把它覆盖成旧版本号，挡住 5.6 用户的更新提示。
-      # 下载走存储直连域名（lanxing-vod.b0.aicdn.com）：云存储流出流量免费，月成本约 0 元。
+      # 下载走 CDN 测试域名（服务名.test.upcdn.net）HTTP：测试域名免备案、默认可用；
+      # 实测其 HTTPS 仅支持老旧 TLS（Chrome/Android 9+ 均拒连），b0.aicdn.com 存储直连
+      # 域名 HTTP 被未备案拦截、HTTPS 同样 TLS 不匹配——两者均不可用，故用 HTTP。
       # 认证：又拍云 REST API 的 Basic 认证（操作员名:操作员密码）。
       - name: 上传又拍云（APK + version.json）
         if: github.ref_name == 'dev-5.6.1'
@@ -205,7 +207,7 @@ jobs:
           desc = subprocess.check_output(['git', 'log', '-1', '--pretty=%s'], text=True).strip()
           obj = {
               'version': version,
-              'apk_url': 'https://%s.b0.aicdn.com/lanxing-arm64_v8a-v%s.apk' % (bucket, version),
+              'apk_url': 'http://%s.test.upcdn.net/lanxing-arm64_v8a-v%s.apk' % (bucket, version),
               'desc': desc,
           }
           open('/tmp/lx-release/version.json', 'w', encoding='utf-8').write(json.dumps(obj, ensure_ascii=False))
@@ -232,4 +234,4 @@ jobs:
             echo "::error::version.json 上传又拍云失败（HTTP=$code）: $(cat /tmp/upyun-ver.resp)"
             exit 1
           fi
-          echo "又拍云更新源已更新：https://${UPYUN_BUCKET}.b0.aicdn.com/lanxing-arm64_v8a-v${VERSION}.apk"
+          echo "又拍云更新源已更新：http://${UPYUN_BUCKET}.test.upcdn.net/lanxing-arm64_v8a-v${VERSION}.apk"
