@@ -196,11 +196,18 @@ jobs:
           APK="/tmp/lx-release/lanxing-arm64_v8a-v${VERSION}.apk"
           TAG="v${VERSION}"
           API="https://gitee.com/api/v5/repos/cyj265/lanxing-vod"
+          # 0) 空仓库先初始化：创建 README 让 master 分支存在（Gitee 创建 Release 必须指定
+          #    target_commitish，空仓库没有 commit 会报 target_commitish is missing）；
+          #    文件已存在则忽略错误继续。
+          README=$(python3 -c "import base64; print(base64.b64encode('揽星影视 App 更新源（GitHub Actions 自动维护）'.encode('utf-8')).decode())")
+          curl -sS --max-time 60 -X POST "${API}/contents/README.md?access_token=${GITEE_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "{\"content\":\"${README}\"}" || true
           # 1) 按 tag 查已有 release；没有则创建
           LIST=$(curl -sS --max-time 60 "${API}/releases?per_page=100&access_token=${GITEE_TOKEN}" || true)
           REL_ID=$(echo "$LIST" | python3 -c "import json,sys; d=json.load(sys.stdin); print(next((r['id'] for r in d if r.get('tag_name')=='$TAG'), ''))" 2>/dev/null || echo "")
           if [ -z "$REL_ID" ]; then
-            BODY=$(python3 -c "import json; print(json.dumps({'tag_name':'$TAG','name':'揽星影视 $TAG','body':'手机版 lanxing-arm64_v8a-v$VERSION.apk','prerelease':False}))")
+            BODY=$(python3 -c "import json; print(json.dumps({'tag_name':'$TAG','target_commitish':'master','name':'揽星影视 $TAG','body':'手机版 lanxing-arm64_v8a-v$VERSION.apk','prerelease':False}))")
             REL=$(curl -sS --max-time 60 -X POST "${API}/releases?access_token=${GITEE_TOKEN}" \
               -H "Content-Type: application/json" -d "$BODY" || true)
             REL_ID=$(echo "$REL" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('id',''))" 2>/dev/null || echo "")
