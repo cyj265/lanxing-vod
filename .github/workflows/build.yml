@@ -179,59 +179,51 @@ jobs:
           fail_on_unmatched_files: false
           overwrite_files: true
 
-      # 上传到又拍云（App 内更新主源）：APK + version.json。
-      # 只在当前主力线 dev-5.6.1 执行——version.json 只允许写 5.6.x 最新版本，
-      # 否则 main(5.4.x) 发版会把它覆盖成旧版本号，挡住 5.6 用户的更新提示。
-      # 下载走 CDN 测试域名（服务名.test.upcdn.net）HTTP：测试域名免备案、默认可用；
-      # 实测其 HTTPS 仅支持老旧 TLS（Chrome/Android 9+ 均拒连），b0.aicdn.com 存储直连
-      # 域名 HTTP 被未备案拦截、HTTPS 同样 TLS 不匹配——两者均不可用，故用 HTTP。
-      # 认证：又拍云 REST API 的 Basic 认证（操作员名:操作员密码）。
-      - name: 上传又拍云（APK + version.json）
+      # 上传到 Gitee Release（App 内更新主源）：APK。
+      # 只在主力线 dev-5.6.1 执行。Gitee API v5：先按 tag 查 release，没有则创建，再上传附件。
+      # 未配置 GITEE_TOKEN 则跳过（warning），不阻断构建。
+      - name: 上传 Gitee Release（APK）
         if: github.ref_name == 'dev-5.6.1'
         env:
-          UPYUN_BUCKET: ${{ secrets.UPYUN_BUCKET }}
-          UPYUN_OPERATOR: ${{ secrets.UPYUN_OPERATOR }}
-          UPYUN_PASSWORD: ${{ secrets.UPYUN_PASSWORD }}
+          GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
         run: |
           set -e
-          if [ -z "$UPYUN_BUCKET" ] || [ -z "$UPYUN_OPERATOR" ] || [ -z "$UPYUN_PASSWORD" ]; then
-            echo "::warning::未配置又拍云 Secrets（UPYUN_BUCKET/UPYUN_OPERATOR/UPYUN_PASSWORD），跳过又拍云上传"
+          if [ -z "$GITEE_TOKEN" ]; then
+            echo "::warning::未配置 Gitee Token（GITEE_TOKEN），跳过 Gitee 上传"
             exit 0
           fi
           VERSION="${{ steps.ver.outputs.name }}"
           APK="/tmp/lx-release/lanxing-arm64_v8a-v${VERSION}.apk"
-          # 生成 version.json（用 python 写，避免 commit 标题里的引号破坏 JSON）
-          python3 - "$VERSION" "$UPYUN_BUCKET" <<'PYEOF'
-          import json, subprocess, sys
-          version, bucket = sys.argv[1], sys.argv[2]
-          desc = subprocess.check_output(['git', 'log', '-1', '--pretty=%s'], text=True).strip()
-          obj = {
-              'version': version,
-              'apk_url': 'http://%s.test.upcdn.net/lanxing-arm64_v8a-v%s.apk' % (bucket, version),
-              'desc': desc,
-          }
-          open('/tmp/lx-release/version.json', 'w', encoding='utf-8').write(json.dumps(obj, ensure_ascii=False))
-          PYEOF
-          echo "version.json: $(cat /tmp/lx-release/version.json)"
-          # 又拍 REST API：PUT 上传（v0.api.upyun.com 智能选路），Basic 认证
-          # GitHub runner 在美国、又拍云在国内：跨洋上传 60MB 曾 180s 超时(exit 28)，
-          # 故超时加大到 15 分钟 + 失败重试 3 次，避免偶发慢链路直接打红。
-          code=$(curl -sS --max-time 900 --connect-timeout 60 --retry 3 --retry-all-errors --retry-delay 5 \
-            -u "${UPYUN_OPERATOR}:${UPYUN_PASSWORD}" \
-            -o /tmp/upyun-apk.resp -w "%{http_code}" \
-            -T "$APK" "https://v0.api.upyun.com/${UPYUN_BUCKET}/lanxing-arm64_v8a-v${VERSION}.apk")
-          echo "APK 上传 HTTP=$code"
-          if [ "$code" != "200" ] && [ "$code" != "201" ]; then
-            echo "::error::APK 上传又拍云失败（HTTP=$code）: $(cat /tmp/upyun-apk.resp)"
+          TAG="v${VERSION}"
+          API="https://gitee.com/api/v5/repos/cyj265/lanxing-vod"
+          # 1) 按 tag 查已有 release；没有则创建
+          LIST=$(curl -sS --max-time 60 "${API}/releases?per_page=100&access_token=${GITEE_TOKEN}" || true)
+          REL_ID=$(echo "$LIST" | python3 -c "import json,sys; d=json.load(sys.stdin); print(next((r['id'] for r in d if r.get('tag_name')=='$TAG'), ''))" 2>/dev/null || echo "")
+          if [ -z "$REL_ID" ]; then
+            BODY=$(python3 -c "import json; print(json.dumps({'tag_name':'$TAG','name':'揽星影视 $TAG','body':'手机版 lanxing-arm64_v8a-v$VERSION.apk','prerelease':False}))")
+            REL=$(curl -sS --max-time 60 -X POST "${API}/releases?access_token=${GITEE_TOKEN}" \
+              -H "Content-Type: application/json" -d "$BODY" || true)
+            REL_ID=$(echo "$REL" | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('id',''))" 2>/dev/null || echo "")
+          fi
+          echo "Gitee release id=$REL_ID tag=$TAG"
+          if [ -z "$REL_ID" ]; then
+            echo "::error::Gitee Release 创建失败: $(echo ${REL:-$LIST} | head -c 300)"
             exit 1
           fi
-          code=$(curl -sS --max-time 120 --connect-timeout 30 --retry 3 --retry-all-errors --retry-delay 5 \
-            -u "${UPYUN_OPERATOR}:${UPYUN_PASSWORD}" \
-            -o /tmp/upyun-ver.resp -w "%{http_code}" \
-            -T /tmp/lx-release/version.json "https://v0.api.upyun.com/${UPYUN_BUCKET}/version.json")
-          echo "version.json 上传 HTTP=$code"
-          if [ "$code" != "200" ] && [ "$code" != "201" ]; then
-            echo "::error::version.json 上传又拍云失败（HTTP=$code）: $(cat /tmp/upyun-ver.resp)"
-            exit 1
+          # 2) 附件已存在则跳过（CI 重跑不重复传），否则上传 APK（multipart）
+          ATTS=$(curl -sS --max-time 60 "${API}/releases/${REL_ID}/attach_files?access_token=${GITEE_TOKEN}" || true)
+          HAS=$(echo "$ATTS" | python3 -c "import json,sys; d=json.load(sys.stdin); print(any(a.get('name')=='lanxing-arm64_v8a-v$VERSION.apk' for a in d))" 2>/dev/null || echo "false")
+          if [ "$HAS" = "True" ]; then
+            echo "APK 附件已存在，跳过上传"
+          else
+            code=$(curl -sS --max-time 900 --connect-timeout 60 --retry 3 --retry-all-errors --retry-delay 5 \
+              -o /tmp/gitee-apk.resp -w "%{http_code}" \
+              -X POST "${API}/releases/${REL_ID}/attach_files?access_token=${GITEE_TOKEN}" \
+              -F "file=@${APK}")
+            echo "APK 上传 HTTP=$code"
+            if [ "$code" != "200" ] && [ "$code" != "201" ]; then
+              echo "::error::APK 上传 Gitee 失败（HTTP=$code）: $(head -c 300 /tmp/gitee-apk.resp)"
+              exit 1
+            fi
           fi
-          echo "又拍云更新源已更新：http://${UPYUN_BUCKET}.test.upcdn.net/lanxing-arm64_v8a-v${VERSION}.apk"
+          echo "Gitee 更新源已更新：https://gitee.com/cyj265/lanxing-vod/releases/download/${TAG}/lanxing-arm64_v8a-v${VERSION}.apk"

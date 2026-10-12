@@ -30,29 +30,21 @@ import java.util.List;
 
 public class Updater implements Download.Callback, UpdateListener {
 
-    // 更新逻辑：查 GitHub Releases，用版本号(versionName)判断是否有新版本（分段数值比较）。
+    // 更新逻辑：查 Gitee Releases（主源，国内直连），失败回退 GitHub Releases（直连），
+    // 用版本号(versionName)判断是否有新版本（分段数值比较）。
     // 注：构建号(BUILD_NUMBER)方案已废弃——安装包的 BUILD_NUMBER 取自 CI run_number，与线上
     //     release 的构建号恒相等，无法触发更新；改用版本号后，用户装到更高版本号才会提示更新。
     // 注意：不能用 /releases/latest —— 该接口默认排除 prerelease，而 dev 构建发布为预发布版会永远返回 404。
     // 用列表接口(含 prerelease)即可。per_page 取 10 而非 1：main(5.4.x) 与 dev(5.6.x) 共用同一仓库的
     // Releases，列表按创建时间倒序，main 线若最近发过包会排到最前，取 1 条会让 dev 线用户
     // 被引导去装另一个分支的包。CI 的清理步骤已把 Release 压到 3 条以内，取 10 条足够覆盖。
+    // Gitee 更新源（App 内更新主源）：国内直连，CI 发版时上传 APK 附件；检查更新先走它，
+    // 失败或拿不到版本再回退 GitHub 直连。Gitee 与 GitHub 的 API 返回结构（tag_name /
+    // assets[].browser_download_url）一致，解析逻辑完全复用。
+    private static final String GITEE_API_URL = "https://gitee.com/api/v5/repos/cyj265/lanxing-vod/releases?per_page=10";
     private static final String RELEASES_URL = "https://api.github.com/repos/cyj265/lanxing-vod/releases?per_page=10";
-    // 又拍云更新源（App 内更新主源）：国内直连，version.json 为 CI 每次发版时上传的轻量清单
-    // （几 KB），检查更新先走它；失败或拿不到版本再回退 GitHub 多节点。下载走 CDN 测试域名
-    // 服务名.test.upcdn.net 的 HTTP：测试域名免备案默认可用；实测 HTTPS 只支持老旧 TLS
-    // （Chrome/Android 9+ 拒连），b0.aicdn.com 存储直连 HTTP 被未备案拦截，故统一用 HTTP
-    // （App 已开 usesCleartextTraffic）。
-    private static final String UPYUN_VERSION_URL = "http://lanxing-vod.test.upcdn.net/version.json";
-    // 加速节点：直连优先，失败依次回退到多个主流 GitHub 加速中转（国内常见可用节点）
-    private static final String[] PROXIES = {
-            "https://gh-proxy.com/",
-            "https://ghproxy.net/",
-            "https://ghfast.top/",
-            "https://mirror.ghproxy.com/",
-            "https://gh.idayer.com/",
-            "https://ghproxy.cfd/"
-    };
+    // 加速节点已全部移除（2026-10-12）：实测 gh-proxy 类节点速度与稳定性不理想，且 Gitee
+    // 直链已能满足国内更新，GitHub 仅保留直连兜底。
     // 单节点无数据超过该时长(毫秒)则自动切换下一个加速节点，防止卡死在假死节点
     private static final long STALL_TIMEOUT_MS = 15000;
 
@@ -114,58 +106,21 @@ public class Updater implements Download.Callback, UpdateListener {
      * 先直连，不通就依次换加速节点的 API 前缀代理（只换列表入口，APK 链接本身仍走 buildCandidates 那套）。
      */
     private JSONObject getLatestRelease() throws Exception {
-        // 1) 又拍云源优先：国内直连拉轻量 version.json，秒出结果；任何异常都不阻断，回退 GitHub
+        // 1) Gitee 源优先：国内直连拉 Releases 列表，秒出结果；任何异常都不阻断，回退 GitHub
         try {
-            JSONObject found = fetchUpyunRelease();
+            JSONObject found = fetchGiteeRelease();
             if (found != null) return found;
         } catch (Exception e) {
-            e.printStackTrace(); // 又拍源失败不影响更新链路，继续走 GitHub 多节点回退
+            e.printStackTrace(); // Gitee 源失败不影响更新链路，继续走 GitHub 直连兜底
         }
-        // 2) GitHub 兜底：直连 + 各加速节点前缀代理（只换列表入口，APK 链接本身仍走 buildCandidates 那套）
-        Exception last = null;
-        for (String url : releaseCandidates()) {
-            try {
-                JSONObject found = matchOwnLine(fetchReleases(new URL(url), 4000, 5000));
-                if (found != null) return found;
-            } catch (Exception e) {
-                last = e;
-            }
-        }
-        if (last != null) throw last;
-        return null;
+        // 2) GitHub 兜底：直连（加速节点已移除）
+        return matchOwnLine(fetchReleases(new URL(RELEASES_URL), 4000, 5000));
     }
 
-    /**
-     * 又拍云更新源：拉取 version.json（CI 发版时上传），返回与 GitHub 流程同构的 release 对象。
-     * 版本号统一交给调用方 isNewer 判断（版本更大才提示），这里只负责取最新清单。
-     */
-    private JSONObject fetchUpyunRelease() throws Exception {
-        HttpURLConnection conn = (HttpURLConnection) new URL(UPYUN_VERSION_URL).openConnection();
-        conn.setConnectTimeout(4000);
-        conn.setReadTimeout(5000);
-        conn.setRequestProperty("User-Agent", "LanXingVod");
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
-            StringBuilder sb = new StringBuilder();
-            String line;
-            while ((line = reader.readLine()) != null) sb.append(line);
-            JSONObject obj = new JSONObject(sb.toString());
-            String tag = obj.optString("version", "").replaceFirst("^v", "").replaceFirst("-.*$", "");
-            String url = obj.optString("apk_url", null);
-            if (tag.isEmpty() || url == null || url.isEmpty()) return null;
-            JSONObject release = new JSONObject();
-            release.put("version", tag);
-            release.put("apk_url", url);
-            release.put("desc", obj.optString("desc", ""));
-            return release;
-        }
-    }
-
-    /** 检查更新的候选入口：API 直连 + 各加速节点前缀代理 */
-    private List<String> releaseCandidates() {
-        List<String> list = new ArrayList<>();
-        list.add(RELEASES_URL);
-        for (String p : PROXIES) list.add(p + RELEASES_URL);
-        return list;
+    /** Gitee 更新源：拉 Releases 列表（CI 发版时上传 APK 附件），挑出本线最新一条，返回与 GitHub 同构的 release 对象 */
+    private JSONObject fetchGiteeRelease() throws Exception {
+        JSONArray arr = fetchReleases(new URL(GITEE_API_URL), 4000, 5000);
+        return matchOwnLine(arr);
     }
 
     private JSONArray fetchReleases(URL url, int connectTimeout, int readTimeout) throws Exception {
@@ -379,7 +334,7 @@ public class Updater implements Download.Callback, UpdateListener {
     /**
      * 并发探测所有候选节点的前 32KB，返回按实测速度降序排列的完整候选列表（失败节点排末尾）；
      * 一个节点都没通则返回 null。
-     * 探测结果同时打进 logcat，日后调整 PROXIES 列表有据可依。
+     * 探测结果同时打进 logcat，日后调整下载候选有据可依。
      */
     private List<String> probeRanked() {
         final int PIECE = 32 * 1024;
@@ -476,17 +431,10 @@ public class Updater implements Download.Callback, UpdateListener {
         return out;
     }
 
-    /** 构建下载候选：GitHub 链接 = 直连 + 多个加速中转 + kkgithub 域名替换；其它链接只有一条 */
+    /** 构建下载候选：Gitee/GitHub 直链均为单候选（加速节点已移除）；失败即提示，重试检查更新可自动换源 */
     private void buildCandidates() {
         candidates.clear();
-        if (apkUrl != null && apkUrl.startsWith("https://github.com/")) {
-            candidates.add(apkUrl); // 直连
-            for (String p : PROXIES) candidates.add(p + apkUrl);
-            // kkgithub 域名替换（独立加速线路，非前缀）
-            candidates.add(apkUrl.replaceFirst("https://github\\.com/", "https://kgithub.com/"));
-        } else {
-            candidates.add(apkUrl);
-        }
+        candidates.add(apkUrl);
     }
 
     private String nameOf(int idx) {
