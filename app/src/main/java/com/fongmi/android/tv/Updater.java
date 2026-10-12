@@ -43,8 +43,13 @@ public class Updater implements Download.Callback, UpdateListener {
     // assets[].browser_download_url）一致，解析逻辑完全复用。
     private static final String GITEE_API_URL = "https://gitee.com/api/v5/repos/cyj265/lanxing-vod/releases?per_page=10";
     private static final String RELEASES_URL = "https://api.github.com/repos/cyj265/lanxing-vod/releases?per_page=10";
-    // 加速节点已全部移除（2026-10-12）：实测 gh-proxy 类节点速度与稳定性不理想，且 Gitee
-    // 直链已能满足国内更新，GitHub 仅保留直连兜底。
+    // GitHub 加速节点兜底（2026-10-12 按千问/WorkBuddy 建议恢复 1~2 个）：实测速度不理想
+    // （gh-proxy ~19KB/s）但比完全不可达强，仅当 Gitee 主源与 GitHub 直连都失败时兜底，
+    // 放候选末尾，probe 测速会自然把它排到最后。
+    private static final String[] PROXIES = {
+            "https://gh-proxy.com/",
+            "https://ghfast.top/"
+    };
     // 单节点无数据超过该时长(毫秒)则自动切换下一个加速节点，防止卡死在假死节点
     private static final long STALL_TIMEOUT_MS = 15000;
 
@@ -431,7 +436,7 @@ public class Updater implements Download.Callback, UpdateListener {
         return out;
     }
 
-    /** 构建下载候选：Gitee 主源 + GitHub 直连兜底，双候选互为备份（加速节点已移除）。
+    /** 构建下载候选：Gitee 主源 + GitHub 直连兜底 + GitHub 加速节点（末位兜底）。
      *  两源的文件名与 tag 完全一致（vX.Y.Z + lanxing-arm64_v8a-vX.Y.Z.apk），
      *  从任一侧 URL 解析出 tag+文件名即可拼出另一侧同构链接。
      *  解析失败时退化为单候选（保底原链接）。 */
@@ -439,7 +444,14 @@ public class Updater implements Download.Callback, UpdateListener {
         candidates.clear();
         if (apkUrl != null) candidates.add(apkUrl);
         String twin = twinUrl(apkUrl);
-        if (twin != null && !candidates.contains(twin)) candidates.add(twin);
+        if (twin != null && !candidates.contains(twin)) {
+            candidates.add(twin);
+            // GitHub 加速节点兜底：前缀 + GitHub 直连链接，仅作最后防线
+            for (String p : PROXIES) {
+                String proxied = p + twin;
+                if (!candidates.contains(proxied)) candidates.add(proxied);
+            }
+        }
     }
 
     /** 从任意一侧的 releases/download 链接，拼出另一侧的同构链接；解析失败返回 null */
