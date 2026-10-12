@@ -24,9 +24,10 @@ import androidx.media3.common.VideoSize;
 import androidx.media3.exoplayer.drm.FrameworkMediaDrm;
 import androidx.media3.session.MediaController;
 import androidx.media3.session.SessionToken;
-import androidx.media3.ui.PlayerSeekView;
 import androidx.media3.ui.PlayerView;
 import androidx.media3.ui.TimeBar;
+
+import com.fongmi.android.tv.ui.custom.CustomSeekView;
 import androidx.media3.ui.danmaku.DanmakuConfig;
 
 import com.fongmi.android.tv.R;
@@ -118,7 +119,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
 
     protected abstract PlaybackService.NavigationCallback getNavigationCallback();
 
-    protected abstract PlayerSeekView getSeekView();
+    protected abstract CustomSeekView getSeekView();
 
     protected abstract PlayerView getPlayerView();
 

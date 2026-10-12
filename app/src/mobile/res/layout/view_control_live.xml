@@ -178,7 +178,7 @@
         android:orientation="vertical"
         android:paddingBottom="8dp">
 
-        <androidx.media3.ui.PlayerSeekView
+        <com.fongmi.android.tv.ui.custom.CustomSeekView
             android:id="@+id/seek"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
