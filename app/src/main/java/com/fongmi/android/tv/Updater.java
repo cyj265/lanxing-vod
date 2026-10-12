@@ -111,15 +111,37 @@ public class Updater implements Download.Callback, UpdateListener {
      * 先直连，不通就依次换加速节点的 API 前缀代理（只换列表入口，APK 链接本身仍走 buildCandidates 那套）。
      */
     private JSONObject getLatestRelease() throws Exception {
-        // 1) Gitee 源优先：国内直连拉 Releases 列表，秒出结果；任何异常都不阻断，回退 GitHub
+        // 1) Gitee 源优先：国内直连拉 Releases 列表，秒出结果；任何异常都不阻断，回退 GitHub。
+        //    依赖 matchOwnLine 的新语义：命中本线最新一条却缺 APK 附件时抛异常（而不是 continue
+        //    翻出旧版本冒充「最新」），异常经 catch 正常传导到下面的 GitHub 兜底。
         try {
             JSONObject found = fetchGiteeRelease();
             if (found != null) return found;
         } catch (Exception e) {
-            e.printStackTrace(); // Gitee 源失败不影响更新链路，继续走 GitHub 直连兜底
+            e.printStackTrace(); // Gitee 源失败不影响更新链路，继续走 GitHub 兜底
         }
-        // 2) GitHub 兜底：直连（加速节点已移除）
-        return matchOwnLine(fetchReleases(new URL(RELEASES_URL), 4000, 5000));
+        // 2) GitHub 兜底：先直连 api.github.com，不通再逐个换加速前缀（只换列表入口，
+        //    APK 链接本身仍交给 buildCandidates() 那套候选）。
+        //    实测并非所有代理都转发 api.*：gh-proxy.com 返回真 JSON(200)，ghfast.top 对 api
+        //    路径直接 403。坏前缀会因 getInputStream 抛 IOException(4xx) 或 JSON 解析失败被
+        //    自动跳过，所以这里全量遍历 PROXIES 是安全的，不必维护「API 专用代理」清单。
+        Exception last = null;
+        try {
+            JSONObject found = matchOwnLine(fetchReleases(new URL(RELEASES_URL), 4000, 5000));
+            if (found != null) return found;
+        } catch (Exception e) {
+            last = e;
+        }
+        for (String proxy : PROXIES) {
+            try {
+                JSONObject found = matchOwnLine(fetchReleases(new URL(proxy + RELEASES_URL), 4000, 8000));
+                if (found != null) return found;
+            } catch (Exception e) {
+                last = e;
+            }
+        }
+        if (last != null) throw last;
+        return null;
     }
 
     /** Gitee 更新源：拉 Releases 列表（CI 发版时上传 APK 附件），挑出本线最新一条，返回与 GitHub 同构的 release 对象 */
@@ -152,7 +174,10 @@ public class Updater implements Download.Callback, UpdateListener {
             String tag = json.optString("tag_name", "").replaceFirst("^v", "").replaceFirst("-.*$", "");
             if (tag.isEmpty() || !sameMajor(tag, BuildConfig.VERSION_NAME)) continue;
             String url = pickApk(json);
-            if (url == null) continue;
+            // 命中本线最新一条却缺 APK 附件：直接判本线不可用（抛异常走兜底），
+            // 不能 continue 翻出更旧的版本冒充"最新"——否则 found != null 会把 GitHub 兜底短路掉，
+            // 用户会被钉死在旧版（v5.6.83 空壳 release 就是这么断的）。
+            if (url == null) throw new IllegalStateException("release " + tag + " 无可用 APK 附件（判源不可用，交由兜底）");
             JSONObject release = new JSONObject();
             release.put("version", tag);
             release.put("apk_url", url);

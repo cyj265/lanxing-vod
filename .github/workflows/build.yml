@@ -179,59 +179,83 @@ jobs:
           fail_on_unmatched_files: false
           overwrite_files: true
 
-      # ═══ Gitee 更新源（App 内更新主源，国内直连 ~2MB/s）═══
-      # APK 瘦身（so 压缩 + 砍 v7a + 去 pqc）后体积约 44MB，GitHub runner（美国）跨洋 multipart 上传
-      # 由原先的 300s 超时提到 600s 再试：能过即全自动；不过则本步骤标红（宁红勿静默），
-      # 日志给出本地补传命令兜底。Gitee 与 GitHub 的 tag/文件名同构，App 端双候选可互相回退。
-      - name: 上传 Gitee Release（APK 附件，自动）
-        env:
-          GT: ${{ secrets.GITEE_TOKEN }}
+  # ═══ Gitee 更新源（App 内更新主源，国内直连 ~2MB/s）═══
+  # 跨洋上传已证明不可行（300s/600s 均超时），改由自托管 Runner（用户电脑）执行：
+  # 构建仍 100% 在 GitHub 云端，本 job 只做「下载 APK 产物 → 上传 Gitee → 清理旧 release」，
+  # 本地网络上传秒级完成，不跑 gradle、不卡电脑。
+  # 注册 Runner 时加标签 gitee-upload：runs-on 用 [self-hosted, gitee-upload] 精确匹配。
+  gitee-upload:
+    needs: build
+    # 失败不阻塞主 CI（红标仍在；附件缺失由 Gitee 主源判不可用走 GitHub 兜底，不会静默断更）
+    continue-on-error: true
+    runs-on: [self-hosted, gitee-upload]
+    if: github.ref == 'refs/heads/dev-5.6.1'
+    env:
+      GT: ${{ secrets.GITEE_TOKEN }}
+    steps:
+      - name: 下载 APK 产物
+        uses: actions/download-artifact@v4
+        with:
+          name: 揽星影视-release
+          path: /tmp/lx-release
+
+      - name: 上传 Gitee Release（APK 附件 + 清理旧版本）
+        shell: pwsh
         run: |
-          set -e
-          if [ -z "$GT" ]; then echo "未配置 GITEE_TOKEN，跳过 Gitee 上传（App 内更新源将缺附件，请尽快配置）"; exit 0; fi
-          VERSION="${{ steps.ver.outputs.name }}"
-          TAG="v${VERSION}"
-          NAME="lanxing-arm64_v8a-v${VERSION}.apk"
-          APK="/tmp/lx-release/${NAME}"
-          API="https://gitee.com/api/v5/repos/cyj265/lanxing-vod"
-          [ -f "$APK" ] || { echo "::error::APK 不存在 $APK"; exit 1; }
-          echo "Gitee upload: ${NAME} ($(du -h "$APK" | cut -f1))"
-          # 1) 查/建 release（Gitee API 认证额度 5000/h，token 调用无匿名限流问题）
-          LIST=$(curl -sS --max-time 60 "$API/releases?per_page=100&access_token=$GT")
-          RELID=$(echo "$LIST" | python3 -c "import json,sys; d=json.load(sys.stdin); print(next((r['id'] for r in d if r['tag_name']=='$TAG'), ''))")
-          if [ -z "$RELID" ]; then
-            echo "创建 Gitee release $TAG ..."
-            BODY=$(python3 -c "import json; print(json.dumps({'tag_name':'$TAG','target_commitish':'master','name':'揽星影视 $TAG','body':'**手机版** \`$NAME\`\n\n系统要求：Android 7.0（API 24）及以上。5.4.x 检查更新可直接覆盖安装。\n\n更新内容详见 GitHub 仓库提交记录。','prerelease':False}))")
-            RESP=$(curl -sS --max-time 60 -X POST "$API/releases?access_token=$GT" -H "Content-Type: application/json" -d "$BODY")
-            RELID=$(echo "$RESP" | python3 -c "import json,sys; print(json.load(sys.stdin).get('id',''))")
-          fi
-          [ -n "$RELID" ] || { echo "::error::创建 Gitee release 失败"; exit 1; }
-          echo "Gitee release id=$RELID"
+          if (-not $env:GT) { Write-Host "未配置 GITEE_TOKEN，跳过 Gitee 上传"; exit 0 }
+          $ErrorActionPreference = 'Stop'
+          $APK = Get-ChildItem /tmp/lx-release -Filter *.apk | Select-Object -First 1
+          if (-not $APK) { Write-Error "APK 不存在"; exit 1 }
+          $VER = [regex]::Match($APK.Name, 'v(\d+\.\d+\.\d+)\.apk$').Groups[1].Value
+          $TAG = "v$VER"
+          $NAME = $APK.Name
+          $API = "https://gitee.com/api/v5/repos/cyj265/lanxing-vod"
+          Write-Host "Gitee upload: $NAME ($([math]::Round($APK.Length/1MB,1)) MB)"
+          # 1) 查/建 release（Gitee API 认证额度 5000/h）
+          $LIST = Invoke-RestMethod -Uri "$API/releases?per_page=100&access_token=$env:GT" -TimeoutSec 60
+          $REL = $LIST | Where-Object { $_.tag_name -eq $TAG } | Select-Object -First 1
+          $CREATED = 0
+          if (-not $REL) {
+            Write-Host "创建 Gitee release $TAG ..."
+            $BODY = @{ tag_name=$TAG; target_commitish='master'; name="揽星影视 $TAG"; body="**手机版** $NAME`n`n系统要求：Android 7.0（API 24）及以上。5.4.x 检查更新可直接覆盖安装。`n`n更新内容详见 GitHub 仓库提交记录。"; prerelease=$false } | ConvertTo-Json
+            $REL = Invoke-RestMethod -Uri "$API/releases?access_token=$env:GT" -Method Post -ContentType 'application/json' -Body $BODY -TimeoutSec 60
+            $CREATED = 1
+          }
+          if (-not $REL.id) { Write-Error "创建 Gitee release 失败"; exit 1 }
+          Write-Host "Gitee release id=$($REL.id)"
           # 2) 附件已存在则跳过
-          ATTS=$(curl -sS --max-time 60 "$API/releases/$RELID/attach_files?access_token=$GT")
-          HAS=$(echo "$ATTS" | python3 -c "import json,sys; d=json.load(sys.stdin); print('yes' if any(a['name']=='$NAME' for a in d) else 'no')")
-          if [ "$HAS" = "yes" ]; then echo "附件已存在，跳过上传"; else
-            # 3) multipart 上传（600s 上限；瘦身后 ~44MB，若仍超时本步骤红并提示本地补传）
-            CODE=$(curl -sS --max-time 600 --connect-timeout 30 -o /tmp/gitee-upload.resp -w "%{http_code}" \
-              -X POST "$API/releases/$RELID/attach_files?access_token=$GT" -F "file=@$APK" || echo "curl-fail")
-            echo "Upload HTTP=$CODE"
-            if [ "$CODE" = "200" ] || [ "$CODE" = "201" ]; then
-              echo "OK: https://gitee.com/cyj265/lanxing-vod/releases/download/$TAG/$NAME"
-            else
-              echo "::error::Gitee 上传失败(HTTP=$CODE)。跨洋仍超时请本地补传一次："
-              echo "::error::  powershell -ExecutionPolicy Bypass -File tools\gitee-upload.ps1 -Version ${VERSION}"
-              cat /tmp/gitee-upload.resp 2>/dev/null | head -5 || true
+          $ATTS = Invoke-RestMethod -Uri "$API/releases/$($REL.id)/attach_files?access_token=$env:GT" -TimeoutSec 60
+          if ($ATTS | Where-Object { $_.name -eq $NAME }) {
+            Write-Host "附件已存在，跳过上传"
+          } else {
+            # 3) 上传（自托管 Runner 本地网络，秒级；curl.exe 为 Windows 自带）
+            & curl.exe -sS --max-time 300 -o /tmp/gitee-upload.resp -w "Upload HTTP=%{http_code}`n" -X POST "$API/releases/$($REL.id)/attach_files?access_token=$env:GT" -F "file=@$($APK.FullName)"
+            if ($LASTEXITCODE -ne 0) {
+              Write-Error "Gitee 上传失败(curl exit=$LASTEXITCODE)"
+              Get-Content /tmp/gitee-upload.resp -ErrorAction SilentlyContinue | Select-Object -First 5
+              if ($CREATED -eq 1) { try { Invoke-RestMethod -Uri "$API/releases/$($REL.id)?access_token=$env:GT" -Method Delete -TimeoutSec 30 | Out-Null; Write-Host "回滚删除空壳 release $TAG" } catch {} }
               exit 1
-            fi
-          fi
-          # 4) 清理 Gitee 旧 release（保留本次 + 最新 1 条其他正式版；5.4.x 保留）
-          #    不用 heredoc：YAML 块标量要求每行保持缩进，而 shell heredoc 的结束符必须 0 缩进，二者冲突
-          echo "$LIST" > /tmp/gitee_rel.json
-          TO_DEL=$(python3 -c "import json; d=json.load(open('/tmp/gitee_rel.json')); tag='$TAG'; keep=[tag]+[r['tag_name'] for r in sorted(d,key=lambda x:x.get('created_at',''),reverse=True) if r['tag_name'].startswith('v') and not r['tag_name'].startswith('v5.4.') and r['tag_name']!=tag][:1]; print(' '.join(str(r['id']) for r in d if r['tag_name'] not in keep))")
-          if [ -n "$TO_DEL" ]; then
-            for ID in $TO_DEL; do
-              echo "删除 Gitee release id=$ID"
-              curl -sS --max-time 30 -X DELETE "$API/releases/$ID?access_token=$GT" || true
-            done
-          fi
-          echo "Gitee release 清理完成，保留: $TAG + 最新1条"
+            }
+            # 3b) 回读校验：HTTP 200 不等于附件真能下载，必须确认 name 出现在附件列表里
+            $VERIFY = Invoke-RestMethod -Uri "$API/releases/$($REL.id)/attach_files?access_token=$env:GT" -TimeoutSec 60
+            if (-not ($VERIFY | Where-Object { $_.name -eq $NAME })) {
+              Write-Error "Gitee 附件回读校验失败（附件未出现在列表）"
+              if ($CREATED -eq 1) { try { Invoke-RestMethod -Uri "$API/releases/$($REL.id)?access_token=$env:GT" -Method Delete -TimeoutSec 30 | Out-Null; Write-Host "回滚删除空壳 release $TAG" } catch {} }
+              exit 1
+            }
+          }
+          Write-Host "OK: https://gitee.com/cyj265/lanxing-vod/releases/download/$TAG/$NAME"
+          # 4) 清理旧 release（保留本次 + 最新 1 条其他正式版；5.4.x 保留）
+          $KEEP = @($TAG)
+          foreach ($r in ($LIST | Sort-Object { $_.created_at } -Descending)) {
+            if ($r.tag_name -match '^v\d+\.\d+' -and $r.tag_name -notmatch '^v5\.4\.' -and $KEEP -notcontains $r.tag_name) { $KEEP += $r.tag_name }
+            if ($KEEP.Count -ge 2) { break }
+          }
+          foreach ($r in $LIST) {
+            # 5.4.x 老线保留（回滚退路），只在 KEEP 之外且非 v5.4.x 时删除
+            if (($KEEP -notcontains $r.tag_name) -and ($r.tag_name -notmatch '^v5\.4\.')) {
+              Write-Host "删除 Gitee release $($r.tag_name) id=$($r.id)"
+              try { Invoke-RestMethod -Uri "$API/releases/$($r.id)?access_token=$env:GT" -Method Delete -TimeoutSec 30 } catch { Write-Host "skip delete $($r.tag_name): $_" }
+            }
+          }
+          Write-Host "Gitee release 清理完成，保留: $($KEEP -join ', ')"
