@@ -181,9 +181,12 @@ jobs:
 
       # 上传到 Gitee Release（App 内更新主源）：APK。
       # 只在主力线 dev-5.6.1 执行。Gitee API v5：先按 tag 查 release，没有则创建，再上传附件。
-      # 未配置 GITEE_TOKEN 则跳过（warning），不阻断构建。
+      # 注意：GitHub runner（美国）跨洋上传 60MB 到 Gitee 实测极慢（>40 分钟仍未完成），
+      # 故本步骤 continue-on-error：失败不红 CI，由 tools/gitee-upload.ps1 本地脚本兜底补传
+      # （用户本地上传秒级完成）。未配置 GITEE_TOKEN 则跳过（warning）。
       - name: 上传 Gitee Release（APK）
         if: github.ref_name == 'dev-5.6.1'
+        continue-on-error: true
         env:
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
         run: |
@@ -223,14 +226,14 @@ jobs:
           if [ "$HAS" = "True" ]; then
             echo "APK 附件已存在，跳过上传"
           else
-            code=$(curl -sS --max-time 900 --connect-timeout 60 --retry 3 --retry-all-errors --retry-delay 5 \
+            code=$(curl -sS --max-time 300 --connect-timeout 60 --retry 1 --retry-delay 5 \
               -o /tmp/gitee-apk.resp -w "%{http_code}" \
               -X POST "${API}/releases/${REL_ID}/attach_files?access_token=${GITEE_TOKEN}" \
               -F "file=@${APK}")
             echo "APK 上传 HTTP=$code"
             if [ "$code" != "200" ] && [ "$code" != "201" ]; then
-              echo "::error::APK 上传 Gitee 失败（HTTP=$code）: $(head -c 300 /tmp/gitee-apk.resp)"
-              exit 1
+              echo "::warning::APK 上传 Gitee 失败（HTTP=$code，跨洋慢），可稍后运行 tools/gitee-upload.ps1 补传: $(head -c 200 /tmp/gitee-apk.resp)"
+              exit 0
             fi
           fi
           echo "Gitee 更新源已更新：https://gitee.com/cyj265/lanxing-vod/releases/download/${TAG}/lanxing-arm64_v8a-v${VERSION}.apk"
