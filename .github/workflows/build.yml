@@ -224,23 +224,14 @@ jobs:
               exit 1
             fi
           fi
-          # 4) 清理 Gitee 旧 release（保留本次 + 最新 1 条其他正式版，共 2 条；5.4.x 保留）
-          python3 - "$API" "$GT" "$TAG" <<'EOF'
-import json,sys,urllib.request
-api,gt,tag=sys.argv[1],sys.argv[2],sys.argv[3]
-d=json.load(urllib.request.urlopen(f"{api}/releases?per_page=100&access_token={gt}",timeout=60))
-keep=[tag]
-for r in sorted(d,key=lambda x:x.get('created_at',''),reverse=True):
-    t=r['tag_name']
-    if t.startswith('v') and not t.startswith('v5.4.') and t not in keep:
-        keep.append(t)
-    if len(keep)>=2: break
-for r in d:
-    if r['tag_name'] not in keep:
-        try:
-            urllib.request.urlopen(urllib.request.Request(f"{api}/releases/{r['id']}?access_token={gt}",method='DELETE'),timeout=30)
-            print("deleted", r['tag_name'])
-        except Exception as e:
-            print("skip delete", r['tag_name'], e)
-print("keep:", keep)
-EOF
+          # 4) 清理 Gitee 旧 release（保留本次 + 最新 1 条其他正式版；5.4.x 保留）
+          #    不用 heredoc：YAML 块标量要求每行保持缩进，而 shell heredoc 的结束符必须 0 缩进，二者冲突
+          echo "$LIST" > /tmp/gitee_rel.json
+          TO_DEL=$(python3 -c "import json; d=json.load(open('/tmp/gitee_rel.json')); tag='$TAG'; keep=[tag]+[r['tag_name'] for r in sorted(d,key=lambda x:x.get('created_at',''),reverse=True) if r['tag_name'].startswith('v') and not r['tag_name'].startswith('v5.4.') and r['tag_name']!=tag][:1]; print(' '.join(str(r['id']) for r in d if r['tag_name'] not in keep))")
+          if [ -n "$TO_DEL" ]; then
+            for ID in $TO_DEL; do
+              echo "删除 Gitee release id=$ID"
+              curl -sS --max-time 30 -X DELETE "$API/releases/$ID?access_token=$GT" || true
+            done
+          fi
+          echo "Gitee release 清理完成，保留: $TAG + 最新1条"
