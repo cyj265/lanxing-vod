@@ -38,6 +38,10 @@ public class Updater implements Download.Callback, UpdateListener {
     // Releases，列表按创建时间倒序，main 线若最近发过包会排到最前，取 1 条会让 dev 线用户
     // 被引导去装另一个分支的包。CI 的清理步骤已把 Release 压到 3 条以内，取 10 条足够覆盖。
     private static final String RELEASES_URL = "https://api.github.com/repos/cyj265/lanxing-vod/releases?per_page=10";
+    // 又拍云更新源（App 内更新主源）：国内直连，version.json 为 CI 每次发版时上传的轻量清单
+    // （几 KB），检查更新先走它；失败或拿不到版本再回退 GitHub 多节点。下载走存储直连域名
+    // lanxing-vod.b0.aicdn.com：云存储只有存储容量费，流出流量免费，月成本约 0 元。
+    private static final String UPYUN_VERSION_URL = "https://lanxing-vod.b0.aicdn.com/version.json";
     // 加速节点：直连优先，失败依次回退到多个主流 GitHub 加速中转（国内常见可用节点）
     private static final String[] PROXIES = {
             "https://gh-proxy.com/",
@@ -108,6 +112,14 @@ public class Updater implements Download.Callback, UpdateListener {
      * 先直连，不通就依次换加速节点的 API 前缀代理（只换列表入口，APK 链接本身仍走 buildCandidates 那套）。
      */
     private JSONObject getLatestRelease() throws Exception {
+        // 1) 又拍云源优先：国内直连拉轻量 version.json，秒出结果；任何异常都不阻断，回退 GitHub
+        try {
+            JSONObject found = fetchUpyunRelease();
+            if (found != null) return found;
+        } catch (Exception e) {
+            e.printStackTrace(); // 又拍源失败不影响更新链路，继续走 GitHub 多节点回退
+        }
+        // 2) GitHub 兜底：直连 + 各加速节点前缀代理（只换列表入口，APK 链接本身仍走 buildCandidates 那套）
         Exception last = null;
         for (String url : releaseCandidates()) {
             try {
@@ -119,6 +131,31 @@ public class Updater implements Download.Callback, UpdateListener {
         }
         if (last != null) throw last;
         return null;
+    }
+
+    /**
+     * 又拍云更新源：拉取 version.json（CI 发版时上传），返回与 GitHub 流程同构的 release 对象。
+     * 版本号统一交给调用方 isNewer 判断（版本更大才提示），这里只负责取最新清单。
+     */
+    private JSONObject fetchUpyunRelease() throws Exception {
+        HttpURLConnection conn = (HttpURLConnection) new URL(UPYUN_VERSION_URL).openConnection();
+        conn.setConnectTimeout(4000);
+        conn.setReadTimeout(5000);
+        conn.setRequestProperty("User-Agent", "LanXingVod");
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) sb.append(line);
+            JSONObject obj = new JSONObject(sb.toString());
+            String tag = obj.optString("version", "").replaceFirst("^v", "").replaceFirst("-.*$", "");
+            String url = obj.optString("apk_url", null);
+            if (tag.isEmpty() || url == null || url.isEmpty()) return null;
+            JSONObject release = new JSONObject();
+            release.put("version", tag);
+            release.put("apk_url", url);
+            release.put("desc", obj.optString("desc", ""));
+            return release;
+        }
     }
 
     /** 检查更新的候选入口：API 直连 + 各加速节点前缀代理 */

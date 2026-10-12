@@ -178,3 +178,54 @@ jobs:
           generate_release_notes: false
           fail_on_unmatched_files: false
           overwrite_files: true
+
+      # 上传到又拍云（App 内更新主源）：APK + version.json。
+      # 只在当前主力线 dev-5.6.1 执行——version.json 只允许写 5.6.x 最新版本，
+      # 否则 main(5.4.x) 发版会把它覆盖成旧版本号，挡住 5.6 用户的更新提示。
+      # 下载走存储直连域名（lanxing-vod.b0.aicdn.com）：云存储流出流量免费，月成本约 0 元。
+      # 认证：又拍云 REST API 的 Basic 认证（操作员名:操作员密码）。
+      - name: 上传又拍云（APK + version.json）
+        if: github.ref_name == 'dev-5.6.1'
+        env:
+          UPYUN_BUCKET: ${{ secrets.UPYUN_BUCKET }}
+          UPYUN_OPERATOR: ${{ secrets.UPYUN_OPERATOR }}
+          UPYUN_PASSWORD: ${{ secrets.UPYUN_PASSWORD }}
+        run: |
+          set -e
+          if [ -z "$UPYUN_BUCKET" ] || [ -z "$UPYUN_OPERATOR" ] || [ -z "$UPYUN_PASSWORD" ]; then
+            echo "::warning::未配置又拍云 Secrets（UPYUN_BUCKET/UPYUN_OPERATOR/UPYUN_PASSWORD），跳过又拍云上传"
+            exit 0
+          fi
+          VERSION="${{ steps.ver.outputs.name }}"
+          APK="/tmp/lx-release/lanxing-arm64_v8a-v${VERSION}.apk"
+          # 生成 version.json（用 python 写，避免 commit 标题里的引号破坏 JSON）
+          python3 - "$VERSION" "$UPYUN_BUCKET" <<'PYEOF'
+          import json, subprocess, sys
+          version, bucket = sys.argv[1], sys.argv[2]
+          desc = subprocess.check_output(['git', 'log', '-1', '--pretty=%s'], text=True).strip()
+          obj = {
+              'version': version,
+              'apk_url': 'https://%s.b0.aicdn.com/lanxing-arm64_v8a-v%s.apk' % (bucket, version),
+              'desc': desc,
+          }
+          open('/tmp/lx-release/version.json', 'w', encoding='utf-8').write(json.dumps(obj, ensure_ascii=False))
+          PYEOF
+          echo "version.json: $(cat /tmp/lx-release/version.json)"
+          # 又拍 REST API：PUT 上传（v0.api.upyun.com 智能选路），Basic 认证
+          code=$(curl -sS --max-time 180 -u "${UPYUN_OPERATOR}:${UPYUN_PASSWORD}" \
+            -o /tmp/upyun-apk.resp -w "%{http_code}" \
+            -T "$APK" "https://v0.api.upyun.com/${UPYUN_BUCKET}/lanxing-arm64_v8a-v${VERSION}.apk")
+          echo "APK 上传 HTTP=$code"
+          if [ "$code" != "200" ] && [ "$code" != "201" ]; then
+            echo "::error::APK 上传又拍云失败（HTTP=$code）: $(cat /tmp/upyun-apk.resp)"
+            exit 1
+          fi
+          code=$(curl -sS --max-time 30 -u "${UPYUN_OPERATOR}:${UPYUN_PASSWORD}" \
+            -o /tmp/upyun-ver.resp -w "%{http_code}" \
+            -T /tmp/lx-release/version.json "https://v0.api.upyun.com/${UPYUN_BUCKET}/version.json")
+          echo "version.json 上传 HTTP=$code"
+          if [ "$code" != "200" ] && [ "$code" != "201" ]; then
+            echo "::error::version.json 上传又拍云失败（HTTP=$code）: $(cat /tmp/upyun-ver.resp)"
+            exit 1
+          fi
+          echo "又拍云更新源已更新：https://${UPYUN_BUCKET}.b0.aicdn.com/lanxing-arm64_v8a-v${VERSION}.apk"
