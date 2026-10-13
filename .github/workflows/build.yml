@@ -11,10 +11,18 @@ on:
       # 改忽略规则、文档都不会改变 APK 产物，不必白跑一轮 9 分钟的构建
       - '.gitignore'
   workflow_dispatch:
+    inputs:
+      force_republish:
+        description: 版本号未变时强制重发同 tag（应急用，慎用）
+        type: boolean
+        default: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    # 发布闸门输出：skip=1 表示版本号未变、跳过全部发布步
+    outputs:
+      skip: ${{ steps.gate.outputs.skip }}
     steps:
       - name: 检出代码
         uses: actions/checkout@v4
@@ -73,6 +81,12 @@ jobs:
             # 文件名必须带 arm64：5.4.x 老包的更新逻辑只认「文件名含 arm64 的 apk」，
             # 老用户从 5.4 直接升 5.6 时才能取到下载链接。
             cp "$MOBILE_APK" "/tmp/lx-release/lanxing-arm64_v8a-v${version}.apk"
+            # 发布闸门配套：mapping 压缩后随 Release 资产发布（67MiB→个位数 MB）；
+            # Bugly 侧仍用原始 mapping.txt，这里只产出 gz 资产
+            MAP="app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt"
+            if [ -f "$MAP" ]; then
+              gzip -k -f "$MAP" && mv "${MAP}.gz" "/tmp/lx-release/mapping-v${version}.txt.gz"
+            fi
             ls -la /tmp/lx-release
             echo "APK_PATH=/tmp/lx-release" >> $GITHUB_ENV
           else
@@ -94,7 +108,34 @@ jobs:
           VERSION=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)
           echo "name=$VERSION" >> $GITHUB_OUTPUT
 
+      # ═══ 发布闸门 ═══
+      # 版本号不变 → tag 已存在 → skip 后续发布步（Bugly/清理/发布/Gitee），
+      # 但 artifact 照常生成可自测：push 小改不动用户端更新提示，只有 bump 版本号才真正发版。
+      # FORCE（workflow_dispatch 手动触发）可强制重发同 tag，作应急逃生口。
+      - name: 发布闸门（版本号未变则跳过发布）
+        id: gate
+        run: |
+          TAG="v${{ steps.ver.outputs.name }}"
+          if [ "${{ github.event.inputs.force_republish }}" == "true" ]; then
+            echo "FORCE=true：强制重发 $TAG"
+            echo "skip=0" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 20 \
+            -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$TAG")
+          if [ "$CODE" == "200" ]; then
+            echo "tag $TAG 已存在：跳过发布（不发版、不清理、不传 Bugly、不同步 Gitee）"
+            echo "skip=1" >> $GITHUB_OUTPUT
+          else
+            echo "tag $TAG 不存在：正常发布"
+            echo "skip=0" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GH_TOKEN: ${{ github.token }}
+
       - name: 上传 Bugly 符号表（mapping，手机版）
+        if: steps.gate.outputs.skip != '1'
         continue-on-error: true
         run: |
           if [ -z "${{ secrets.BUGLY_APP_KEY }}" ]; then
@@ -133,6 +174,7 @@ jobs:
       # 即「本次 + 最近 2 条」共 3 条，给误发留回滚余地，又不至于让 Release 列表无限膨胀。
       # 注意：清理失败一律不阻断发布（tag 可能被引用），用 set +e + continue-on-error 兜底。
       - name: 清理旧 Release（保留本次 + 最近 2 条正式版）
+        if: steps.gate.outputs.skip != '1'
         continue-on-error: true
         run: |
           set +e
@@ -159,6 +201,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
       - name: 发布 GitHub Release（正式版）
+        if: steps.gate.outputs.skip != '1'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.name }}
@@ -174,9 +217,10 @@ jobs:
             更新内容详见仓库提交记录：https://github.com/cyj265/lanxing-vod/commits/${{ github.ref_name }}
           files: |
             /tmp/lx-release/lanxing-arm64_v8a-v${{ steps.ver.outputs.name }}.apk
-            app/build/outputs/mapping/mobileArm64_v8aRelease/mapping.txt
+            /tmp/lx-release/mapping-v${{ steps.ver.outputs.name }}.txt.gz
           generate_release_notes: false
           fail_on_unmatched_files: false
+          # 保持 true：FORCE 强制重发同 tag 时 asset 已存在，false 会让逃生口必失败
           overwrite_files: true
 
   # ═══ Gitee 更新源（App 内更新主源，国内直连 ~2MB/s）═══
@@ -186,10 +230,11 @@ jobs:
   # 注册 Runner 时加标签 gitee-upload：runs-on 用 [self-hosted, gitee-upload] 精确匹配。
   gitee-upload:
     needs: build
-    # 失败不阻塞主 CI（红标仍在；附件缺失由 Gitee 主源判不可用走 GitHub 兜底，不会静默断更）
-    continue-on-error: true
+    # 失败不再容忍：真正发版时 Gitee 同步失败顶层可见（红标）。配合 Updater 版本发现
+    # 走 GitHub 权威源，Gitee 附件缺失不会静默断更——下载侧仍有 GitHub twin 兜底。
     runs-on: [self-hosted, gitee-upload]
-    if: github.ref == 'refs/heads/dev-5.6.1'
+    # 单 if 键合并：分支条件 && 闸门（版本号变化才同步 Gitee）
+    if: github.ref == 'refs/heads/dev-5.6.1' && needs.build.outputs.skip != '1'
     env:
       GT: ${{ secrets.GITEE_TOKEN }}
     steps:
