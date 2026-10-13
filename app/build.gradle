@@ -174,4 +174,9 @@ dependencies {
     coreLibraryDesugaring libs.desugar
     implementation 'com.tencent.bugly:crashreport:4.1.9.3'
     implementation 'com.tencent.bugly:nativecrashreport:3.9.2'
+    // 单元测试（ReleaseSource 版本发现逻辑）。
+    // org.json 必须显式引入：android.jar 里的 org.json 是 stub，纯 JVM 测试碰到会抛 "not mocked"。
+    // 版本取本地已验证跑通的组合（junit 4.13.2 + org.json 20160810），CI 首跑会自动下载。
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20160810'
 }
