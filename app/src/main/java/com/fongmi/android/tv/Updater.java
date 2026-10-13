@@ -12,6 +12,7 @@ import com.fongmi.android.tv.ui.dialog.UpdateDialog;
 import com.fongmi.android.tv.utils.Download;
 import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.Notify;
+import com.fongmi.android.tv.utils.ReleaseSource;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Task;
 import com.github.catvod.utils.Path;
@@ -30,22 +31,28 @@ import java.util.List;
 
 public class Updater implements Download.Callback, UpdateListener {
 
-    // 更新逻辑：查 Gitee Releases（主源，国内直连），失败回退 GitHub Releases（直连），
-    // 用版本号(versionName)判断是否有新版本（分段数值比较）。
+    // 更新逻辑：查 GitHub Releases（主源：直连不通再逐个换加速前缀），失败回退 Gitee Releases，
+    // 用版本号(versionName)判断是否有新版本（分段数值比较，选版本交给 ReleaseSource）。
     // 注：构建号(BUILD_NUMBER)方案已废弃——安装包的 BUILD_NUMBER 取自 CI run_number，与线上
     //     release 的构建号恒相等，无法触发更新；改用版本号后，用户装到更高版本号才会提示更新。
     // 注意：不能用 /releases/latest —— 该接口默认排除 prerelease，而 dev 构建发布为预发布版会永远返回 404。
-    // 用列表接口(含 prerelease)即可。per_page 取 10 而非 1：main(5.4.x) 与 dev(5.6.x) 共用同一仓库的
-    // Releases，列表按创建时间倒序，main 线若最近发过包会排到最前，取 1 条会让 dev 线用户
-    // 被引导去装另一个分支的包。CI 的清理步骤已把 Release 压到 3 条以内，取 10 条足够覆盖。
-    // Gitee 更新源（App 内更新主源）：国内直连，CI 发版时上传 APK 附件；检查更新先走它，
-    // 失败或拿不到版本再回退 GitHub 直连。Gitee 与 GitHub 的 API 返回结构（tag_name /
-    // assets[].browser_download_url）一致，解析逻辑完全复用。
-    private static final String GITEE_API_URL = "https://gitee.com/api/v5/repos/cyj265/lanxing-vod/releases?per_page=10";
+    // 用列表接口(含 prerelease)即可。per_page 取 10 而非 1：main(5.4.x) 与 dev(5.6.x) 共用同一仓库，
+    // 只取 1 条会让 dev 线用户被引导去装另一条线的包。CI 的清理步骤已把 Release 压到 3 条以内，取 10 条足够覆盖。
+    // ⚠️ 接口列表顺序不可信，且两个源并不一致（2026-10-13 实测本仓库）：
+    // Gitee v5 releases 为创建时间升序——v5.6.82(10-12 19:46) 排在第 1 位、v5.6.83(10-13 00:03) 排在第 2 位，
+    // 即旧的在前。而旧实现是「返回第一条命中」，走 Gitee 时拿到的正是本线最旧的一条：后果不是收不到更新，
+    // 而是把 5.6.81 的用户引导去装 5.6.82（恰好是缺 Updater 修复的那个旧构建）。
+    // 旧注释写的"列表按创建时间倒序，逐条往下找"只对 GitHub 成立，这个假设就是本次事故的源头。
+    // 现在选版本一律交给 ReleaseSource.pickLatest 自己比版本号大小，不依赖任何接口的默认顺序。
+    // GitHub 与 Gitee 的 API 返回结构（tag_name / assets[].browser_download_url）一致，解析逻辑完全复用。
+    // 顺序上把 GitHub 放前面：它由 CI 直接发布、附件完整性由回读校验保证，Gitee 依赖本机 runner 上传，
+    // runner 离线时 Gitee 会落后于 GitHub（5.6.83 双源字节分叉即此因），故不宜再作主源。
     private static final String RELEASES_URL = "https://api.github.com/repos/cyj265/lanxing-vod/releases?per_page=10";
-    // GitHub 加速节点兜底（2026-10-12 按千问/WorkBuddy 建议恢复 1~2 个）：实测速度不理想
-    // （gh-proxy ~19KB/s）但比完全不可达强，仅当 Gitee 主源与 GitHub 直连都失败时兜底，
-    // 放候选末尾，probe 测速会自然把它排到最后。
+    // Gitee 更新源（兜底）：国内直连，CI 发版时由 runner 上传 APK 附件；GitHub 各节点都拿不到时才用它。
+    private static final String GITEE_API_URL = "https://gitee.com/api/v5/repos/cyj265/lanxing-vod/releases?per_page=10";
+    // GitHub 加速节点（2026-10-12 按千问/WorkBuddy 建议恢复 1~2 个）：实测速度不理想
+    // （gh-proxy ~19KB/s）但比完全不可达强，用于版本发现阶段直连 api.github.com 失败时的换址，
+    // 下载阶段作末位候选，probe 测速会自然把它排到最后。
     private static final String[] PROXIES = {
             "https://gh-proxy.com/",
             "https://ghfast.top/"
@@ -107,20 +114,13 @@ public class Updater implements Download.Callback, UpdateListener {
 
     /**
      * 读取本线（主版本相同）最新的 Release，解析出版本号 / APK 下载地址；无更新或异常返回 null。
-     * 国内直连 api.github.com 基本拿不到响应，这里和下载一样做多节点回退：
-     * 先直连，不通就依次换加速节点的 API 前缀代理（只换列表入口，APK 链接本身仍走 buildCandidates 那套）。
+     * 源顺序：GitHub（直连 + 逐个加速前缀）为主，全部拿不到才回退 Gitee。
+     * GitHub 优先的理由不在速度而在权威性：它由 CI 直接发布并做附件回读校验，
+     * Gitee 一侧依赖本机 runner 补传，runner 离线时内容会落后（5.6.83 双源字节分叉即此因），
+     * 作主源会把用户引向缺修复的旧构建。
      */
     private JSONObject getLatestRelease() throws Exception {
-        // 1) Gitee 源优先：国内直连拉 Releases 列表，秒出结果；任何异常都不阻断，回退 GitHub。
-        //    依赖 matchOwnLine 的新语义：命中本线最新一条却缺 APK 附件时抛异常（而不是 continue
-        //    翻出旧版本冒充「最新」），异常经 catch 正常传导到下面的 GitHub 兜底。
-        try {
-            JSONObject found = fetchGiteeRelease();
-            if (found != null) return found;
-        } catch (Exception e) {
-            e.printStackTrace(); // Gitee 源失败不影响更新链路，继续走 GitHub 兜底
-        }
-        // 2) GitHub 兜底：先直连 api.github.com，不通再逐个换加速前缀（只换列表入口，
+        // 1) GitHub 主源：先直连 api.github.com，不通再逐个换加速前缀（只换列表入口，
         //    APK 链接本身仍交给 buildCandidates() 那套候选）。
         //    实测并非所有代理都转发 api.*：gh-proxy.com 返回真 JSON(200)，ghfast.top 对 api
         //    路径直接 403。坏前缀会因 getInputStream 抛 IOException(4xx) 或 JSON 解析失败被
@@ -140,14 +140,22 @@ public class Updater implements Download.Callback, UpdateListener {
                 last = e;
             }
         }
+        // 2) Gitee 兜底：国内直连拉 Releases 列表。任一 GitHub 节点抛出的异常（含本线最新一条
+        //    空壳被判源不可用）到这里都不阻断，仍继续尝试；任何异常都不让整条链路失败。
+        try {
+            JSONObject found = fetchGiteeRelease();
+            if (found != null) return found;
+        } catch (Exception e) {
+            e.printStackTrace(); // Gitee 兜底失败：沿用 GitHub 侧最后一个异常
+            if (last != null) throw last;
+        }
         if (last != null) throw last;
         return null;
     }
 
-    /** Gitee 更新源：拉 Releases 列表（CI 发版时上传 APK 附件），挑出本线最新一条，返回与 GitHub 同构的 release 对象 */
+    /** Gitee 兜底源：拉 Releases 列表（CI 发版时由 runner 上传 APK 附件），挑出本线最新一条 */
     private JSONObject fetchGiteeRelease() throws Exception {
-        JSONArray arr = fetchReleases(new URL(GITEE_API_URL), 4000, 5000);
-        return matchOwnLine(arr);
+        return matchOwnLine(fetchReleases(new URL(GITEE_API_URL), 4000, 5000));
     }
 
     private JSONArray fetchReleases(URL url, int connectTimeout, int readTimeout) throws Exception {
@@ -164,95 +172,22 @@ public class Updater implements Download.Callback, UpdateListener {
     }
 
     /**
-     * 在 Release 列表里挑出主版本与本机相同（本线）的最新一条。
-     * 列表按创建时间倒序，逐条往下找，main(5.4.x) / dev(5.6.x) 共用一个 Releases 频道也不串线。
+     * 在 Release 列表里挑出本线（主版本与本机相同）版本号最大的一条。
+     * 顺序无关性、空壳判定、手机版优先等规则全部由 ReleaseSource 承载（纯逻辑，有 JVM 单测覆盖），
+     * 这里只负责注入本机版本号。
      */
     private JSONObject matchOwnLine(JSONArray arr) throws Exception {
-        for (int i = 0; i < arr.length(); i++) {
-            JSONObject json = arr.getJSONObject(i);
-            // tag 形如 v5.6.67-r124：去掉前缀 v，再去掉 -r124 等后缀，只留版本号 5.6.67
-            String tag = json.optString("tag_name", "").replaceFirst("^v", "").replaceFirst("-.*$", "");
-            if (tag.isEmpty() || !sameMajor(tag, BuildConfig.VERSION_NAME)) continue;
-            String url = pickApk(json);
-            // 命中本线最新一条却缺 APK 附件：直接判本线不可用（抛异常走兜底），
-            // 不能 continue 翻出更旧的版本冒充"最新"——否则 found != null 会把 GitHub 兜底短路掉，
-            // 用户会被钉死在旧版（v5.6.83 空壳 release 就是这么断的）。
-            if (url == null) throw new IllegalStateException("release " + tag + " 无可用 APK 附件（判源不可用，交由兜底）");
-            JSONObject release = new JSONObject();
-            release.put("version", tag);
-            release.put("apk_url", url);
-            release.put("desc", json.optString("body", ""));
-            return release;
-        }
-        return null;
-    }
-
-    /** 从一条 Release 的附件里挑手机版 APK 下载地址；挑不到返回 null，宁可不更新也不下错包 */
-    private String pickApk(JSONObject release) throws Exception {
-        JSONArray assets = release.optJSONArray("assets");
-        if (assets == null) return null;
-        String url = null;
-        String fallback = null;
-        for (int i = 0; i < assets.length(); i++) {
-            JSONObject a = assets.getJSONObject(i);
-            String name = a.optString("name", "");
-            if (!name.endsWith(".apk")) continue;
-            if (fallback == null) fallback = a.optString("browser_download_url", "");
-            // 历史 Release 长期同时挂着手机版(lanxing-v*.apk)与电视版(lanxing-tv-v*.apk)两个包，
-            // 直接取首个 .apk 会命中电视版（"lanxing-tv" 排在 "lanxing-v" 前），导致手机端总更新成电视包；
-            // 电视版已停发，这里始终优先选不含 tv 的手机版，万一只剩电视包也宁可不更新也不下错。
-            if (!name.contains("tv")) {
-                url = a.optString("browser_download_url", "");
-                break;
-            }
-        }
-        if (url == null || url.isEmpty()) url = fallback;
-        return url == null || url.isEmpty() ? null : url;
+        return ReleaseSource.pickLatest(arr, BuildConfig.VERSION_NAME);
     }
 
     private boolean isNewer(String remoteVersion) {
-        // 用版本号(版本号)判断是否有新版本：分段数值比较，如 5.6.9 < 5.6.10
-        if (compareVersion(remoteVersion, BuildConfig.VERSION_NAME) <= 0) return false;
+        // 用版本号判断是否有新版本：分段数值比较，如 5.6.9 < 5.6.10
+        if (ReleaseSource.compare(remoteVersion, BuildConfig.VERSION_NAME) <= 0) return false;
         // 只限制「主版本必须一致」，允许跨次/修正号升级（如 5.4.44 用户可直接升到 5.6.69）。
         // 不能再用「主+次都相同」的系列过滤：那会把 5.4.x 老用户永久挡在 5.6.x 门外。
         // 至于两个分支共用 Releases 频道，靠版本号大小比较天然隔离——低版本分支发了新包也不会
         // 对本机更高版本的用户提示更新（数字更小），无需再靠系列过滤兜底。
-        return sameMajor(remoteVersion, BuildConfig.VERSION_NAME);
-    }
-
-    /** 判断两个版本号主版本是否一致（只比第一段，如 5.4.44 与 5.6.69 同为主版本 5） */
-    private boolean sameMajor(String a, String b) {
-        return majorOf(a) == majorOf(b);
-    }
-
-    private int majorOf(String v) {
-        try {
-            return Integer.parseInt(((v == null ? "" : v).split("\\."))[0].trim());
-        } catch (Exception e) {
-            return -1;
-        }
-    }
-
-    /** 分段数值比较：a>b 返回正数，相等返回 0，a<b 返回负数；任一为空视为相等(不提示) */
-    private int compareVersion(String a, String b) {
-        if (a == null || b == null) return 0;
-        String[] pa = a.split("\\.");
-        String[] pb = b.split("\\.");
-        int n = Math.max(pa.length, pb.length);
-        for (int i = 0; i < n; i++) {
-            int x = i < pa.length ? parseInt(pa[i]) : 0;
-            int y = i < pb.length ? parseInt(pb[i]) : 0;
-            if (x != y) return Integer.compare(x, y);
-        }
-        return 0;
-    }
-
-    private int parseInt(String s) {
-        try {
-            return Integer.parseInt(s.trim());
-        } catch (Exception e) {
-            return 0;
-        }
+        return ReleaseSource.sameMajor(remoteVersion, BuildConfig.VERSION_NAME);
     }
 
     private void show(FragmentActivity activity, String version, String desc) {
@@ -461,7 +396,7 @@ public class Updater implements Download.Callback, UpdateListener {
         return out;
     }
 
-    /** 构建下载候选：Gitee 主源 + GitHub 直连兜底 + GitHub 加速节点（末位兜底）。
+    /** 构建下载候选：发现到的那一条链接优先，再拼出另一侧同构链接，最后挂 GitHub 加速节点。
      *  两源的文件名与 tag 完全一致（vX.Y.Z + lanxing-arm64_v8a-vX.Y.Z.apk），
      *  从任一侧 URL 解析出 tag+文件名即可拼出另一侧同构链接。
      *  解析失败时退化为单候选（保底原链接）。 */
@@ -576,7 +511,7 @@ public class Updater implements Download.Callback, UpdateListener {
     public void error(String msg) {
         disarmWatchdog();
         // 当前候选失败，自动切换下一个候选；全部失败才提示
-        // （Gitee 主源失败会自动换 GitHub 直连兜底，不再锁死 github.com 前缀）
+        // （候选含两源与加速节点，任一条不通都会自动换下一条，不锁死某个 host 前缀）
         if (mirrorIndex < candidates.size() - 1) {
             int failed = mirrorIndex;
             mirrorIndex++;
