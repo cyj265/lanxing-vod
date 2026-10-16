@@ -69,7 +69,7 @@ if (Test-Path $Changelog) {
 }
 if ([string]::IsNullOrWhiteSpace($Notes)) { $Notes = "更新内容详见 GitHub 仓库提交记录。" }
 $Notes = $Notes.Trim()
-$Body = "**手机版** ``lanxing-arm64_v8a-v$Ver.apk```n`n系统要求：Android 7.0（API 24）及以上。5.4.x 检查更新可直接覆盖安装。`n`n$Notes"
+$Body = "**手机版** ``lanxing-arm64_v8a-v$Ver.apk```n`n系统要求：Android 7.0（API 24）及以上。`n`n$Notes"
 
 Write-Host "Checking Gitee release $Tag ..."
 $List = curl.exe -sS --max-time 60 "$Api/releases?per_page=100&access_token=$Token"

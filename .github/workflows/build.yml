@@ -124,7 +124,7 @@ jobs:
             echo "body<<NOTES_EOF"
             echo "**手机版** \`lanxing-arm64_v8a-v${{ steps.ver.outputs.name }}.apk\`"
             echo ""
-            echo "系统要求：Android 7.0（API 24）及以上。5.4.x 检查更新可直接覆盖安装。"
+            echo "系统要求：Android 7.0（API 24）及以上。"
             echo ""
             printf '%s\n' "$NOTES"
             echo "NOTES_EOF"
