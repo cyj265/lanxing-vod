@@ -44,10 +44,15 @@ public class Product {
 
     private static int getCutout(Context context) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return 0;
-        DisplayCutout cutout = ResUtil.getDisplay(context).getCutout();
-        if (cutout == null) return 0;
-        int left = cutout.getSafeInsetLeft();
-        int right = cutout.getSafeInsetRight();
-        return left | right;
+        try {
+            DisplayCutout cutout = ResUtil.getDisplay(context).getCutout();
+            if (cutout == null) return 0;
+            int left = cutout.getSafeInsetLeft();
+            int right = cutout.getSafeInsetRight();
+            return left | right;
+        } catch (Throwable e) {
+            // 个别 ROM 谎报版本/框架缺 getCutout 方法，降级为 0
+            return 0;
+        }
     }
 }

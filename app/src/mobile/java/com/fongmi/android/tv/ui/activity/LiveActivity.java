@@ -424,7 +424,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     }
 
     private int getInsetTop() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.P) return 0;
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return 0;
         try {
             DisplayCutout cutout = ResUtil.getDisplay(this).getCutout();
             return cutout == null ? 0 : cutout.getSafeInsetTop();
