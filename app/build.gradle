@@ -141,6 +141,10 @@ dependencies {
     implementation libs.lifecycle.service
     implementation libs.media
     implementation libs.bundles.media3
+    // RTMP 播放：media3-datasource-rtmp 运行时需要 io.antmedia.rtmp_client.RtmpClient，
+    // 官方 io.antmedia:rtmp-client 已全局排除（历史重复类冲突），用 mcxinyu 的同包名分支顶上。
+    // 缺了这个类，用户播 rtmp:// 源会 NoClassDefFoundError 闪退（Bugly #4008）。
+    implementation libs.rtmp.client
     implementation libs.exoplayer.hdr.utils
     implementation libs.nextlib.media3ext
     implementation libs.palette
