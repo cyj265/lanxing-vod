@@ -51,14 +51,39 @@ $Size = [math]::Round((Get-Item $ApkPath).Length / 1MB, 1)
 Write-Host "APK: $Name ($Size MB) tag=$Tag"
 
 # 2) find or create Gitee release
+# 更新日志正文：从仓库根 CHANGELOG.md 提取「## v<版本>」段落（与 CI 发布的 GitHub Release 同源），
+# 只写该版本自身的新增与修复；找不到段落则回退为提交记录提示。
+$Notes = ""
+$Changelog = Join-Path $PSScriptRoot "..\CHANGELOG.md"
+if (Test-Path $Changelog) {
+    $inSection = $false
+    $tagPattern = "^##\s+" + [regex]::Escape($Tag) + "\s*$"
+    foreach ($line in Get-Content $Changelog -Encoding UTF8) {
+        if ($line -match '^##\s') {
+            if ($inSection) { break }
+            $inSection = ($line -match $tagPattern)
+            continue
+        }
+        if ($inSection) { $Notes += $line.TrimEnd() + "`n" }
+    }
+}
+if ([string]::IsNullOrWhiteSpace($Notes)) { $Notes = "更新内容详见 GitHub 仓库提交记录。" }
+$Notes = $Notes.Trim()
+$Body = "**手机版** ``lanxing-arm64_v8a-v$Ver.apk```n`n系统要求：Android 7.0（API 24）及以上。5.4.x 检查更新可直接覆盖安装。`n`n$Notes"
+
 Write-Host "Checking Gitee release $Tag ..."
 $List = curl.exe -sS --max-time 60 "$Api/releases?per_page=100&access_token=$Token"
 $RelId = ($List | ConvertFrom-Json | Where-Object { $_.tag_name -eq $Tag } | Select-Object -First 1).id
 if (-not $RelId) {
     Write-Host "Creating Gitee release $Tag ..."
-    $Body = @{ tag_name = $Tag; target_commitish = "master"; name = "揽星影视 $Tag"; body = "**手机版** ``lanxing-arm64_v8a-v$Ver.apk```n`n系统要求：Android 7.0（API 24）及以上。5.4.x 检查更新可直接覆盖安装。`n`n更新内容详见 GitHub 仓库提交记录。"; prerelease = $false } | ConvertTo-Json -Compress
-    $Resp = curl.exe -sS --max-time 60 -X POST "$Api/releases?access_token=$Token" -H "Content-Type: application/json" -d $Body
+    $Payload = @{ tag_name = $Tag; target_commitish = "master"; name = "揽星影视 $Tag"; body = $Body; prerelease = $false } | ConvertTo-Json -Compress
+    $Resp = curl.exe -sS --max-time 60 -X POST "$Api/releases?access_token=$Token" -H "Content-Type: application/json" -d $Payload
     $RelId = ($Resp | ConvertFrom-Json).id
+} else {
+    # release 已存在也刷新一次正文，保证与 CHANGELOG.md / GitHub 侧一致（补写日志后重跑即生效）
+    Write-Host "Release exists, syncing body ..."
+    $Patch = @{ body = $Body } | ConvertTo-Json -Compress
+    curl.exe -sS --max-time 60 -X PATCH "$Api/releases/$RelId?access_token=$Token" -H "Content-Type: application/json" -d $Patch | Out-Null
 }
 if (-not $RelId) { Write-Host "ERROR: failed to create Gitee release"; exit 1 }
 Write-Host "Gitee release id=$RelId"

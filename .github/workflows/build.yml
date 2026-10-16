@@ -108,6 +108,28 @@ jobs:
           VERSION=$(grep -oP 'versionName "\K[^"]+' app/build.gradle)
           echo "name=$VERSION" >> $GITHUB_OUTPUT
 
+      # 更新日志：从 CHANGELOG.md 提取「## v<版本>」段落作为 Release 正文（应用内更新弹窗展示）。
+      # 约定：bump 版本号时必须同步在 CHANGELOG.md 补该版本小节（只写本版新增/修复）。
+      # 找不到段落不阻断发布：回退为提交记录链接，并发 CI 告警提醒补日志。
+      - name: 提取本版更新日志（CHANGELOG.md → Release 正文）
+        id: notes
+        run: |
+          VER="v${{ steps.ver.outputs.name }}"
+          NOTES=$(awk -v ver="$VER" 'BEGIN{f=0} /^## /{if(f) exit; if($2==ver) f=1; next} f' CHANGELOG.md)
+          if [ -z "$NOTES" ]; then
+            echo "::warning::CHANGELOG.md 未找到 $VER 段落，回退为提交记录链接（bump 版本时请同步补 CHANGELOG）"
+            NOTES="更新内容详见仓库提交记录：https://github.com/$GITHUB_REPOSITORY/commits/${{ github.ref_name }}"
+          fi
+          {
+            echo "body<<NOTES_EOF"
+            echo "**手机版** \`lanxing-arm64_v8a-v${{ steps.ver.outputs.name }}.apk\`"
+            echo ""
+            echo "系统要求：Android 7.0（API 24）及以上。5.4.x 检查更新可直接覆盖安装。"
+            echo ""
+            printf '%s\n' "$NOTES"
+            echo "NOTES_EOF"
+          } >> "$GITHUB_OUTPUT"
+
       # ═══ 发布闸门 ═══
       # 版本号不变 → tag 已存在 → skip 后续发布步（Bugly/清理/发布/Gitee），
       # 但 artifact 照常生成可自测：push 小改不动用户端更新提示，只有 bump 版本号才真正发版。
@@ -209,12 +231,8 @@ jobs:
           # （main）建 tag，导致在 dev 分支发布时 tag 指向 main，Release 源码包拿不到本次修复
           target_commitish: ${{ github.sha }}
           name: 揽星影视 v${{ steps.ver.outputs.name }}
-          body: |
-            **手机版** `lanxing-arm64_v8a-v${{ steps.ver.outputs.name }}.apk`
-
-            系统要求：Android 7.0（API 24）及以上。5.4.x 检查更新可直接覆盖安装。
-
-            更新内容详见仓库提交记录：https://github.com/cyj265/lanxing-vod/commits/${{ github.ref_name }}
+          # 正文来自 steps.notes：CHANGELOG.md 中本版本段落（应用内更新弹窗即展示此内容）
+          body: ${{ steps.notes.outputs.body }}
           files: |
             /tmp/lx-release/lanxing-arm64_v8a-v${{ steps.ver.outputs.name }}.apk
             /tmp/lx-release/mapping-v${{ steps.ver.outputs.name }}.txt.gz
