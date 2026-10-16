@@ -84,8 +84,9 @@ public class OkProxySelector extends ProxySelector {
         private final int port;
 
         private Policy(URI uri, Proxy rule, List<java.net.Proxy> proxies, ProxySelector system, int generation) {
-            this.scheme = uri.getScheme().toLowerCase(Locale.ROOT);
-            this.host = uri.getHost().toLowerCase(Locale.ROOT);
+            // Bugly #9042：URI host 含下划线等字符时 getHost() 返回 null，判空兜底（lowerCase NPE）。
+            this.scheme = uri.getScheme() == null ? "" : uri.getScheme().toLowerCase(Locale.ROOT);
+            this.host = uri.getHost() == null ? "" : uri.getHost().toLowerCase(Locale.ROOT);
             this.port = getPort(uri);
             this.rule = rule;
             this.proxies = List.copyOf(proxies);
