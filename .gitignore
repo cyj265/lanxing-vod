@@ -21,3 +21,10 @@ build_verify*.log
 dry.log
 push*.log
 trace*.log
+
+# WorkBuddy 项目数据目录（本地记忆/日志，非源码）
+.workbuddy/
+
+# 低内存构建时 JVM 崩溃转储（非源码）
+hs_err*.log
+replay_pid*.log
