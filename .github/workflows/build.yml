@@ -50,7 +50,7 @@ jobs:
       - name: 安装 Android SDK（platform-37 预览版 + build-tools）
         run: |
           yes | sdkmanager --licenses > /dev/null || true
-          yes | sdkmanager --channel=3 "platforms;android-37" || echo "platform-37 预装失败，将由 AGP 自动下载兜底"
+          yes | sdkmanager --channel=3 "platforms;android-37.0" || echo "platform-37 预装失败，将由 AGP 自动下载兜底"
           yes | sdkmanager "build-tools;36.0.0" || echo "build-tools 预装失败，将由 AGP 自动下载兜底"
 
       - name: 写入签名配置（从 Secrets 读取）
