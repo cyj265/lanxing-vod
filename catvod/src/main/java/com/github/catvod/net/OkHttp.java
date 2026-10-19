@@ -39,6 +39,7 @@ public class OkHttp {
     private OkProxySelector selector;
     private OkHttpClient client;
     private OkHttpClient player;
+    private OkHttpClient secure;
     private OkDns dns;
 
     public static OkHttp get() {
@@ -78,6 +79,24 @@ public class OkHttp {
     public static synchronized OkHttpClient client() {
         if (get().client != null) return get().client;
         return get().client = getBuilder().build();
+    }
+
+    /**
+     * 使用平台默认信任链与默认主机名校验的客户端，专供「不能被中间人替换」的请求（APK 下载）。
+     * <p>
+     * 不能复用 client()：getBuilder() 为兼容自签爬虫源配了 trust-all + hostnameVerifier 恒真，
+     * 那会让上层做的主机白名单、证书指纹校验在传输层就被绕过。
+     * <p>
+     * 这里从零构建而不是 client().newBuilder()：派生方式会把 sslSocketFactory(trust-all) 一起继承，
+     * 只覆盖 hostnameVerifier 等于没修。不指定 hostnameVerifier 与 sslSocketFactory 时，OkHttp
+     * 用的就是平台默认（可信根 + 主机名匹配），正是想要的。
+     * <p>
+     * 保留 selector 是有意的：用户配了代理时 APK 下载仍能走代理。安全性不依赖"不走代理"，
+     * 而依赖默认证书链校验——恶意代理也签不出 githubusercontent.com 的可信证书。
+     */
+    public static synchronized OkHttpClient secureClient() {
+        if (get().secure != null) return get().secure;
+        return get().secure = getBuilder(false).build();
     }
 
     public static synchronized OkHttpClient player() {
@@ -189,8 +208,17 @@ public class OkHttp {
     }
 
     private static OkHttpClient.Builder getBuilder() {
+        return getBuilder(true);
+    }
+
+    /**
+     * @param trustAll true 时覆盖 TLS：接受任意证书与任意主机名（爬虫源大量使用自签/错误证书）。
+     *                 false 时完全不覆盖，走平台默认证书链校验，用于 APK 这类必须防中间人的下载。
+     */
+    private static OkHttpClient.Builder getBuilder(boolean trustAll) {
         OkProxySelector selector = selector();
-        OkHttpClient.Builder builder = new OkHttpClient.Builder().addInterceptor(requestInterceptor()).addInterceptor(authInterceptor()).addInterceptor(new ProxyRedirectInterceptor(selector)).addNetworkInterceptor(responseInterceptor()).connectTimeout(TIMEOUT, TimeUnit.MILLISECONDS).readTimeout(TIMEOUT, TimeUnit.MILLISECONDS).writeTimeout(TIMEOUT, TimeUnit.MILLISECONDS).dns(dns()).hostnameVerifier((hostname, session) -> true).sslSocketFactory(getSSLContext().getSocketFactory(), trustAllCertificates()).followRedirects(false);
+        OkHttpClient.Builder builder = new OkHttpClient.Builder().addInterceptor(requestInterceptor()).addInterceptor(authInterceptor()).addInterceptor(new ProxyRedirectInterceptor(selector)).addNetworkInterceptor(responseInterceptor()).connectTimeout(TIMEOUT, TimeUnit.MILLISECONDS).readTimeout(TIMEOUT, TimeUnit.MILLISECONDS).writeTimeout(TIMEOUT, TimeUnit.MILLISECONDS).dns(dns()).followRedirects(false);
+        if (trustAll) builder.hostnameVerifier((hostname, session) -> true).sslSocketFactory(getSSLContext().getSocketFactory(), trustAllCertificates());
         HttpLoggingInterceptor logging = new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY);
         builder.proxyAuthenticator(authenticator());
         //builder.addNetworkInterceptor(logging);

@@ -2,6 +2,9 @@ package com.fongmi.android.tv;
 
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.Signature;
+import android.content.pm.SigningInfo;
+import android.os.Build;
 import android.view.View;
 
 import androidx.fragment.app.FragmentActivity;
@@ -13,8 +16,10 @@ import com.fongmi.android.tv.utils.Download;
 import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ReleaseSource;
+import com.fongmi.android.tv.utils.ReleaseTrust;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Task;
+import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Path;
 
 import org.json.JSONArray;
@@ -50,9 +55,9 @@ public class Updater implements Download.Callback, UpdateListener {
     private static final String RELEASES_URL = "https://api.github.com/repos/cyj265/lanxing-vod/releases?per_page=10";
     // Gitee 更新源（兜底）：国内直连，CI 发版时由 runner 上传 APK 附件；GitHub 各节点都拿不到时才用它。
     private static final String GITEE_API_URL = "https://gitee.com/api/v5/repos/cyj265/lanxing-vod/releases?per_page=10";
-    // GitHub 加速节点（2026-10-12 按千问/WorkBuddy 建议恢复 1~2 个）：实测速度不理想
-    // （gh-proxy ~19KB/s）但比完全不可达强，用于版本发现阶段直连 api.github.com 失败时的换址，
-    // 下载阶段作末位候选，probe 测速会自然把它排到最后。
+    // GitHub 加速节点：仅用于「版本发现」阶段直连 api.github.com 失败时的换址（那里只会拿到一段
+    // release JSON）。实测速度不理想（gh-proxy ~19KB/s）但比完全不可达强。
+    // 注意：它们不再承载 APK 字节——buildCandidates() 只允许官方域递包，理由见那里的注释。
     private static final String[] PROXIES = {
             "https://gh-proxy.com/",
             "https://ghfast.top/"
@@ -208,7 +213,9 @@ public class Updater implements Download.Callback, UpdateListener {
             if (hit >= 0) {
                 // 命中缓存不探测（省下 3.5s），但顺序仍是 buildCandidates 的原始顺序，
                 // 中途卡死时会盲切到"下一位"。这里零成本地重排一次：把国内基本必挂的
-                // github.com 直连挪到末尾，好让切换先落到加速节点上。
+                // github.com 直连挪到末尾，好让切换先落到 Gitee 上。
+                // 注：旧版本可能把加速节点 host 写进了缓存，那时 indexOfHost 匹配不到任何候选
+                // （候选已不含代理），自然走探测，不会把包递给第三方站。
                 reorderAround(candidates.get(hit));
                 startNext();
                 return;
@@ -220,7 +227,7 @@ public class Updater implements Download.Callback, UpdateListener {
 
     /**
      * 并发探测各候选节点前 32KB 速率，把候选按实测速度重排后从最快的开下；
-     * 全部失败则跳过国内必挂的直连、从第一个代理起步。
+     * 全部失败则跳过国内必挂的 GitHub 直连、从 Gitee 起步。
      * 重排的意义不只是"本次用最快的"：下载中途卡死(onStall)或报错(error)时，
      * 顺序切换到的就是实测第二快的，而不是原来那个凭运气排在下一位的节点。
      */
@@ -246,8 +253,8 @@ public class Updater implements Download.Callback, UpdateListener {
                         candidates = new ArrayList<>(r);
                         mirrorIndex = 0;
                     } else {
-                        // 全失败：跳过国内必挂的直连，从第一个代理起步
-                        mirrorIndex = firstProxyIndex();
+                        // 全失败：跳过国内必挂的 GitHub 直连，从兜底源起步
+                        mirrorIndex = firstFallbackIndex();
                     }
                     startNext();
                 } catch (Exception e) {
@@ -287,8 +294,8 @@ public class Updater implements Download.Callback, UpdateListener {
         mirrorIndex = 0;
     }
 
-    /** 第一个非 github.com 直连的候选索引（国内直连基本不通，失败时跳过它） */
-    private int firstProxyIndex() {
+    /** 第一个非 github.com 直连的候选索引（国内直连基本不通，失败时跳过它；候选里它就是 Gitee 那条） */
+    private int firstFallbackIndex() {
         for (int i = 0; i < candidates.size(); i++) {
             String u = candidates.get(i);
             if (u != null && !u.startsWith("https://github.com/")) return i;
@@ -396,21 +403,27 @@ public class Updater implements Download.Callback, UpdateListener {
         return out;
     }
 
-    /** 构建下载候选：发现到的那一条链接优先，再拼出另一侧同构链接，最后挂 GitHub 加速节点。
-     *  两源的文件名与 tag 完全一致（vX.Y.Z + lanxing-arm64_v8a-vX.Y.Z.apk），
-     *  从任一侧 URL 解析出 tag+文件名即可拼出另一侧同构链接。
-     *  解析失败时退化为单候选（保底原链接）。 */
+    /**
+     * 构建下载候选：发现到的那一条优先，再拼出另一侧同构链接。
+     * 两源的文件名与 tag 完全一致（vX.Y.Z + lanxing-arm64_v8a-vX.Y.Z.apk），
+     * 从任一侧 URL 解析出 tag+文件名即可拼出另一侧同构链接；解析失败时退化为单候选。
+     * <p>
+     * 候选一律先过 ReleaseTrust 域白名单，且不再挂 GitHub 加速节点前缀。理由是职责不同：
+     * PROXIES 仍参与「版本发现」（那里只会拿到一段 release JSON），但不再承载 APK 字节。
+     * gh-proxy.com / ghfast.top 属第三方，作为包体来源时既能替换内容，也能对单个用户
+     * 反复返回当前版本实现定向冻结更新——后者签名校验治不了，只能靠不让它递包。
+     * <p>
+     * 可用性上不亏：GitHub 与 Gitee 两源永远同时在候选里（twinUrl 保证），
+     * 国内直连 GitHub 不通时仍有 Gitee 兜底，这一条本来就是国内路径。
+     */
     private void buildCandidates() {
         candidates.clear();
-        if (apkUrl != null) candidates.add(apkUrl);
+        if (ReleaseTrust.isTrustedDownloadUrl(apkUrl)) candidates.add(apkUrl);
         String twin = twinUrl(apkUrl);
-        if (twin != null && !candidates.contains(twin)) {
-            candidates.add(twin);
-            // GitHub 加速节点兜底：前缀 + GitHub 直连链接，仅作最后防线
-            for (String p : PROXIES) {
-                String proxied = p + twin;
-                if (!candidates.contains(proxied)) candidates.add(proxied);
-            }
+        if (twin != null && ReleaseTrust.isTrustedDownloadUrl(twin) && !candidates.contains(twin)) candidates.add(twin);
+        if (candidates.isEmpty()) {
+            android.util.Log.w("Updater", "untrusted apk url dropped: " + apkUrl);
+            Notify.show("更新源返回了不可信的下载链接，已拒绝");
         }
     }
 
@@ -458,7 +471,11 @@ public class Updater implements Download.Callback, UpdateListener {
         }
         String url = candidates.get(mirrorIndex);
         if (candidates.size() > 1) Notify.show("正在" + nameOf(mirrorIndex) + "下载更新…");
-        download = Download.create(url, getFile()).tag(nameOf(mirrorIndex));
+        // 安装包走独立客户端（默认信任链 + 默认主机名校验）：catvod 的 OkHttp.client()
+        // 为兼容爬虫源配了 trust-all + hostnameVerifier 恒真，复用它的话这条 HTTPS
+        // 连接可被任意证书冒充，buildCandidates 的域白名单与下面的签名固定都会被绕过。
+        // 其它下载（jar / EPG / 字幕 / 壁纸 / so）仍用原客户端，不改它们的可达性。
+        download = Download.create(url, getFile()).tag(nameOf(mirrorIndex)).client(OkHttp.secureClient());
         download.start(this);
         armWatchdog();
     }
@@ -511,7 +528,7 @@ public class Updater implements Download.Callback, UpdateListener {
     public void error(String msg) {
         disarmWatchdog();
         // 当前候选失败，自动切换下一个候选；全部失败才提示
-        // （候选含两源与加速节点，任一条不通都会自动换下一条，不锁死某个 host 前缀）
+        // （候选只有 GitHub / Gitee 两源，任一条不通都会自动换另一条，不再包含第三方加速前缀）
         if (mirrorIndex < candidates.size() - 1) {
             int failed = mirrorIndex;
             mirrorIndex++;
@@ -526,9 +543,10 @@ public class Updater implements Download.Callback, UpdateListener {
     @Override
     public void success(File file) {
         disarmWatchdog();
-        if (!isValidApk(file)) {
+        ApkCheck check = checkApk(file);
+        if (check != ApkCheck.OK) {
             Path.clear(file);
-            Notify.show("安装包校验失败，已清理，请重试");
+            Notify.show(messageOf(check));
             dismiss();
             return;
         }
@@ -559,17 +577,97 @@ public class Updater implements Download.Callback, UpdateListener {
         }
     }
 
-    /** 下载完成后校验安装包：包名一致且版本号不低于当前版本，避免误装旧包/错包 */
-    private boolean isValidApk(File file) {
+    /** 校验结果分级：签名问题与包体问题分开报，前者重试无意义，后者可能是网络截断 */
+    private enum ApkCheck {
+        OK, INVALID, UNSIGNED, MISMATCH
+    }
+
+    private String messageOf(ApkCheck check) {
+        if (check == ApkCheck.MISMATCH) return "安装包签名与官方发布证书不一致，已拒绝安装";
+        if (check == ApkCheck.UNSIGNED) return "无法读取安装包签名，可能不是有效安装包，已拒绝安装";
+        return "安装包校验失败，已清理，请重试";
+    }
+
+    /**
+     * 下载完成后校验安装包：包名一致、版本号不低于当前版本，且签名必须是 ReleaseTrust 固定的发布证书。
+     * <p>
+     * 为什么要自己查：Android 安装器同样会拒绝异签名覆盖安装（INSTALL_FAILED_UPDATE_INCOMPATIBLE），
+     * 但那意味着用户只看到一个看不懂的失败码，接着被搜索结果引导去「卸载重装」——而卸载重装会让
+     * 同包名的假包以全新安装直接装上。这里提前拒绝并说明原因，就是不给这条路留机会。
+     * <p>
+     * 线上两个包（v5.6.85 / v5.6.87）都没有 v1(JAR) 签名：META-INF 下没有任何 .RSA/.SF，
+     * 签名只在 APK Signing Block 的 v2 块里。查 AOSP 确认这样仍然读得到证书——
+     * PackageManager.getPackageArchiveInfo 在 7.0 起就是先跑 ApkSignatureSchemeV2Verifier
+     * 再回退 JAR 校验，所以 24~27 用 GET_SIGNATURES 拿到的是 v2 signer 的证书。
+     * 两条读取路径都取值并合并，任一环节被厂商 ROM 改动也不至于把合法包判死。
+     * 两路都拿不到时判 UNSIGNED（拒绝），绝不把"读不到"当成"通过"。
+     * <p>
+     * 顺带的好处：collectCertificates 会真跑一遍 v2 校验（对全文件算摘要），下载被截断或篡改时
+     * 平台多半直接返回 null，落到 INVALID，不会走到安装器那一步。
+     */
+    private ApkCheck checkApk(File file) {
         try {
             PackageManager pm = App.get().getBaseContext().getPackageManager();
-            PackageInfo info = pm.getPackageArchiveInfo(file.getAbsolutePath(), PackageManager.GET_SIGNATURES);
-            if (info == null) return false;
-            if (info.versionCode < BuildConfig.VERSION_CODE) return false;
-            return info.packageName != null && info.packageName.equals(BuildConfig.APPLICATION_ID);
+            // GET_SIGNATURES 必须始终带上，不只是「旧接口」：AOSP 的 getPackageArchiveInfo 在
+            // Android 9/10 里只在 (flags & GET_SIGNATURES) != 0 时才调 collectCertificates，
+            // 到 Android 11 才改成两个 flag 任一即可。所以 28/29 上若只传
+            // GET_SIGNING_CERTIFICATES，归档根本不会被解析签名，signingInfo 恒为 null，
+            // 合法更新会被全部判成 UNSIGNED。这里两个 flag 一起传，兼容各版本触发条件。
+            int flags = PackageManager.GET_SIGNATURES;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) flags |= PackageManager.GET_SIGNING_CERTIFICATES;
+            PackageInfo info = pm.getPackageArchiveInfo(file.getAbsolutePath(), flags);
+            if (info == null) return ApkCheck.INVALID;
+            if (info.versionCode < BuildConfig.VERSION_CODE) return ApkCheck.INVALID;
+            if (info.packageName == null || !info.packageName.equals(BuildConfig.APPLICATION_ID)) return ApkCheck.INVALID;
+            List<byte[]> certs = signerCerts(info);
+            if (certs.isEmpty()) {
+                android.util.Log.w("Updater", "no signer cert readable from archive: " + file.getName());
+                return ApkCheck.UNSIGNED;
+            }
+            for (byte[] cert : certs) {
+                if (ReleaseTrust.isTrustedCert(cert)) return ApkCheck.OK;
+            }
+            android.util.Log.w("Updater", "signature mismatch: " + file.getName() + " from " + nameOf(mirrorIndex));
+            return ApkCheck.MISMATCH;
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return ApkCheck.INVALID;
+        }
+    }
+
+    /**
+     * 取归档的签名者证书 DER，两条路径都取并合并（去重后交给 ReleaseTrust 逐枚比对）。
+     * signingInfo 是首选：GET_SIGNATURES 在存在轮转历史时只返回「最旧的一枚」，
+     * 单靠它会漏掉当前 signer；反之个别厂商 ROM 对归档不填 signingInfo，单靠它又会读空。
+     * 任一命中固定指纹即视为可信——多 signer（轮转窗口）场景下这正是我们要接受的形态。
+     */
+    private List<byte[]> signerCerts(PackageInfo info) {
+        List<byte[]> out = new ArrayList<>();
+        addAll(out, info.signatures);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && info.signingInfo != null) {
+            try {
+                SigningInfo signing = info.signingInfo;
+                // 多 signer 时 getSigningCertificateHistory() 按契约返回 null，改用 contents signers
+                addAll(out, signing.hasMultipleSigners() ? signing.getApkContentsSigners() : signing.getSigningCertificateHistory());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return out;
+    }
+
+    private void addAll(List<byte[]> out, Signature[] signatures) {
+        if (signatures == null) return;
+        for (Signature item : signatures) {
+            if (item == null) continue;
+            byte[] der = item.toByteArray();
+            if (der == null || der.length == 0) continue;
+            boolean seen = false;
+            for (byte[] exist : out) if (java.security.MessageDigest.isEqual(exist, der)) {
+                seen = true;
+                break;
+            }
+            if (!seen) out.add(der);
         }
     }
 }

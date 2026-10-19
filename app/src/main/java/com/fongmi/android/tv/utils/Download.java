@@ -14,6 +14,7 @@ import java.util.concurrent.Future;
 import java.util.function.Consumer;
 
 import okhttp3.Call;
+import okhttp3.OkHttpClient;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
@@ -32,6 +33,7 @@ public class Download {
     private int lastProgress;
     private long maxBytes;
     private String tag;
+    private OkHttpClient client;
 
     public static Download create(String url, File file) {
         return new Download(url, file);
@@ -54,6 +56,16 @@ public class Download {
         return this;
     }
 
+    /**
+     * 指定发起请求的客户端。不设置时沿用 OkHttp.client()（trust-all，兼容自签爬虫源）；
+     * 需要防中间人的下载（APK 更新包）必须显式传入默认信任链的客户端，否则传输层可被任意证书冒充。
+     * cancel() 也跟着换到这个客户端，否则标签在另一个 dispatcher 上，取消不到。
+     */
+    public Download client(OkHttpClient client) {
+        this.client = client;
+        return this;
+    }
+
     public File get() {
         doInBackground();
         return file;
@@ -71,7 +83,8 @@ public class Download {
         if (future != null) future.cancel(true);
         Call request = call;
         if (request != null) request.cancel();
-        OkHttp.cancel(tag);
+        if (client != null) OkHttp.cancel(client, tag);
+        else OkHttp.cancel(tag);
         future = null;
         return this;
     }
@@ -90,7 +103,7 @@ public class Download {
     }
 
     private Call createCall() {
-        Call request = OkHttp.newCall(url, tag);
+        Call request = client != null ? OkHttp.newCall(client, url, tag) : OkHttp.newCall(url, tag);
         call = request;
         return request;
     }
