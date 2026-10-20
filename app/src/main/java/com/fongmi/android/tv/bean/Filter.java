@@ -71,7 +71,20 @@ public class Filter implements Parcelable {
     }
 
     public Filter check() {
-        Iterables.removeIf(getValue(), Predicates.isNull());
+        if (value == null) return this;
+        Iterables.removeIf(value, Predicates.isNull());
+        List<Value> expanded = new ArrayList<>();
+        for (Value item : value) {
+            String[] name = item.getN().split(",");
+            String[] val = item.getV().split(",");
+            if (name.length > 1 && name.length == val.length) {
+                for (int i = 0; i < name.length; i++) expanded.add(Value.create(name[i].trim(), val[i].trim()));
+            } else {
+                expanded.add(item);
+            }
+        }
+        value.clear();
+        value.addAll(expanded);
         return this;
     }
 
