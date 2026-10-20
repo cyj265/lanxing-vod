@@ -47,7 +47,7 @@
         android:layout_height="wrap_content"
         android:ellipsize="end"
         android:singleLine="true"
-        android:textColor="#8AFFFFFF"
+        android:textColor="@color/white_50"
         android:textSize="10sp" />
 
 </androidx.appcompat.widget.LinearLayoutCompat>

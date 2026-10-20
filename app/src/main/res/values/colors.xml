@@ -30,9 +30,8 @@
     <color name="primary">#1FD6A6</color>
 
     <color name="bg">#121212</color>
-    <color name="bg_deep">#0F0F0F</color>
 
-    <!-- ===== 揽星设计语言统一令牌：暗色 + 毛玻璃/圆角表面 + 暖黄强调 ===== -->
+    <!-- ===== 揽星设计语言统一令牌：暗色三档底 + 毛玻璃/圆角表面 + 薄荷(#1FD6A6)强调 ===== -->
     <color name="accent">@color/primary</color>
     <color name="surface">#1B1E26</color>
     <color name="surface_high">#23262F</color>
@@ -41,6 +40,10 @@
     <color name="on_surface">@color/white</color>
     <color name="on_surface_variant">@color/white_60</color>
     <color name="sheet_bg">@color/surface</color>
-    <color name="nav_bg">#F2121212</color>
+
+    <!-- 液态玻璃三层材质，见 ui/custom/GlassDrawable.java：底色 / 顶部高光线 / 圆角描边 -->
+    <color name="glass_bg">#A6121212</color>
+    <color name="glass_hairline">#55FFFFFF</color>
+    <color name="glass_stroke">#33FFFFFF</color>
 
 </resources>

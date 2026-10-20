@@ -30,7 +30,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="更多 >"
-            android:textColor="#8AFFFFFF"
+            android:textColor="@color/white_50"
             android:textSize="12sp" />
 
     </androidx.appcompat.widget.LinearLayoutCompat>

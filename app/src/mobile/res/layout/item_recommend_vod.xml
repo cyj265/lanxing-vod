@@ -10,7 +10,7 @@
     <androidx.cardview.widget.CardView
         android:layout_width="match_parent"
         android:layout_height="@dimen/recommend_poster_height"
-        app:cardCornerRadius="10dp"
+        app:cardCornerRadius="8dp"
         app:cardElevation="0dp">
 
         <androidx.appcompat.widget.AppCompatImageView
@@ -30,7 +30,7 @@
             android:paddingTop="2dp"
             android:paddingEnd="6dp"
             android:paddingBottom="2dp"
-            android:textColor="#FFFFFF"
+            android:textColor="@color/white"
             android:textSize="10sp"
             android:textStyle="bold"
             android:visibility="gone" />
@@ -44,7 +44,7 @@
         android:layout_marginTop="4dp"
         android:ellipsize="end"
         android:maxLines="1"
-        android:textColor="#E0FFFFFF"
+        android:textColor="@color/white_90"
         android:textSize="12sp" />
 
     <com.google.android.material.textview.MaterialTextView
@@ -53,7 +53,7 @@
         android:layout_height="wrap_content"
         android:ellipsize="end"
         android:maxLines="1"
-        android:textColor="#6AFFFFFF"
+        android:textColor="@color/white_40"
         android:textSize="10sp" />
 
 </androidx.appcompat.widget.LinearLayoutCompat>

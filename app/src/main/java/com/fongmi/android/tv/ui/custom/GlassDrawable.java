@@ -21,6 +21,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.RequiresApi;
 
 import com.fongmi.android.tv.R;
+import com.fongmi.android.tv.utils.ResUtil;
 
 /**
  * 底部导航玻璃背景（液态玻璃观感）：
@@ -67,7 +68,7 @@ public class GlassDrawable extends Drawable {
         mContent = content;
         mPaint = new Paint(Paint.FILTER_BITMAP_FLAG | Paint.ANTI_ALIAS_FLAG);
         mGlassPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-        mGlassPaint.setColor(0xA6121212);
+        mGlassPaint.setColor(ResUtil.getColor(R.color.glass_bg));
         mLinePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mClipPath = new Path();
         mClipRectF = new RectF();
@@ -212,13 +213,13 @@ public class GlassDrawable extends Drawable {
 
         mHighlightRectF.set(b.left + dp(4), b.top + dp(1), b.right - dp(4), b.top + dp(3));
         mLinePaint.setStyle(Paint.Style.FILL);
-        mLinePaint.setColor(0x55FFFFFF);
+        mLinePaint.setColor(ResUtil.getColor(R.color.glass_hairline));
         canvas.drawRoundRect(mHighlightRectF, dp(1.5f), dp(1.5f), mLinePaint);
 
         mStrokeRectF.set(b.left + dp(0.5f), b.top + dp(0.5f), b.right - dp(0.5f), b.bottom - dp(0.5f));
         mLinePaint.setStyle(Paint.Style.STROKE);
         mLinePaint.setStrokeWidth(dp(1));
-        mLinePaint.setColor(0x33FFFFFF);
+        mLinePaint.setColor(ResUtil.getColor(R.color.glass_stroke));
         canvas.drawRoundRect(mStrokeRectF, mRadiusPx, mRadiusPx, mLinePaint);
     }
 

@@ -19,7 +19,7 @@
         android:layout_weight="1"
         android:ellipsize="middle"
         android:singleLine="true"
-        android:textColor="#F2FFFFFF"
+        android:textColor="@color/white_90"
         android:textSize="14sp"
         tools:text="https://fongmi.github.io/cat.json" />
 

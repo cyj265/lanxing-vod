@@ -22,7 +22,7 @@
 
     <style name="Theme.Crash" parent="Theme.Base">
         <item name="android:windowDisablePreview">true</item>
-        <item name="android:windowBackground">@color/bg_deep</item>
+        <item name="android:windowBackground">@color/bg</item>
     </style>
 
     <style name="Control">

@@ -210,7 +210,7 @@ public class HomeActivity extends BaseActivity {
 
     private void updateNav() {
         int primary = ContextCompat.getColor(this, R.color.primary);
-        int normal = 0x99FFFFFF;
+        int normal = ContextCompat.getColor(this, R.color.on_surface_variant);
         setTab(mBinding.tabVod, mBinding.iconVod, mBinding.textVod, mSelected == TAB_VOD, primary, normal);
         setTab(mBinding.tabHistory, mBinding.iconHistory, mBinding.textHistory, mSelected == TAB_HISTORY, primary, normal);
         setTab(mBinding.tabSetting, mBinding.iconSetting, mBinding.textSetting, mSelected == TAB_SETTING, primary, normal);
