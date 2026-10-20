@@ -94,6 +94,7 @@ public class RecommendRowAdapter extends RecyclerView.Adapter<RecommendRowAdapte
             LinearLayoutManager lm = new LinearLayoutManager(binding.getRoot().getContext(), LinearLayoutManager.HORIZONTAL, false);
             binding.recycler.setLayoutManager(lm);
             binding.recycler.setHasFixedSize(true);
+            binding.recycler.setItemAnimator(null);
             binding.recycler.setItemViewCacheSize(12);
             binding.recycler.setNestedScrollingEnabled(false);
             mAdapter = new RecommendVodAdapter(v -> {});

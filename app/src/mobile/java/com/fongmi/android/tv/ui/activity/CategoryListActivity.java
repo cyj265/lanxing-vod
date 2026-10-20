@@ -84,6 +84,7 @@ public class CategoryListActivity extends BaseActivity {
         mBinding.toolbar.setNavigationOnClickListener(v -> finish());
 
         mAdapter = new CategoryListAdapter(this::onItemClick);
+        mBinding.recycler.setItemAnimator(null);
         mBinding.recycler.setAdapter(mAdapter);
         mBinding.recycler.setLayoutManager(new LinearLayoutManager(this));
 

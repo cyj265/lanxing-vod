@@ -101,6 +101,7 @@ public class DiscoverFragment extends Fragment {
         mBinding.recommendRecycler.setAdapter(mRecommendAdapter);
         mBinding.recommendRecycler.setLayoutManager(new LinearLayoutManager(requireContext()));
         mBinding.recommendRecycler.setHasFixedSize(true);
+        mBinding.recommendRecycler.setItemAnimator(null);
         mBinding.recommendRecycler.setItemViewCacheSize(8);
     }
 
@@ -111,6 +112,7 @@ public class DiscoverFragment extends Fragment {
             return;
         }
         mBinding.continueLayout.setVisibility(View.VISIBLE);
+        mBinding.continueRecycler.setItemAnimator(null);
         int count = Math.min(items.size(), 10);
         mBinding.continueRecycler.setAdapter(new ContinueAdapter(items.subList(0, count), item ->
             VideoActivity.start(requireActivity(), item.getSiteKey(), item.getVodId(), item.getVodName(), item.getVodPic())

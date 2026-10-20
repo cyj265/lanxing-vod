@@ -49,6 +49,7 @@ public class FileActivity extends BaseActivity implements FileAdapter.OnClickLis
 
     private void setRecyclerView() {
         mBinding.recycler.setHasFixedSize(true);
+        mBinding.recycler.setItemAnimator(null);
         mBinding.recycler.setAdapter(mAdapter = new FileAdapter(this));
     }
 

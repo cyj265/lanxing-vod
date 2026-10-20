@@ -61,6 +61,7 @@ public class HistoryFragment extends BaseFragment implements HistoryAdapter.OnCl
 
     private void setRecyclerView() {
         mBinding.recycler.setHasFixedSize(true);
+        mBinding.recycler.setItemAnimator(null);
         mBinding.recycler.setLayoutManager(new GridLayoutManager(requireContext(), Product.getColumn(requireContext())));
         mBinding.recycler.setAdapter(mAdapter = new HistoryAdapter(this));
         mAdapter.setSize(Product.getSpec(requireContext()));

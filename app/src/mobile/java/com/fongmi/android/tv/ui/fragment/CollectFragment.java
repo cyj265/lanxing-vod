@@ -125,6 +125,7 @@ public class CollectFragment extends BaseFragment implements
         mBinding.collect.setAdapter(mCollectAdapter = new CollectAdapter(this));
 
         mBinding.recycler.setHasFixedSize(true);
+        mBinding.recycler.setItemAnimator(null);
         mBinding.recycler.setAdapter(mSearchAdapter = new SearchAdapter(this));
         ((GridLayoutManager) mBinding.recycler.getLayoutManager()).setSpanCount(getCount());
     }
