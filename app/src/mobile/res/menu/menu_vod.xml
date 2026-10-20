@@ -10,6 +10,14 @@
         app:showAsAction="always" />
 
     <item
+        android:id="@+id/filter"
+        android:icon="@drawable/ic_action_filter"
+        android:title="@string/menu_filter"
+        android:visible="false"
+        app:iconTint="@color/white"
+        app:showAsAction="always" />
+
+    <item
         android:id="@+id/keep"
         android:icon="@drawable/ic_action_keep"
         android:title="@string/app_keep"

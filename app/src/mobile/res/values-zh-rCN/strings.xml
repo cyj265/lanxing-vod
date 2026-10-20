@@ -14,6 +14,7 @@
     <string name="menu_sync">同步</string>
     <string name="menu_delete">删除</string>
     <string name="menu_search">搜索</string>
+    <string name="menu_filter">筛选</string>
     <string name="menu_site">站点</string>
     <string name="menu_reset">重置</string>
 

@@ -37,6 +37,7 @@ import com.fongmi.android.tv.ui.activity.KeepActivity;
 import com.fongmi.android.tv.ui.activity.SearchActivity;
 import com.fongmi.android.tv.ui.adapter.TypeAdapter;
 import com.fongmi.android.tv.ui.base.BaseFragment;
+import com.fongmi.android.tv.ui.dialog.FilterDialog;
 import com.fongmi.android.tv.ui.dialog.HistoryDialog;
 import com.fongmi.android.tv.ui.dialog.ReceiveDialog;
 import com.fongmi.android.tv.ui.dialog.SiteDialog;
@@ -107,6 +108,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
             public void onPageSelected(int position) {
                 mBinding.type.smoothScrollToPosition(position);
                 mAdapter.setSelected(position);
+                setFilterVisible();
             }
         });
     }
@@ -126,8 +128,15 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     private void setAdapter(Result result) {
         mAdapter.addAll(mResult = result);
         mBinding.pager.getAdapter().notifyDataSetChanged();
+        setFilterVisible();
         hideProgress();
         showContent();
+    }
+
+    private void setFilterVisible() {
+        int position = mBinding.pager.getCurrentItem();
+        boolean visible = position >= 0 && position < mAdapter.getItemCount() && !mAdapter.get(position).getFilters().isEmpty();
+        mBinding.toolbar.getMenu().findItem(R.id.filter).setVisible(visible);
     }
 
     private void setTitle() {
@@ -150,6 +159,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         if (item.getItemId() == R.id.keep) KeepActivity.start(requireActivity());
         else if (item.getItemId() == R.id.search) SearchActivity.start(requireActivity());
         else if (item.getItemId() == R.id.history) HistoryActivity.start(requireActivity());
+        else if (item.getItemId() == R.id.filter) FilterDialog.create().filter(mAdapter.get(mBinding.pager.getCurrentItem()).getFilters()).show(this);
         return true;
     }
 
@@ -174,6 +184,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
     private void homeContent() {
         showProgress();
         mAdapter.clear();
+        setFilterVisible();
         mViewModel.homeContent();
         mBinding.pager.setAdapter(new PageAdapter(getChildFragmentManager()));
     }
