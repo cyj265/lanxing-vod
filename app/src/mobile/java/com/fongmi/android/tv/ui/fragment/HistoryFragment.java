@@ -26,6 +26,7 @@ import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.dialog.SyncDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
+import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
@@ -55,6 +56,7 @@ public class HistoryFragment extends BaseFragment implements HistoryAdapter.OnCl
 
     @Override
     protected void initView() {
+        EventBus.getDefault().register(this);
         setRecyclerView();
         getHistory();
     }
@@ -130,6 +132,7 @@ public class HistoryFragment extends BaseFragment implements HistoryAdapter.OnCl
 
     @Override
     public void onDestroyView() {
+        EventBus.getDefault().unregister(this);
         requireActivity().removeMenuProvider(this);
         super.onDestroyView();
     }
