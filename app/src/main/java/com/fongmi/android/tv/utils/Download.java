@@ -34,6 +34,7 @@ public class Download {
     private long maxBytes;
     private String tag;
     private OkHttpClient client;
+    private volatile long bytesRead;
 
     public static Download create(String url, File file) {
         return new Download(url, file);
@@ -71,9 +72,15 @@ public class Download {
         return file;
     }
 
+    /** 已落盘字节数（跨线程读，仅供调用方判活/展示） */
+    public long bytesRead() {
+        return bytesRead;
+    }
+
     public void start(Callback callback) {
         this.lastProgress = -1;
         this.canceled = false;
+        this.bytesRead = 0;
         this.callback = callback;
         future = Task.submit(this::doInBackground);
     }
@@ -131,6 +138,8 @@ public class Download {
             while ((readBytes = input.read(buffer)) != -1) {
                 checkCanceled();
                 totalBytes += readBytes;
+                // 供看门狗判活：按整数百分比回调会在慢速但正常的连接上漏报，这里记真实字节
+                bytesRead = totalBytes;
                 checkSize(totalBytes);
                 output.write(buffer, 0, readBytes);
                 updateProgress(totalBytes, length);

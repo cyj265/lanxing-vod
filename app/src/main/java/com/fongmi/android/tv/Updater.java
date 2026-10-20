@@ -62,8 +62,15 @@ public class Updater implements Download.Callback, UpdateListener {
             "https://gh-proxy.com/",
             "https://ghfast.top/"
     };
-    // 单节点无数据超过该时长(毫秒)则自动切换下一个加速节点，防止卡死在假死节点
+    // 单节点连续该时长(毫秒)零字节则自动切换下一个候选，防止卡死在假死节点
     private static final long STALL_TIMEOUT_MS = 15000;
+    // 看门狗检查间隔：判活依据是「累计字节是否还在涨」，不是「百分比是否变化」
+    private static final long WATCHDOG_TICK_MS = 3000;
+
+    // 同一时刻只允许一个更新会话：两处入口（首页自动检查、设置页手动检查）各自 create()，
+    // 若同时确认就会有两个 Download 写同一份缓存文件、并按同一个 tag 互相取消（见 dismiss/clearStaleFiles）。
+    // 在 show() 抢占、在 dismiss() 释放，不做「已忙即拒绝」的闸门——那种写法一旦某条路径漏释放就永久收不到更新。
+    private static Updater session;
 
     private Download download;
     private UpdateDialog dialog;
@@ -72,7 +79,9 @@ public class Updater implements Download.Callback, UpdateListener {
     private List<String> candidates = new ArrayList<>();
     private int mirrorIndex = 0;
     private boolean forced = false;
-    private final Runnable stallTask = this::onStall;
+    private long lastBytes;
+    private long lastMoveAt;
+    private final Runnable stallTask = this::tickWatchdog;
 
     private Updater() {
     }
@@ -81,8 +90,19 @@ public class Updater implements Download.Callback, UpdateListener {
         return new Updater();
     }
 
+    /**
+     * 每个候选各写自己的文件：切源时上一个 Download 线程未必已退出（cancel 到 IOException 抛出有一个
+     * 很短的窗口），共用一个路径会让两次写交织出半个包，最终表现为一句看不懂的「校验失败」。
+     */
     private File getFile() {
-        return Path.cache("update.apk");
+        return Path.cache("update-" + mirrorIndex + ".apk");
+    }
+
+    /** 清掉上次会话留下的分片文件；在确认更新时调用，此刻本会话还没有在飞的下载 */
+    private void clearStaleFiles() {
+        File[] files = Path.cache().listFiles((dir, name) -> name.startsWith("update-") && name.endsWith(".apk"));
+        if (files == null) return;
+        for (File file : files) Path.clear(file);
     }
 
     public Updater force() {
@@ -197,6 +217,9 @@ public class Updater implements Download.Callback, UpdateListener {
 
     private void show(FragmentActivity activity, String version, String desc) {
         dismiss();
+        // 抢占会话：上一个还开着的更新弹窗连同它的下载一起收掉，避免两会话抢同一 tag/同一文件
+        if (session != null && session != this) session.dismiss();
+        session = this;
         dialog = UpdateDialog.create().title(ResUtil.getString(R.string.update_version, version)).desc(desc).listener(this).show(activity);
     }
 
@@ -204,6 +227,7 @@ public class Updater implements Download.Callback, UpdateListener {
     public void onConfirm(View view) {
         view.setEnabled(false);
         buildCandidates();
+        clearStaleFiles();
         // 1) 缓存命中：上次成功下载的镜像在候选列表里，直接 0 延迟开下（不弹 Toast，避免和 startNext 的提示重复）
         // 缓存按 host 匹配，不能比整条 URL：apkUrl 每次发版都变（文件名与 tag 都带版本号），
         // 整条 URL 比对会导致升级到新版本时缓存永远命中不了，每次都要白等一轮探测。
@@ -480,17 +504,37 @@ public class Updater implements Download.Callback, UpdateListener {
         armWatchdog();
     }
 
-    /** 重新计时无数据超时（开始下载或收到进度时调用） */
+    /**
+     * 起一个新候选的看门狗：按固定间隔自检「累计字节是否还在涨」，不再依赖 progress() 回调。
+     * 进度回调按整数百分比触发，33MB 包的 1% 就是 338KB——持续速率低于约 22KB/s 的正常连接
+     * 会在 15s 内一次回调都不发，被误判成卡死而切源；切源又是从头重下（Gitee 侧实测不支持 Range），
+     * 慢网用户于是永远下不完，最后只剩一句「更新下载超时」。
+     */
     private void armWatchdog() {
         App.removeCallbacks(stallTask);
-        App.post(stallTask, STALL_TIMEOUT_MS);
+        lastBytes = 0;
+        lastMoveAt = System.currentTimeMillis();
+        App.post(stallTask, WATCHDOG_TICK_MS);
     }
 
     private void disarmWatchdog() {
         App.removeCallbacks(stallTask);
     }
 
-    /** 单节点长时间无数据，自动切换下一个候选；已是最后一个则提示失败 */
+    private void tickWatchdog() {
+        long bytes = download != null ? download.bytesRead() : lastBytes;
+        if (bytes > lastBytes) {
+            lastBytes = bytes;
+            lastMoveAt = System.currentTimeMillis();
+        }
+        if (System.currentTimeMillis() - lastMoveAt >= STALL_TIMEOUT_MS) {
+            onStall();
+            return;
+        }
+        App.post(stallTask, WATCHDOG_TICK_MS);
+    }
+
+    /** 单节点连续 STALL_TIMEOUT_MS 零字节，自动切换下一个候选；已是最后一个则提示失败 */
     private void onStall() {
         if (mirrorIndex >= candidates.size() - 1) {
             Notify.show("更新下载超时，请稍后重试");
@@ -499,6 +543,9 @@ public class Updater implements Download.Callback, UpdateListener {
         }
         Notify.show(nameOf(mirrorIndex) + "无数据，切换" + nameOf(mirrorIndex + 1) + "下载…");
         if (download != null) download.cancel();
+        // 取消路径上 Download 不会自己清文件（handleError 见 canceled 就跳过），
+        // 33MB 的半成品留在缓存目录里既占空间也没人再用，这里主动删掉。
+        Path.clear(getFile());
         mirrorIndex++;
         startNext();
     }
@@ -506,12 +553,17 @@ public class Updater implements Download.Callback, UpdateListener {
     @Override
     public void onCancel(View view) {
         Setting.putUpdate(false);
-        if (download != null) download.cancel();
         dismiss();
     }
 
+    /**
+     * 收场必须连同在飞的下载一起取消：只关弹窗不管下载的话，被判超时的那个慢节点稍后仍会跑完，
+     * 然后自己调 success() → 拉起安装界面，用户看到的是「刚提示超时，怎么突然要安装」。
+     */
     private void dismiss() {
         disarmWatchdog();
+        if (download != null) download.cancel();
+        if (session == this) session = null;
         try {
             if (dialog != null) dialog.dismiss();
         } catch (Exception ignored) {
@@ -520,7 +572,6 @@ public class Updater implements Download.Callback, UpdateListener {
 
     @Override
     public void progress(int progress) {
-        armWatchdog(); // 收到进度即重置无数据超时
         if (dialog != null) dialog.setProgress(progress);
     }
 
