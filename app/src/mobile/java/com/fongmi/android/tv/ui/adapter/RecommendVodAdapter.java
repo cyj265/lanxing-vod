@@ -1,5 +1,6 @@
 package com.fongmi.android.tv.ui.adapter;
 
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -48,11 +49,13 @@ public class RecommendVodAdapter extends RecyclerView.Adapter<RecommendVodAdapte
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Vod item = mItems.get(position);
         holder.binding.name.setText(item.getName());
-        holder.binding.remark.setText(item.getRemarks());
-        // 豆瓣榜单 remark 形如 "8.5分"，作为海报角标展示
-        boolean hasScore = item.getRemarks() != null && item.getRemarks().contains("分");
-        holder.binding.score.setVisibility(hasScore ? View.VISIBLE : View.GONE);
-        if (hasScore) holder.binding.score.setText(item.getRemarks());
+        // 豆瓣榜单的 remark 本身就是评分，只留海报角标，不在标题下再重复一行
+        String remark = item.getRemarks();
+        boolean score = !TextUtils.isEmpty(remark) && remark.matches("\\d+(\\.\\d+)?分");
+        holder.binding.score.setVisibility(score ? View.VISIBLE : View.GONE);
+        holder.binding.remark.setVisibility(score || TextUtils.isEmpty(remark) ? View.GONE : View.VISIBLE);
+        if (score) holder.binding.score.setText(remark);
+        else holder.binding.remark.setText(remark);
         ImgUtil.load(item.getName(), item.getPic(), holder.binding.pic);
         holder.itemView.setOnClickListener(v -> mListener.onItemClick(item));
     }
