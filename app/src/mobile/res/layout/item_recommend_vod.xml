@@ -54,6 +54,6 @@
         android:ellipsize="end"
         android:maxLines="1"
         android:textColor="@color/white_40"
-        android:textSize="10sp" />
+        android:textSize="12sp" />
 
 </androidx.appcompat.widget.LinearLayoutCompat>

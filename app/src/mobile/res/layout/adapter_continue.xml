@@ -48,6 +48,6 @@
         android:ellipsize="end"
         android:singleLine="true"
         android:textColor="@color/white_50"
-        android:textSize="10sp" />
+        android:textSize="12sp" />
 
 </androidx.appcompat.widget.LinearLayoutCompat>

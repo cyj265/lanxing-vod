@@ -83,7 +83,6 @@
 
 # Lanxing 内置首页
 -keep class com.fongmi.android.tv.ui.fragment.DiscoverFragment { *; }
--keep class com.fongmi.android.tv.ui.fragment.HomeFragment { *; }
 -keep class com.fongmi.android.tv.ui.adapter.RecommendRowAdapter { *; }
 -keep class com.fongmi.android.tv.ui.adapter.RecommendVodAdapter { *; }
 -keep class com.fongmi.android.tv.ui.adapter.ContinueAdapter { *; }

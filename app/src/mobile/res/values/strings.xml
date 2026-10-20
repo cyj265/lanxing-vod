@@ -21,6 +21,11 @@
     <!-- Vod -->
     <string name="vod_home">Home</string>
 
+    <!-- Home -->
+    <string name="home_continue">Continue watching</string>
+    <string name="home_more">More &gt;</string>
+    <string name="home_error">Failed to load\nTap to retry</string>
+
     <!-- Detail -->
     <string name="detail_flag">Flag</string>
     <string name="detail_episode">Episode</string>

@@ -21,6 +21,11 @@
     <!-- Vod -->
     <string name="vod_home">推薦</string>
 
+    <!-- Home -->
+    <string name="home_continue">繼續觀看</string>
+    <string name="home_more">更多 &gt;</string>
+    <string name="home_error">首頁載入失敗\n點擊重試</string>
+
     <!-- Detail -->
     <string name="detail_flag">線路</string>
     <string name="detail_episode">選集</string>
