@@ -70,7 +70,7 @@
                 android:paddingTop="4dp"
                 android:paddingBottom="4dp"
                 android:text="@string/keep_add_btn"
-                android:textColor="@color/selector_keep"
+                android:textColor="@color/black"
                 android:textSize="12sp" />
 
         </FrameLayout>
