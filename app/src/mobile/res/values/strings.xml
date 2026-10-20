@@ -35,6 +35,7 @@
 
     <!-- Device -->
     <string name="device_select">Select devices</string>
+    <string name="device_select_sync">Select sync target</string>
     <string name="device_offline">Device is offline</string>
     <string name="cast_connected">Connected</string>
     <string name="cast_empty">No devices found\nTap to search again</string>

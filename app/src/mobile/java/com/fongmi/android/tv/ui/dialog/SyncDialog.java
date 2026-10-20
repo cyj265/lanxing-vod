@@ -87,6 +87,7 @@ public class SyncDialog extends BaseBottomSheetDialog implements DeviceAdapter.O
 
     @Override
     protected void initView() {
+        binding.title.setText(R.string.device_select_sync);
         binding.mode.setVisibility(View.VISIBLE);
         setRecyclerView();
         getDevice();

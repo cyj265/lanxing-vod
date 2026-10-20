@@ -35,6 +35,7 @@
 
     <!-- Device -->
     <string name="device_select">选择投屏设备</string>
+    <string name="device_select_sync">选择同步设备</string>
     <string name="device_offline">装置已离线</string>
     <string name="cast_connected">已连接</string>
     <string name="cast_empty">未发现设备\n点击重新搜索</string>
