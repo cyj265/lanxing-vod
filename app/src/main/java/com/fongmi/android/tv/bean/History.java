@@ -14,6 +14,7 @@ import com.fongmi.android.tv.Constant;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.db.AppDatabase;
+import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.impl.Diffable;
 import com.fongmi.android.tv.utils.Task;
 import com.google.gson.annotations.SerializedName;
@@ -109,7 +110,11 @@ public class History implements Diffable<History> {
     }
 
     public static void clear(int cid) {
-        Task.executeSerial(() -> delete(cid));
+        Task.executeSerial(() -> {
+            delete(cid);
+            // 删除在串行线程落地后才广播，避免首页 onResume 抢先读到旧数据。
+            RefreshEvent.history();
+        });
     }
 
     public static void sync(List<History> targets) {

@@ -14,6 +14,7 @@ import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.bean.History;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.FragmentHomeBinding;
+import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.ui.activity.CategoryListActivity;
 import com.fongmi.android.tv.ui.activity.HistoryActivity;
 import com.fongmi.android.tv.ui.activity.SearchActivity;
@@ -21,6 +22,10 @@ import com.fongmi.android.tv.ui.activity.VideoActivity;
 import com.fongmi.android.tv.ui.adapter.ContinueAdapter;
 import com.fongmi.android.tv.ui.adapter.RecommendRowAdapter;
 import com.fongmi.android.tv.utils.Douban;
+
+import org.greenrobot.eventbus.EventBus;
+import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.eventbus.ThreadMode;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -67,6 +72,7 @@ public class DiscoverFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        EventBus.getDefault().register(this);
         initView();
         setContinue();
         loadRanks();
@@ -126,6 +132,12 @@ public class DiscoverFragment extends Fragment {
         if (mBinding != null) setContinue();
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onRefreshEvent(RefreshEvent event) {
+        // 清空历史是异步落库的，靠 onResume 会读到旧数据，只能等事件。
+        if (event.getType() == RefreshEvent.Type.HISTORY && mBinding != null) setContinue();
+    }
+
     private void loadRanks() {
         if (mLoading) return;
         mLoading = true;
@@ -152,6 +164,7 @@ public class DiscoverFragment extends Fragment {
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        EventBus.getDefault().unregister(this);
         if (mExecutor != null) mExecutor.shutdownNow();
         mBinding = null;
     }
