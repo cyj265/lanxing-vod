@@ -47,6 +47,7 @@ public class CustomKeyDown extends GestureDetector.SimpleOnGestureListener imple
     private CustomKeyDown(Activity activity, View videoView) {
         this.manager = (AudioManager) activity.getSystemService(Context.AUDIO_SERVICE);
         this.scaleDetector = new ScaleGestureDetector(activity, this);
+        this.scaleDetector.setQuickScaleEnabled(false);
         this.detector = new GestureDetector(activity, this);
         this.listener = (Listener) activity;
         this.videoView = videoView;
