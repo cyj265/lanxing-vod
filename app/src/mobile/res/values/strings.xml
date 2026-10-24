@@ -83,5 +83,6 @@
     <string name="live_program_none">No programme info</string>
     <string name="live_program_next">Next  <xliff:g name="name">%s</xliff:g></string>
     <string name="live_program_all">All &gt;</string>
+    <string name="live_program_collapse">Close &gt;</string>
 
 </resources>

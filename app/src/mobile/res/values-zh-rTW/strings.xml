@@ -74,5 +74,6 @@
     <string name="live_program_none">暫無節目資訊</string>
     <string name="live_program_next">下一檔  <xliff:g name="name">%s</xliff:g></string>
     <string name="live_program_all">全部節目 &gt;</string>
+    <string name="live_program_collapse">收起 &gt;</string>
 
 </resources>

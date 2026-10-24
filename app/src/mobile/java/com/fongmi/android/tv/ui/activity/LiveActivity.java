@@ -226,7 +226,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mBinding.panelLine.setOnClickListener(view -> onLine());
         mBinding.panelCast.setOnClickListener(view -> onCast());
         mBinding.panelSetting.setOnClickListener(view -> onSetting());
-        mBinding.programCard.setOnClickListener(view -> showProgramList());
+        mBinding.programCard.setOnClickListener(view -> toggleProgramList());
         mBinding.video.setOnTouchListener((view, event) -> mKeyDown.onTouchEvent(event));
     }
 
@@ -389,7 +389,6 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
             setPadding(mBinding.recycler, true);
             // 横屏全屏视频贴屏幕左右边缘，顶部栏需避让侧边挖孔
             setPadding(mBinding.control.getRoot());
-            applyLogoMargin(true);
         } else {
             // 半屏：视频上半屏（16:9 实际高度，从状态栏/挖孔下方开始，与点播播放窗口对齐）、频道列表下半屏
             int screenH = ResUtil.getScreenHeight();
@@ -416,7 +415,6 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
             noPadding(mBinding.control.getRoot());
             mBinding.panelBar.setVisibility(View.VISIBLE);
             setContainerWidth(ViewGroup.LayoutParams.MATCH_PARENT);
-            applyLogoMargin(false);
             setPanelWidth();
             setPosition();
         }
@@ -440,29 +438,6 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         }
     }
 
-    private int getInsetSide() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return 0;
-        try {
-            DisplayCutout cutout = ResUtil.getDisplay(this).getCutout();
-            return cutout == null ? 0 : Math.max(cutout.getSafeInsetLeft(), cutout.getSafeInsetRight());
-        } catch (Throwable e) {
-            return 0;
-        }
-    }
-
-    /** 台标水印：竖屏视频已避开顶部挖孔，横屏全屏需按侧边挖孔让位 */
-    private void applyLogoMargin(boolean land) {
-        ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) mBinding.widget.logo.getLayoutParams();
-        params.setMarginStart(ResUtil.dp2px(12) + (land ? getInsetSide() : 0));
-        mBinding.widget.logo.setLayoutParams(params);
-    }
-
-    /** 台标只放视频左上角一处；控制栏弹出时让位，避免和返回按钮重叠 */
-    private void updateLogoVisibility() {
-        boolean show = mChannel != null && !mChannel.getLogo().isEmpty() && !isVisible(mBinding.control.getRoot());
-        mBinding.widget.logo.setVisibility(show ? View.VISIBLE : View.GONE);
-    }
-
     private void setPanelWidth() {
         if (!isHalfPanel()) return;
         int screenW = ResUtil.getScreenWidth();
@@ -472,7 +447,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         for (int i = 0; i < mGroupAdapter.getItemCount(); i++)
             groupW = Math.max(groupW, ResUtil.getTextWidth(mGroupAdapter.get(i).getName(), 14) + ResUtil.dp2px(48));
         groupW = Math.max(ResUtil.dp2px(96), Math.min(groupW, screenW / 3));
-        // 节目单已改成顶部节目卡, 剩余宽度全部给频道列(行内台标也已去掉, 只留编号和台名)
+        // 节目单已改成顶部节目卡, 剩余宽度全部给频道列(编号 + 台标 + 台名)
         setWidth(mBinding.group, groupW);
         setWidth(mBinding.channel, screenW - groupW);
     }
@@ -674,6 +649,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mBinding.epgData.setVisibility(View.VISIBLE);
         mBinding.group.setVisibility(View.GONE);
         mBinding.channel.setVisibility(View.GONE);
+        mBinding.programAll.setText(R.string.live_program_collapse);
         int index = mEpgDataAdapter.getSelected();
         if (index >= 0) scrollToPosition(mBinding.epgData, index);
     }
@@ -683,7 +659,14 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mBinding.epgData.setVisibility(View.GONE);
         mBinding.group.setVisibility(View.VISIBLE);
         mBinding.channel.setVisibility(View.VISIBLE);
+        mBinding.programAll.setText(R.string.live_program_all);
         setPanelWidth();
+    }
+
+    /** 节目卡再点一次收起，回到电视台列表 */
+    private void toggleProgramList() {
+        if (isVisible(mBinding.epgData)) hideProgramList();
+        else showProgramList();
     }
 
     @Override
@@ -727,7 +710,6 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mBinding.control.back.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.top.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.getRoot().setVisibility(View.VISIBLE);
-        updateLogoVisibility();
         setR1Callback();
         setOsd();
         hideInfo();
@@ -735,7 +717,6 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
     private void hideControl() {
         mBinding.control.getRoot().setVisibility(View.GONE);
-        updateLogoVisibility();
         App.removeCallbacks(mR1);
     }
 
@@ -833,7 +814,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     @Override
     public void onItemClick(Channel item) {
         if (!item.getData(mViewModel.getZoneId()).getList().isEmpty() && item.isSelected() && mChannel != null && mChannel.equals(item) && mChannel.getGroup().equals(mGroup)) {
-            if (isHalfPanel()) showProgramList();
+            if (isHalfPanel()) toggleProgramList();
             else showEpg(item);
         } else if (mGroup != null) {
             mLive.selectChannel(item.group(mGroup));
@@ -874,7 +855,6 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mViewModel.getEpg(mChannel);
         mBinding.widget.play.setText("");
         mBinding.widget.name.setMaxEms(48);
-        mChannel.loadLogo(mBinding.widget.logo);
         mBinding.widget.line.setText(mChannel.getLine());
         mBinding.widget.name.setText(mChannel.getShow());
         mBinding.widget.namePip.setText(mChannel.getShow());
@@ -885,7 +865,6 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mBinding.control.action.line.setVisibility(mBinding.widget.line.getVisibility());
         // 面板功能行「线路」显示当前线路号：线路N
         mBinding.panelLine.setText(getString(R.string.live_line, mChannel.getIndex() + 1));
-        updateLogoVisibility();
     }
 
     private void onEpgLoaded(Epg epg) {
@@ -1077,7 +1056,6 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mChannel = null;
         mGroup = null;
         resetProgramCard();
-        updateLogoVisibility();
     }
 
     private final PlaybackService.NavigationCallback mNavigationCallback = new PlaybackService.NavigationCallback() {
