@@ -67,6 +67,14 @@ public class UpdateDialog extends BaseAlertDialog {
     public void onStart() {
         super.onStart();
         AlertDialog dialog = (AlertDialog) getDialog();
+        // listener/title/desc 是调用方在 show() 之前直接写进实例的运行时字段，不是 arguments。
+        // 进程被杀后 FragmentManager 会按类名重建这个对话框，重建出来的实例三者全是 null，
+        // 此时点任一按钮都会在 listener 上 NPE（5.6.90 线上已复现：空标题弹窗点「立即更新」）。
+        // 这种实例没有任何信息可展示，直接收掉，用户下次进首页会重新检查到更新。
+        if (listener == null) {
+            dismissAllowingStateLoss();
+            return;
+        }
         if (dialog != null) dialog.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(view -> listener.onCancel(view));
         if (dialog != null) dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(view -> listener.onConfirm(view));
     }
