@@ -47,6 +47,11 @@ public class EpgDataAdapter extends RecyclerView.Adapter<EpgDataAdapter.ViewHold
         notifyItemRangeChanged(0, getItemCount());
     }
 
+    public int getSelected() {
+        for (int i = 0; i < mItems.size(); i++) if (mItems.get(i).isSelected()) return i;
+        return -1;
+    }
+
     @Override
     public int getItemCount() {
         return mItems.size();

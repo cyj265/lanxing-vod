@@ -79,4 +79,9 @@
     <string name="copy_success">已复制仓库地址</string>
     <string name="refresh_success">刷新成功</string>
 
+    <!-- Live -->
+    <string name="live_program_none">No programme info</string>
+    <string name="live_program_next">Next  <xliff:g name="name">%s</xliff:g></string>
+    <string name="live_program_all">All &gt;</string>
+
 </resources>

@@ -70,4 +70,9 @@
         <item>画中画</item>
     </string-array>
 
+    <!-- Live -->
+    <string name="live_program_none">暂无节目信息</string>
+    <string name="live_program_next">下一档  <xliff:g name="name">%s</xliff:g></string>
+    <string name="live_program_all">全部节目 &gt;</string>
+
 </resources>

@@ -19,6 +19,7 @@ import android.widget.FrameLayout;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.media3.common.C;
 import androidx.media3.common.MediaMetadata;
@@ -225,6 +226,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mBinding.panelLine.setOnClickListener(view -> onLine());
         mBinding.panelCast.setOnClickListener(view -> onCast());
         mBinding.panelSetting.setOnClickListener(view -> onSetting());
+        mBinding.programCard.setOnClickListener(view -> showProgramList());
         mBinding.video.setOnTouchListener((view, event) -> mKeyDown.onTouchEvent(event));
     }
 
@@ -329,10 +331,9 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     @Override
     public void setWidth(Group group) {
         if (isHalfPanel()) return;
-        int logo = ResUtil.dp2px(56);
         int padding = ResUtil.dp2px(60);
         if (group.isKeep()) group.setWidth(0);
-        if (group.getWidth() == 0) for (Channel item : group.getChannel()) group.setWidth(Math.max(group.getWidth(), (item.getLogo().isEmpty() ? 0 : logo) + ResUtil.getTextWidth(item.getNumber() + item.getName(), 14)));
+        if (group.getWidth() == 0) for (Channel item : group.getChannel()) group.setWidth(Math.max(group.getWidth(), ResUtil.getTextWidth(item.getNumber() + item.getName(), 14)));
         int width = group.getWidth() == 0 ? 0 : Math.min(group.getWidth() + padding, ResUtil.getScreenWidth() / 2);
         setWidth(mBinding.channel, width);
     }
@@ -383,10 +384,12 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
             mBinding.recycler.setLayoutParams(lp);
             mBinding.recycler.setVisibility(View.GONE);
             mBinding.panelBar.setVisibility(View.GONE);
+            mBinding.programCard.setVisibility(View.GONE);
             setContainerWidth(ViewGroup.LayoutParams.WRAP_CONTENT);
             setPadding(mBinding.recycler, true);
             // 横屏全屏视频贴屏幕左右边缘，顶部栏需避让侧边挖孔
             setPadding(mBinding.control.getRoot());
+            applyLogoMargin(true);
         } else {
             // 半屏：视频上半屏（16:9 实际高度，从状态栏/挖孔下方开始，与点播播放窗口对齐）、频道列表下半屏
             int screenH = ResUtil.getScreenHeight();
@@ -404,13 +407,16 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
             mBinding.recycler.setVisibility(View.VISIBLE);
             mBinding.group.setVisibility(View.VISIBLE);
             mBinding.channel.setVisibility(View.VISIBLE);
-            mBinding.epgData.setVisibility(View.VISIBLE);
+            // 竖屏节目单改成顶部节目卡，第三列只在点「全部节目」时临时展开
+            mBinding.epgData.setVisibility(View.GONE);
+            mBinding.programCard.setVisibility(View.VISIBLE);
             // 半屏面板贴底部，不涉及顶部挖孔；居中挖孔机型 SafeInsetLeft 会被误报成整块宽度，
             // 不能把挖孔填充当左 padding 用（会把整个列表顶到右边、EPG 溢出屏幕）
             noPadding(mBinding.recycler);
             noPadding(mBinding.control.getRoot());
             mBinding.panelBar.setVisibility(View.VISIBLE);
             setContainerWidth(ViewGroup.LayoutParams.MATCH_PARENT);
+            applyLogoMargin(false);
             setPanelWidth();
             setPosition();
         }
@@ -434,22 +440,41 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         }
     }
 
+    private int getInsetSide() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) return 0;
+        try {
+            DisplayCutout cutout = ResUtil.getDisplay(this).getCutout();
+            return cutout == null ? 0 : Math.max(cutout.getSafeInsetLeft(), cutout.getSafeInsetRight());
+        } catch (Throwable e) {
+            return 0;
+        }
+    }
+
+    /** 台标水印：竖屏视频已避开顶部挖孔，横屏全屏需按侧边挖孔让位 */
+    private void applyLogoMargin(boolean land) {
+        ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) mBinding.widget.logo.getLayoutParams();
+        params.setMarginStart(ResUtil.dp2px(12) + (land ? getInsetSide() : 0));
+        mBinding.widget.logo.setLayoutParams(params);
+    }
+
+    /** 台标只放视频左上角一处；控制栏弹出时让位，避免和返回按钮重叠 */
+    private void updateLogoVisibility() {
+        boolean show = mChannel != null && !mChannel.getLogo().isEmpty() && !isVisible(mBinding.control.getRoot());
+        mBinding.widget.logo.setVisibility(show ? View.VISIBLE : View.GONE);
+    }
+
     private void setPanelWidth() {
+        if (!isHalfPanel()) return;
         int screenW = ResUtil.getScreenWidth();
-        int pad = ResUtil.dp2px(16); // 各列表左右 8dp padding
-        // 分组列: 按最长分类名算宽, 至少 120dp(真机 0.20*屏宽 仅够 2 字, 必须设下限), 至多 1/3 屏宽
+        // 分类列: 最长分类名 + 胶囊内外边距(shape_live 12dp*2 + 列表 8dp*2) + 8dp 余量,
+        // 下限 96dp 保证「央视」这类两字分类也够点, 至多 1/3 屏宽
         int groupW = 0;
         for (int i = 0; i < mGroupAdapter.getItemCount(); i++)
-            groupW = Math.max(groupW, ResUtil.getTextWidth(mGroupAdapter.get(i).getName(), 14) + pad);
-        groupW = Math.max(ResUtil.dp2px(120), Math.min(groupW, screenW / 3));
-        // 频道列: 固定 0.40 屏宽, 但给节目列(EPG)留至少 120dp 底线, 不足时压缩频道列
-        int epgMin = ResUtil.dp2px(120);
-        int channelW = (int) (screenW * 0.40f);
-        if (channelW > screenW - groupW - epgMin) channelW = Math.max(ResUtil.dp2px(120), screenW - groupW - epgMin);
-        // 节目列用剩余宽度兜底, 三列严丝合缝填满整屏、零黑边
+            groupW = Math.max(groupW, ResUtil.getTextWidth(mGroupAdapter.get(i).getName(), 14) + ResUtil.dp2px(48));
+        groupW = Math.max(ResUtil.dp2px(96), Math.min(groupW, screenW / 3));
+        // 节目单已改成顶部节目卡, 剩余宽度全部给频道列(行内台标也已去掉, 只留编号和台名)
         setWidth(mBinding.group, groupW);
-        setWidth(mBinding.channel, channelW);
-        setWidth(mBinding.epgData, screenW - groupW - channelW);
+        setWidth(mBinding.channel, screenW - groupW);
     }
 
     private void setPosition(int[] position) {
@@ -639,6 +664,28 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mBinding.epgData.setVisibility(View.GONE);
     }
 
+    /**
+     * 竖屏完整节目单：频道列/分类列让位，节目列占满面板，并直接滚到当前正在播的那条。
+     * 竖屏没有第三列常驻节目单，这里也是挑历史节目回看的唯一入口。
+     */
+    private void showProgramList() {
+        if (!isHalfPanel() || mEpgDataAdapter.getItemCount() == 0) return;
+        setWidth(mBinding.epgData, ViewGroup.LayoutParams.MATCH_PARENT);
+        mBinding.epgData.setVisibility(View.VISIBLE);
+        mBinding.group.setVisibility(View.GONE);
+        mBinding.channel.setVisibility(View.GONE);
+        int index = mEpgDataAdapter.getSelected();
+        if (index >= 0) scrollToPosition(mBinding.epgData, index);
+    }
+
+    private void hideProgramList() {
+        if (!isHalfPanel() || !isVisible(mBinding.epgData)) return;
+        mBinding.epgData.setVisibility(View.GONE);
+        mBinding.group.setVisibility(View.VISIBLE);
+        mBinding.channel.setVisibility(View.VISIBLE);
+        setPanelWidth();
+    }
+
     @Override
     public void showProgress() {
         mBinding.progress.getRoot().setVisibility(View.VISIBLE);
@@ -680,6 +727,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mBinding.control.back.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.top.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.getRoot().setVisibility(View.VISIBLE);
+        updateLogoVisibility();
         setR1Callback();
         setOsd();
         hideInfo();
@@ -687,6 +735,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
     private void hideControl() {
         mBinding.control.getRoot().setVisibility(View.GONE);
+        updateLogoVisibility();
         App.removeCallbacks(mR1);
     }
 
@@ -784,7 +833,8 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     @Override
     public void onItemClick(Channel item) {
         if (!item.getData(mViewModel.getZoneId()).getList().isEmpty() && item.isSelected() && mChannel != null && mChannel.equals(item) && mChannel.getGroup().equals(mGroup)) {
-            showEpg(item);
+            if (isHalfPanel()) showProgramList();
+            else showEpg(item);
         } else if (mGroup != null) {
             mLive.selectChannel(item.group(mGroup));
         }
@@ -803,6 +853,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     @Override
     public void onItemClick(EpgData item) {
         mLive.selectEpg(item, player().getPosition());
+        hideProgramList();
     }
 
     private void addKeep(Channel item) {
@@ -834,6 +885,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mBinding.control.action.line.setVisibility(mBinding.widget.line.getVisibility());
         // 面板功能行「线路」显示当前线路号：线路N
         mBinding.panelLine.setText(getString(R.string.live_line, mChannel.getIndex() + 1));
+        updateLogoVisibility();
     }
 
     private void onEpgLoaded(Epg epg) {
@@ -841,10 +893,35 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         EpgData data = epg.getEpgData();
         boolean hasTitle = !data.getTitle().isEmpty();
         mEpgDataAdapter.addAll(epg.getList());
+        updateProgramCard(epg);
         mBinding.widget.name.setMaxEms(hasTitle ? 12 : 48);
         mBinding.widget.play.setText(data.format());
         mLive.onEpgChanged(data);
         setWidth(epg);
+    }
+
+    private void resetProgramCard() {
+        mBinding.programTime.setVisibility(View.GONE);
+        mBinding.programTitle.setText(R.string.live_program_none);
+        mBinding.programTitle.setTextColor(ContextCompat.getColor(this, R.color.on_surface_variant));
+        mBinding.programNextRow.setVisibility(View.GONE);
+        String line = mChannel == null ? "" : mChannel.getLine();
+        mBinding.programLine.setText(line);
+        mBinding.programLine.setVisibility(line.isEmpty() ? View.GONE : View.VISIBLE);
+    }
+
+    private void updateProgramCard(Epg epg) {
+        List<EpgData> list = epg.getList();
+        EpgData now = epg.getEpgData();
+        int index = epg.getSelected();
+        EpgData next = index >= 0 && index + 1 < list.size() ? list.get(index + 1) : null;
+        boolean hasNow = !now.getTitle().isEmpty();
+        mBinding.programTime.setText(now.getTime());
+        mBinding.programTime.setVisibility(hasNow && !now.getStart().isEmpty() ? View.VISIBLE : View.GONE);
+        mBinding.programTitle.setText(hasNow ? now.getTitle() : getString(R.string.live_program_none));
+        mBinding.programTitle.setTextColor(ContextCompat.getColor(this, hasNow ? R.color.on_surface : R.color.on_surface_variant));
+        mBinding.programNext.setText(next == null || next.getTitle().isEmpty() ? "" : getString(R.string.live_program_next, next.getTime() + "  " + next.getTitle()));
+        mBinding.programNextRow.setVisibility(list.isEmpty() ? View.GONE : View.VISIBLE);
     }
 
     private void onXmlParsed(boolean success) {
@@ -931,18 +1008,23 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     @Override
     public void renderGroupSelection(Group group) {
         mGroupAdapter.setSelected(mGroup = group);
+        setPanelWidth();
     }
 
     @Override
     public void renderGroupChannels(Group group) {
         mChannelAdapter.addAll(group.getChannel());
         mChannelAdapter.setSelected(group.getPosition());
+        setPanelWidth();
     }
 
     @Override
     public void renderChannelSelection(Channel channel) {
         if (mGroup != null) mGroup.setPosition(mChannelAdapter.setSelected(channel.group(mGroup)));
         mChannel = channel;
+        hideProgramList();
+        mEpgDataAdapter.clear();
+        resetProgramCard();
         setArtwork();
         updateKeepImg();
         showInfo();
@@ -994,6 +1076,8 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mHides.clear();
         mChannel = null;
         mGroup = null;
+        resetProgramCard();
+        updateLogoVisibility();
     }
 
     private final PlaybackService.NavigationCallback mNavigationCallback = new PlaybackService.NavigationCallback() {
@@ -1359,6 +1443,8 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
             hideInfo();
         } else if (isVisible(mBinding.recycler) && !isHalfPanel()) {
             hideUI();
+        } else if (isHalfPanel() && isVisible(mBinding.epgData)) {
+            hideProgramList();
         } else if (!isLock()) {
             if (isTaskRoot()) startActivity(new Intent(this, HomeActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP));
             super.onBackInvoked();
