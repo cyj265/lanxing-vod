@@ -160,8 +160,8 @@ jobs:
         if: steps.gate.outputs.skip != '1'
         continue-on-error: true
         run: |
-          if [ -z "${{ secrets.BUGLY_APP_KEY }}" ]; then
-            echo "未配置 BUGLY_APP_KEY，跳过 mapping 上传"
+          if [ -z "${{ secrets.BUGLY_APP_KEY }}" ] || [ -z "${{ secrets.BUGLY_APP_ID }}" ]; then
+            echo "未配置 BUGLY_APP_ID / BUGLY_APP_KEY，跳过 mapping 上传"
             exit 0
           fi
           echo "下载 Bugly 符号表上传工具..."
@@ -182,7 +182,7 @@ jobs:
             if [ -f "$MAP" ]; then
               echo "上传 mapping($VARIANT) v${{ steps.ver.outputs.name }} 到 Bugly..."
               java -jar "$JAR" \
-                -appid 69e90fd596 \
+                -appid "${{ secrets.BUGLY_APP_ID }}" \
                 -appkey "${{ secrets.BUGLY_APP_KEY }}" \
                 -version "${{ steps.ver.outputs.name }}" \
                 -platform Android \

@@ -4,6 +4,9 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.pm.PackageManager;
+import android.content.pm.Signature;
+import android.content.pm.SigningInfo;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -14,6 +17,7 @@ import androidx.annotation.Nullable;
 import androidx.core.os.HandlerCompat;
 
 import com.fongmi.android.tv.utils.Notify;
+import com.fongmi.android.tv.utils.ReleaseTrust;
 import com.fongmi.hook.Hook;
 import com.github.catvod.Init;
 import com.google.gson.Gson;
@@ -85,7 +89,33 @@ public class App extends Application implements Application.ActivityLifecycleCal
         super.onCreate();
         Notify.createChannel();
         registerActivityLifecycleCallbacks(this);
-        if (!BuildConfig.BUGLY_APP_ID.isEmpty()) initBugly();
+        if (!BuildConfig.BUGLY_APP_ID.isEmpty() && isOfficialSignature()) initBugly();
+    }
+
+    /**
+     * 只有官方证书签名的包才上报崩溃。
+     * <p>
+     * 5.4 线把 Bugly AppID 写死在代码里，任何人 fork 或二次打包出来的包都会往同一个
+     * Bugly 产品灌崩溃；重签名的包不再上报，官方包签名固定，不受影响。
+     */
+    private boolean isOfficialSignature() {
+        try {
+            PackageManager pm = getPackageManager();
+            Signature[] signatures;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                SigningInfo info = pm.getPackageInfo(getPackageName(), PackageManager.GET_SIGNING_CERTIFICATES).signingInfo;
+                signatures = info == null ? null : info.getApkContentsSigners();
+            } else {
+                signatures = pm.getPackageInfo(getPackageName(), PackageManager.GET_SIGNATURES).signatures;
+            }
+            if (signatures == null) return false;
+            for (Signature signature : signatures) {
+                if (ReleaseTrust.isTrustedCert(signature.toByteArray())) return true;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
     }
 
     /** 初始化 Bugly 崩溃自动上报（逻辑与揽星TV一致：Android ID 作设备标识，不取 IMEI 等敏感信息） */
