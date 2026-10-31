@@ -25,7 +25,7 @@ public class Req {
     @SerializedName("method")
     private String method;
     @SerializedName("body")
-    private String body;
+    private JsonElement body;
     @SerializedName("data")
     private JsonElement data;
     @SerializedName("headers")
@@ -56,7 +56,13 @@ public class Req {
     }
 
     public String getBody() {
-        return body;
+        JsonElement raw = getRawBody();
+        if (raw != null && !raw.isJsonPrimitive()) throw new IllegalArgumentException("Body must be text");
+        return raw == null ? null : raw.getAsString();
+    }
+
+    public JsonElement getRawBody() {
+        return body == null || body.isJsonNull() ? null : body;
     }
 
     public JsonElement getData() {

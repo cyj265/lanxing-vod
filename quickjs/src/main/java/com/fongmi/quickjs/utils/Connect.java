@@ -5,6 +5,8 @@ import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Json;
 import com.github.catvod.utils.Util;
 import com.google.common.net.HttpHeaders;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.whl.quickjs.wrapper.JSObject;
 import com.whl.quickjs.wrapper.QuickJSContext;
 
@@ -69,8 +71,30 @@ public class Connect {
         if (req.getData() != null && "json".equals(req.getPostType())) return getJsonBody(req);
         if (req.getData() != null && "form".equals(req.getPostType())) return getFormBody(req);
         if (req.getData() != null && "form-data".equals(req.getPostType())) return getFormDataBody(req);
-        if (req.getBody() != null && contentType != null) return RequestBody.create(req.getBody(), MediaType.get(contentType));
+        JsonElement raw = req.getRawBody();
+        if (raw != null) return getRawBody(raw, contentType == null ? null : MediaType.get(contentType));
         return RequestBody.create(new byte[0]);
+    }
+
+    private static RequestBody getRawBody(JsonElement raw, MediaType type) {
+        if (raw.isJsonPrimitive()) return RequestBody.create(raw.getAsString(), type);
+        if (!raw.isJsonArray()) throw new IllegalArgumentException("Raw body must be text or bytes");
+        JsonArray values = raw.getAsJsonArray();
+        byte[] bytes = new byte[values.size()];
+        for (int i = 0; i < values.size(); i++) bytes[i] = getRawByte(values.get(i));
+        return RequestBody.create(bytes, type);
+    }
+
+    private static byte getRawByte(JsonElement item) {
+        if (!item.isJsonPrimitive() || !item.getAsJsonPrimitive().isNumber()) throw new IllegalArgumentException("Raw body bytes must be integers from 0 to 255");
+        int value;
+        try {
+            value = item.getAsBigDecimal().intValueExact();
+        } catch (ArithmeticException | NumberFormatException error) {
+            throw new IllegalArgumentException("Raw body bytes must be integers from 0 to 255", error);
+        }
+        if (value < 0 || value > 255) throw new IllegalArgumentException("Raw body bytes must be integers from 0 to 255");
+        return (byte) value;
     }
 
     private static RequestBody getJsonBody(Req req) {
