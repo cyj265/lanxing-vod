@@ -198,11 +198,12 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
     }
 
     private void onCasted() {
-        if (casting != null) {
-            Prefers.put("cast_last_device", casting.getName());
-            adapter.setConnected(casting.getName());
-        }
-        ((CastDialog.Listener) requireActivity()).onCasted();
+        // 投屏成功是异步回调，回来时对话框可能已经被关掉、宿主也可能已销毁；
+        // 这时只能记住上次设备，不能再碰 adapter / requireActivity()
+        if (casting != null) Prefers.put("cast_last_device", casting.getName());
+        if (!isAdded() || getActivity() == null) return;
+        if (casting != null) adapter.setConnected(casting.getName());
+        ((CastDialog.Listener) getActivity()).onCasted();
         dismiss();
     }
 
