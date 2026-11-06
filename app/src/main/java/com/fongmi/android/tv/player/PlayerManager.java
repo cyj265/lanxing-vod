@@ -15,7 +15,6 @@ import androidx.media3.common.PlaybackException;
 import androidx.media3.common.PlaybackParameters;
 import androidx.media3.common.Player;
 import androidx.media3.common.Tracks;
-import androidx.media3.common.VideoSize;
 import androidx.media3.ui.danmaku.DanmakuConfig;
 
 import com.fongmi.android.tv.App;
@@ -53,7 +52,6 @@ public class PlayerManager implements ParseCallback {
     private final Callback callback;
     private PendingPreload pendingPreload;
     private PlayerEngine engine;
-    private VideoSize videoSize;
     private ParseJob parseJob;
     private PlaySpec spec;
     private Player player;
@@ -225,11 +223,11 @@ public class PlayerManager implements ParseCallback {
     }
 
     public int getVideoWidth() {
-        return videoSize == null ? 0 : videoSize.width;
+        return player == null ? 0 : player.getVideoSize().width;
     }
 
     public int getVideoHeight() {
-        return videoSize == null ? 0 : videoSize.height;
+        return player == null ? 0 : player.getVideoSize().height;
     }
 
     public long getPosition() {
@@ -657,11 +655,6 @@ public class PlayerManager implements ParseCallback {
         public void onPlaybackStateChanged(int state) {
             if (state == Player.STATE_READY || state == Player.STATE_ENDED) App.removeCallbacks(runnable);
             if (state == Player.STATE_READY) startPreloadIfReady();
-        }
-
-        @Override
-        public void onVideoSizeChanged(@NonNull VideoSize size) {
-            videoSize = size;
         }
 
         @Override

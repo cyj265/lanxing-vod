@@ -285,6 +285,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
             mController = mControllerFuture.get();
             getSeekView().setPlayer(mController);
             mController.addListener(this);
+            onVideoSizeChanged(mController.getVideoSize());
             updateKeyIncrement();
         } catch (Exception ignored) {
         }
