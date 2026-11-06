@@ -128,7 +128,7 @@ public final class Crypto {
     }
 
     private static String hash(String value, String algorithm) {
-        if (value == null || value.isEmpty()) return "";
+        if (value == null) return "";
         return toHex(newDigest(algorithm).digest(value.getBytes(StandardCharsets.UTF_8)));
     }
 
