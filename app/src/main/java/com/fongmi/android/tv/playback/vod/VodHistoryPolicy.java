@@ -15,8 +15,13 @@ import com.fongmi.android.tv.utils.Task;
 
 public class VodHistoryPolicy {
 
-    public History findOrCreate(String key, String mark, Vod item) {
-        History history = History.find(key);
+    public History findOrCreate(String key, String mark, Vod item, History history) {
+        if (history == null) {
+            history = History.find(key);
+        } else if (!key.equals(history.getKey())) {
+            history.setKey(key);
+            history.setCid(VodConfig.getCid());
+        }
         history = history == null ? create(key, item) : history;
         if (!TextUtils.isEmpty(mark)) history.setVodRemarks(mark);
         if (Setting.isIncognito()) history.delete();

@@ -28,6 +28,7 @@ import com.fongmi.android.tv.dlna.DLNACast;
 import com.fongmi.android.tv.dlna.DLNACastManager;
 import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.server.Server;
+import com.fongmi.android.tv.service.PlaybackService;
 import com.fongmi.android.tv.ui.activity.ScanActivity;
 import com.fongmi.android.tv.ui.adapter.DeviceAdapter;
 import com.fongmi.android.tv.ui.custom.SpaceItemDecoration;
@@ -52,13 +53,13 @@ import okhttp3.Response;
  */
 public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClickListener, ScanTask.Listener, DLNACastManager.DeviceListener, Callback {
 
-    private final FormBody.Builder body;
     private final OkHttpClient client;
 
     private DialogDeviceBinding binding;
     private DeviceAdapter adapter;
     private ScanTask scanTask;
     private CastVideo video;
+    private History history;
     private Device casting;
     private boolean fm;
 
@@ -68,9 +69,6 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
 
     public CastDialog() {
         scanTask = new ScanTask(this);
-        body = new FormBody.Builder();
-        body.add("device", Device.get().toString());
-        body.add("config", Config.vod().toString());
         client = OkHttp.client(Constant.TIMEOUT_SYNC);
     }
 
@@ -82,13 +80,37 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
     }
 
     public CastDialog history(History history) {
-        String id = history.getVodId();
-        String fd = history.getVodId();
+        this.history = history;
+        return this;
+    }
+
+    private FormBody buildBody() {
+        FormBody.Builder builder = new FormBody.Builder();
+        builder.add("device", Device.get().toString());
+        builder.add("config", Config.vod().toString());
+        String json = getHistoryJson();
+        if (json != null) builder.add("history", json);
+        return builder.build();
+    }
+
+    private String getHistoryJson() {
+        if (history == null) return null;
+        History copy = history.copy();
+        PlayerManager player = getSourcePlayer();
+        if (player != null) copy.setPosition(player.getPosition());
+        String id = copy.getVodId();
+        String fd = id;
         if (fd.startsWith("/")) fd = Server.get().getAddress() + "/file" + fd.replace(Path.rootPath(), "");
         if (fd.startsWith("file")) fd = Server.get().getAddress() + "/" + fd.replace(Path.rootPath(), "").replace("://", "");
         if (fd.contains("127.0.0.1")) fd = fd.replace("127.0.0.1", Util.getIp());
-        body.add("history", history.toString().replace(id, fd));
-        return this;
+        String json = copy.toString();
+        return id.isEmpty() ? json : json.replace(id, fd);
+    }
+
+    private PlayerManager getSourcePlayer() {
+        PlaybackService service = Server.get().getService();
+        PlayerManager player = service == null ? null : service.player();
+        return player != null && !player.isReleased() && !player.isEmpty() && video.equals(CastVideo.create(player, video.position())) ? player : null;
     }
 
     public void show(FragmentActivity activity) {
@@ -241,7 +263,7 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
     public void onItemClick(Device item) {
         casting = item;
         if (item.isDLNA()) new DLNACast(video, this::onCasted).cast(item);
-        else OkHttp.newCall(client, item.getIp().concat("/action?do=cast"), body.build()).enqueue(this);
+        else OkHttp.newCall(client, item.getIp().concat("/action?do=cast"), buildBody()).enqueue(this);
     }
 
     @Override

@@ -420,7 +420,7 @@ public class VodPlaybackController {
         item.checkName(host.getVodName());
         List<Flag> flags = item.getFlags();
         state.setFlags(flags);
-        History history = historyPolicy.findOrCreate(host.getHistoryKey(), host.getVodMark(), item);
+        History history = findHistory(item);
         state.setHistory(history);
         lastHistory = history;
         host.renderDetail(item, history);
@@ -428,6 +428,14 @@ public class VodPlaybackController {
         host.renderHistory(history);
         host.onDetailFallbackCancelled();
         return history;
+    }
+
+    private History findHistory(Vod item) {
+        String key = host.getHistoryKey();
+        History history = host.takeCastHistory();
+        History current = state.getHistory();
+        if (history == null && current != null && key.equals(current.getKey())) history = current;
+        return historyPolicy.findOrCreate(key, host.getVodMark(), item, history);
     }
 
     private void restoreDetail(VodPlayRequest activeRequest, History history) {

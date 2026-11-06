@@ -27,6 +27,10 @@ public interface VodPlaybackHost {
 
     String getHistoryKey();
 
+    default History takeCastHistory() {
+        return null;
+    }
+
     boolean isSiteChangeable();
 
     boolean isFromCollect();
