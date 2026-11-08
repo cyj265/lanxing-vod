@@ -16,6 +16,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.os.HandlerCompat;
 
+import com.fongmi.android.tv.utils.CrashLog;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ReleaseTrust;
 import com.fongmi.hook.Hook;
@@ -89,6 +90,9 @@ public class App extends Application implements Application.ActivityLifecycleCal
         super.onCreate();
         Notify.createChannel();
         registerActivityLifecycleCallbacks(this);
+        // 必须放在 Application.onCreate：CaocInitProvider 在 provider 阶段安装自己的 handler，
+        // 在 provider 里安装会被它覆盖，这里再包一层才能真正做到崩溃先落盘。
+        CrashLog.install(this);
         if (!BuildConfig.BUGLY_APP_ID.isEmpty() && isOfficialSignature()) initBugly();
     }
 

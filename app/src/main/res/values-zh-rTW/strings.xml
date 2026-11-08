@@ -384,6 +384,9 @@
     <string name="crash_details">錯誤訊息</string>
     <string name="crash_details_title">錯誤訊息</string>
     <string name="crash_details_close">關閉</string>
+    <string name="crash_share">分享日誌</string>
+    <string name="crash_copy">複製</string>
+    <string name="crash_copied">已複製到剪貼簿</string>
 
     <!-- Hint -->
     <string name="copied">已複製</string>

@@ -386,6 +386,9 @@
     <string name="crash_details">Error Info</string>
     <string name="crash_details_title">Error Info</string>
     <string name="crash_details_close">Close</string>
+    <string name="crash_share">Share Log</string>
+    <string name="crash_copy">Copy</string>
+    <string name="crash_copied">Copied to clipboard</string>
 
     <!-- Hint -->
     <string name="copied">Copied</string>
