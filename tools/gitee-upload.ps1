@@ -1,4 +1,6 @@
-# gitee-upload.ps1 - Upload latest lanxing-vod APK to Gitee Release (local, fast).
+# gitee-upload.ps1 - 应急手动补传 APK 到 Gitee Release（本地执行，速度快）。
+# 定位：常态同步由 CNB 云端流水线（cyj265/lanxing-vod-sync）每小时自动完成，
+#       本脚本仅在 CNB 流水线故障、需要人工补传时作为逃生口使用；不参与常规发布。
 # Usage:
 #   $env:GITEE_TOKEN = "your_gitee_private_token"
 #   powershell -ExecutionPolicy Bypass -File gitee-upload.ps1              # auto: latest GitHub release

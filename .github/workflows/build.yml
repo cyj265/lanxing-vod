@@ -131,8 +131,10 @@ jobs:
           } >> "$GITHUB_OUTPUT"
 
       # ═══ 发布闸门 ═══
-      # 版本号不变 → tag 已存在 → skip 后续发布步（Bugly/清理/发布/Gitee），
+      # 版本号不变 → tag 已存在 → skip 后续发布步（Bugly/清理/发布），
       # 但 artifact 照常生成可自测：push 小改不动用户端更新提示，只有 bump 版本号才真正发版。
+      # Gitee 附件由 CNB 云端流水线（cyj265/lanxing-vod-sync）每小时独立轮询同步，
+      # 不在本 workflow 职责内，故不受闸门影响。
       # FORCE（workflow_dispatch 手动触发）可强制重发同 tag，作应急逃生口。
       - name: 发布闸门（版本号未变则跳过发布）
         id: gate
@@ -147,7 +149,7 @@ jobs:
             -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/$GITHUB_REPOSITORY/releases/tags/$TAG")
           if [ "$CODE" == "200" ]; then
-            echo "tag $TAG 已存在：跳过发布（不发版、不清理、不传 Bugly、不同步 Gitee）"
+            echo "tag $TAG 已存在：跳过发布（不发版、不清理、不传 Bugly）"
             echo "skip=1" >> $GITHUB_OUTPUT
           else
             echo "tag $TAG 不存在：正常发布"

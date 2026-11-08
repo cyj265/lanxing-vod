@@ -50,10 +50,11 @@ public class Updater implements Download.Callback, UpdateListener {
     // 旧注释写的"列表按创建时间倒序，逐条往下找"只对 GitHub 成立，这个假设就是本次事故的源头。
     // 现在选版本一律交给 ReleaseSource.pickLatest 自己比版本号大小，不依赖任何接口的默认顺序。
     // GitHub 与 Gitee 的 API 返回结构（tag_name / assets[].browser_download_url）一致，解析逻辑完全复用。
-    // 顺序上把 GitHub 放前面：它由 CI 直接发布、附件完整性由回读校验保证，Gitee 依赖本机 runner 上传，
-    // runner 离线时 Gitee 会落后于 GitHub（5.6.83 双源字节分叉即此因），故不宜再作主源。
+    // 顺序上把 GitHub 放前面：它由 CI 直接发布、附件完整性由回读校验保证，是权威源；
+    // Gitee 由 CNB 云端流水线每小时定时同步（最长滞后约 1 小时），故不宜再作主源。
     private static final String RELEASES_URL = "https://api.github.com/repos/cyj265/lanxing-vod/releases?per_page=10";
-    // Gitee 更新源（兜底）：国内直连，CI 发版时由 runner 上传 APK 附件；GitHub 各节点都拿不到时才用它。
+    // Gitee 更新源（兜底）：国内直连，附件由 CNB 云端流水线每小时从 GitHub 定时同步；
+    // GitHub 各节点都拿不到时才用它。
     private static final String GITEE_API_URL = "https://gitee.com/api/v5/repos/cyj265/lanxing-vod/releases?per_page=10";
     // GitHub 加速节点：仅用于「版本发现」阶段直连 api.github.com 失败时的换址（那里只会拿到一段
     // release JSON）。实测速度不理想（gh-proxy ~19KB/s）但比完全不可达强。
@@ -141,8 +142,8 @@ public class Updater implements Download.Callback, UpdateListener {
      * 读取本线（主版本相同）最新的 Release，解析出版本号 / APK 下载地址；无更新或异常返回 null。
      * 源顺序：GitHub（直连 + 逐个加速前缀）为主，全部拿不到才回退 Gitee。
      * GitHub 优先的理由不在速度而在权威性：它由 CI 直接发布并做附件回读校验，
-     * Gitee 一侧依赖本机 runner 补传，runner 离线时内容会落后（5.6.83 双源字节分叉即此因），
-     * 作主源会把用户引向缺修复的旧构建。
+     * Gitee 一侧由 CNB 云端流水线每小时定时同步，存在最长约 1 小时的滞后窗口，
+     * 作主源会在该窗口内把用户引向尚未同步的旧构建。
      */
     private JSONObject getLatestRelease() throws Exception {
         // 1) GitHub 主源：先直连 api.github.com，不通再逐个换加速前缀（只换列表入口，
@@ -178,7 +179,7 @@ public class Updater implements Download.Callback, UpdateListener {
         return null;
     }
 
-    /** Gitee 兜底源：拉 Releases 列表（CI 发版时由 runner 上传 APK 附件），挑出本线最新一条 */
+    /** Gitee 兜底源：拉 Releases 列表（附件由 CNB 云端流水线定时同步），挑出本线最新一条 */
     private JSONObject fetchGiteeRelease() throws Exception {
         return matchOwnLine(fetchReleases(new URL(GITEE_API_URL), 4000, 5000));
     }
