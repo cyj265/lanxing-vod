@@ -1,13 +1,16 @@
 package com.fongmi.android.tv.ui.adapter;
 
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.databinding.AdapterQualityBinding;
+import com.fongmi.android.tv.utils.ResUtil;
 
 public class QualityAdapter extends RecyclerView.Adapter<QualityAdapter.ViewHolder> {
 
@@ -36,7 +39,7 @@ public class QualityAdapter extends RecyclerView.Adapter<QualityAdapter.ViewHold
 
     @Override
     public int getItemCount() {
-        return result.getUrl().getValues().size();
+        return result.getUrl().getValues().isEmpty() ? 0 : result.getUrl().getValues().size();
     }
 
     @NonNull
@@ -47,9 +50,13 @@ public class QualityAdapter extends RecyclerView.Adapter<QualityAdapter.ViewHold
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.binding.text.setText(result.getUrl().n(position));
-        holder.binding.text.setOnClickListener(v -> onItemClick(position));
-        holder.binding.text.setSelected(result.getUrl().getPosition() == position);
+        boolean multiple = result.getUrl().isMulti();
+        String name = result.getUrl().n(position);
+        if (TextUtils.isEmpty(name)) name = multiple ? ResUtil.getString(R.string.quality_option, position + 1) : ResUtil.getString(R.string.quality_original);
+        holder.binding.text.setText(name);
+        holder.binding.text.setSelected(!multiple || result.getUrl().getPosition() == position);
+        holder.binding.text.setClickable(multiple);
+        holder.binding.text.setOnClickListener(multiple ? v -> onItemClick(position) : null);
     }
 
     private void onItemClick(int position) {

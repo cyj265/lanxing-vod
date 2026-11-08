@@ -120,12 +120,14 @@ public class VodPlaybackController {
         state.setQuality(result);
         state.setPlayingRequest(request);
         state.setUseParse(result.isUseParse());
-        result.getUrl().set(state.getQualityPosition());
+        int position = QualityMemory.resolve(request.getKey(), request.getFlag(), result.getUrl(), state.getQualityPosition());
+        result.getUrl().set(position);
+        state.setQualityPosition(position);
     }
 
     private void renderPlaybackResult(Result result) {
         host.renderUseParse(state.isUseParse());
-        host.renderQuality(result, result.getUrl().isMulti());
+        host.renderQuality(result, shouldShowQuality(result));
         if (result.hasDesc()) host.renderDescription(result.getDesc());
         if (result.hasArtwork()) host.renderArtwork(result.getArtwork());
     }
@@ -191,9 +193,23 @@ public class VodPlaybackController {
         if (!state.hasEpisode()) return;
         state.setQuality(result);
         state.setQualityPosition(result.getUrl().getPosition());
+        saveQuality(result);
         clearPreload();
         startPlayback(result, host.getPlayerPosition(), state.getEpisode());
         preloadNextEpisode();
+    }
+
+    private void saveQuality(Result result) {
+        VodPlayRequest request = state.getPlayingRequest();
+        if (request == null) return;
+        int position = result.getUrl().getPosition();
+        QualityMemory.save(request.getKey(), request.getFlag(), result.getUrl().n(position), position);
+    }
+
+    private boolean shouldShowQuality(Result result) {
+        if (result.getUrl().getValues().isEmpty()) return false;
+        // 多档永远显示；单档只在直链播放时显示「原画」，解析网页时画质未知，不冒充。
+        return result.getUrl().isMulti() || (!state.isUseParse() && !result.getUrl().isEmpty());
     }
 
     public void selectParse(Parse item) {

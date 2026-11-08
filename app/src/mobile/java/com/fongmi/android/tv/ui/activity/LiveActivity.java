@@ -76,6 +76,7 @@ import com.fongmi.android.tv.ui.dialog.SpeedSettingDialog;
 import com.fongmi.android.tv.ui.dialog.TrackDialog;
 import com.fongmi.android.tv.utils.Biometric;
 import com.fongmi.android.tv.utils.ImgUtil;
+import com.fongmi.android.tv.utils.MediaQuality;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.PiP;
 import com.fongmi.android.tv.utils.ResUtil;
@@ -741,7 +742,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     protected void onSizeChanged(VideoSize size) {
         boolean hasSize = size != null && size.width > 0 && size.height > 0;
         if (hasSize) {
-            mBinding.control.resolution.setText("[" + size.width + "x" + size.height + "]");
+            mBinding.control.resolution.setText("[" + MediaQuality.label(size.width, size.height) + "]");
             mBinding.control.resolution.setVisibility(View.VISIBLE);
         } else {
             mBinding.control.resolution.setVisibility(View.GONE);
