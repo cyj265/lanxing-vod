@@ -114,4 +114,5 @@
     <string name="wall_remote">桌布網址</string>
     <string name="wall_local_done">桌布已更新</string>
     <string name="wall_local_fail">讀取失敗，換一個檔案試試</string>
+    <string name="cast_play_first">請播放後再投屏</string>
 </resources>

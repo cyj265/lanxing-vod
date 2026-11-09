@@ -54,6 +54,31 @@
                 android:layout_width="match_parent"
                 android:layout_height="match_parent" />
 
+            <!-- 详情态：视频窗先铺高清剧照 + 播放按钮，点播放才起播（与手机版共用 renderDeferredPlay） -->
+            <com.fongmi.android.tv.ui.custom.FadeImageView
+                android:id="@+id/deferredCover"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:scaleType="centerCrop"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/deferredPlay"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:backgroundTint="#2EFFFFFF"
+                android:text="@string/play_deferred"
+                android:textColor="@color/white"
+                android:textSize="15sp"
+                android:visibility="gone"
+                app:cornerRadius="24dp"
+                app:icon="@drawable/ic_play_arrow"
+                app:iconGravity="textStart"
+                app:iconTint="@color/white"
+                tools:visibility="visible" />
+
             <!-- 平板功能按钮已挪到视频窗正下方，不再叠在视频画面上 -->
 
             <!-- 收藏胶囊保留在视频窗右上角（不挡字幕区域） -->
@@ -238,7 +263,7 @@
                     android:clipChildren="false"
                     android:clipToPadding="false"
                     android:orientation="vertical"
-                    android:paddingBottom="8dp">
+                    android:paddingBottom="100dp">
 
                     <!-- 海报：手机版在信息区顶部，平板信息区是叠在视频上的，
                          这里放进可滚动信息流开头，位置与手机版对应，不会压住画面 -->

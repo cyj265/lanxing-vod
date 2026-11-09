@@ -123,4 +123,5 @@
     <string name="wall_remote">Wallpaper URL</string>
     <string name="wall_local_done">Wallpaper updated</string>
     <string name="wall_local_fail">Failed to read that file</string>
+    <string name="cast_play_first">Start playback before casting</string>
 </resources>

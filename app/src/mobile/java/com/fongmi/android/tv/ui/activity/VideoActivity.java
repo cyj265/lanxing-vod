@@ -8,9 +8,11 @@ import android.content.IntentFilter;
 import android.os.BatteryManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
@@ -140,6 +142,13 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private VodPlayRequest mDeferredRequest;
     /** 用户是否已主动要求播放（点播放/选集/切线路/切画质），一旦为 true 不再延后 */
     private boolean mPlayConfirmed;
+    /** 点击兜底：DOWN 命中的操作按钮 / 本次手势是否已被按钮自己的 OnClickListener 处理 */
+    private View mFallbackTarget;
+    private boolean mActionHandled;
+    /** 同一按钮 300ms 内只放行一次；收藏是 toggle，重复触发会「收藏→取消」互相抵消 */
+    private View mLastActionTarget;
+    private long mLastActionTime;
+    private long mLastKeepTime;
     private ViewGroup.LayoutParams mFrameParams;
     private ValueAnimator mAnimator;
     private CustomKeyDown mKeyDown;
@@ -348,7 +357,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         setRecyclerView();
         setVideoView();
         setViewModel();
-        showProgress();
+        // 「先详情后播放」时立刻摆好详情态骨架，别等站点数据回来才切换
+        if (shouldDeferAutoPlay()) prepareDeferredDetail();
+        else showProgress();
         setAnimator();
         checkId();
         OsdMode.apply(mBinding.control.osd, mBinding.control.osdHost, mBinding.control.getRoot());
@@ -366,23 +377,91 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         if (view != null) view.setOnTouchListener(listener);
     }
 
+    /**
+     * 操作按钮埋在 SwipeRefreshLayout → ProgressLayout → NestedScrollView → 内容容器深处，
+     * 详情态又叠了三块全屏盖层；部分 ROM 的触摸分发顺序会让按钮「看得见却收不到事件」。
+     * 根 View 的 OnTouchListener 只在「没有子 View 消费 DOWN」时才会调用，而 NestedScrollView
+     * 几乎总会消费 DOWN，等于形同虚设。改到 Activity 这一层：DOWN 记下按钮后照常分发，
+     * UP 时若按钮自己没收到点击（mActionHandled 仍为 false）就按原坐标补触发一次。
+     * 两种路径互斥，不会重复执行。
+     */
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        int action = event.getActionMasked();
+        if (action == MotionEvent.ACTION_DOWN) {
+            mFallbackTarget = findActionAt((int) event.getRawX(), (int) event.getRawY());
+            mActionHandled = false;
+        }
+        boolean handled = super.dispatchTouchEvent(event);
+        if (mFallbackTarget != null) {
+            if (action == MotionEvent.ACTION_UP) {
+                if (!mActionHandled && findActionAt((int) event.getRawX(), (int) event.getRawY()) == mFallbackTarget) triggerAction(mFallbackTarget);
+                mFallbackTarget = null;
+            } else if (action == MotionEvent.ACTION_CANCEL) {
+                mFallbackTarget = null;
+            }
+        }
+        return handled;
+    }
+
+    private void triggerAction(View target) {
+        // 同一个按钮 300ms 内只放行一次：收藏是 toggle，重复触发会「加入→取消」互相抵消，
+        // 表现就是「图标没变化，却提示已取消收藏」。
+        long now = SystemClock.uptimeMillis();
+        if (target == mLastActionTarget && now - mLastActionTime < 300) return;
+        mLastActionTarget = target;
+        mLastActionTime = now;
+        if (target == mBinding.deferredPlay) onDeferredPlay(target);
+        else if (target == mBinding.keepBtn) onKeep();
+        else if (target == mBinding.quickBtn) onName();
+        else if (target == mBinding.castBtn) onCast();
+        else if (target == mBinding.settingBtn) onSetting();
+        else onPlayer(); // 平板 action_bar 的「播放器」入口
+    }
+
+    /** 所有操作按钮统一走 triggerAction，并打标记告诉兜底「这次点击按钮自己收到了」 */
+    private void setActionClick(View view) {
+        if (view == null) return;
+        view.setOnClickListener(v -> { mActionHandled = true; triggerAction(v); });
+    }
+
+    /** 用屏幕绝对坐标做命中测试，避开滚动偏移与各层坐标系换算 */
+    private View findActionAt(int x, int y) {
+        if (mBinding == null) return null;
+        View[] views = {
+                mBinding.deferredPlay, mBinding.keepBtn, mBinding.quickBtn,
+                mBinding.castBtn, mBinding.settingBtn,
+                mBinding.getRoot().findViewById(R.id.player_btn)
+        };
+        Rect rect = new Rect();
+        int[] loc = new int[2];
+        for (View view : views) {
+            if (view == null || view.getVisibility() != View.VISIBLE || !view.isEnabled()) continue;
+            view.getLocationOnScreen(loc);
+            rect.set(loc[0], loc[1], loc[0] + view.getWidth(), loc[1] + view.getHeight());
+            if (rect.contains(x, y)) return view;
+        }
+        return null;
+    }
+
     @Override
     @SuppressLint("ClickableViewAccessibility")
     protected void initEvent() {
         setClick(mBinding.name, view -> onName());
         setClick(mBinding.more, view -> onMore());
-        setClick(mBinding.keepBtn, view -> onKeep());
+        setActionClick(mBinding.keepBtn);
         setClick(mBinding.actor, view -> onActor());
         setClick(mBinding.content, view -> onContent());
         setClick(mBinding.reverse, view -> onReverse());
         setClick(mBinding.director, view -> onDirector());
-        setClick(mBinding.quickBtn, view -> onName());
-        setClick(mBinding.deferredPlay, this::onDeferredPlay);
-        setClick(mBinding.settingBtn, view -> onSetting());
+        setActionClick(mBinding.quickBtn);
+        setActionClick(mBinding.deferredPlay);
+        setActionClick(mBinding.settingBtn);
         setLongClick(mBinding.name, view -> onChange());
         setLongClick(mBinding.content, view -> onCopy());
         setClick(mBinding.control.back, view -> onBack());
-        setClick(mBinding.castBtn, view -> onCast());
+        setActionClick(mBinding.castBtn);
+        setActionClick(mBinding.getRoot().findViewById(R.id.player_btn));
         applyTextShadow();
         setClick(mBinding.control.info, view -> onInfo());
         setClick(mBinding.control.keep, view -> onKeep());
@@ -606,8 +685,35 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         return mBinding != null && mBinding.deferredCover != null && !mPlayConfirmed && !PlayerSetting.isAutoPlay() && !isFullscreenForPlayback();
     }
 
+    /**
+     * 站点详情还没返回时先把详情态骨架摆好。否则这段时间页面仍是默认布局：
+     * 顶部一块黑色播放器占位 + 0 KB/s 转圈，下面是壁纸 + 另一个转圈，
+     * 要等 3~4 秒数据回来才突然切成剧照详情页。
+     */
+    private void prepareDeferredDetail() {
+        renderDeferredPlay(true);
+        hideProgress();                        // 还没起播，播放器区的网速转圈没有意义
+        mBinding.progressLayout.showContent(); // 内容区也不转圈，数据回来直接填文字
+        mBinding.name.setText(getName());
+        checkKeepImg();   // 详情态骨架一铺好就同步收藏状态，别等站点数据回来
+        applyTextShadow();
+        showPlaceholderBackdrop();
+    }
+
+    /** 先用列表页带过来的海报铺底（Glide 内存缓存通常命中，几乎瞬间显示），高清剧照随后替换 */
+    private void showPlaceholderBackdrop() {
+        if (mBinding == null || mBinding.deferredCover == null) return;
+        String pic = getPic();
+        if (TextUtils.isEmpty(pic)) return;
+        List<String> chain = new ArrayList<>();
+        String original = ImgUtil.original(pic);
+        if (!original.equals(pic)) chain.add(original);
+        chain.add(pic);
+        ImgUtil.loadWithFallback(getName(), chain, mBinding.deferredCover);
+    }
+
     private void renderDeferredPlay(boolean visible) {
-        // 平板布局没有「剧照详情页」，直接走原有播放流程
+        // 手机是整屏剧照，平板只在 400x225 视频窗内铺剧照、保留右侧信息分栏
         if (mBinding == null || mBinding.deferredCover == null || mBinding.deferredPlay == null) return;
         mBinding.deferredPlay.setVisibility(visible ? View.VISIBLE : View.GONE);
         mBinding.deferredCover.setVisibility(visible ? View.VISIBLE : View.GONE);
@@ -617,6 +723,34 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         if (visible) mBinding.deferredPlay.setText(mHistory != null && mHistory.getPosition() > 0 ? R.string.play_deferred_continue : R.string.play_deferred);
         // 剧照整屏不透明铺底，淡出交给上层 scrim 做平滑过渡，避免半张图 + 硬线
         mBinding.deferredCover.setFadeEnabled(false);
+        // 手机布局的剧照是根布局子 View，平板布局的剧照在 video 内部 —— 用这个区分两者，
+        // 避免把平板视频窗一起隐藏，也避免对左右分栏做无意义的 Z 顺序调整。
+        boolean coverInsideVideo = mBinding.deferredCover.getParent() == mBinding.video;
+        // 详情态播放器占位（XML clickable=true + OnTouchListener）透明留在原位仍会吞点击，
+        // 直接整块隐藏；起播后恢复。平板不隐藏。
+        mBinding.video.setClickable(!visible);
+        if (!coverInsideVideo) mBinding.video.setVisibility(visible ? View.INVISIBLE : View.VISIBLE);
+        for (View layer : new View[]{mBinding.deferredCover, mBinding.detailScrim, mBinding.detailDim}) {
+            if (layer == null) continue;
+            layer.setClickable(false);
+            layer.setLongClickable(false);
+            layer.setFocusable(false);
+            layer.setFocusableInTouchMode(false);
+        }
+        // 内容层压过所有盖层：Z 顺序 + elevation 双保险（部分 ROM 按 elevation 排触摸顺序）
+        if (!coverInsideVideo) {
+            if (visible) mBinding.swipeLayout.bringToFront();
+            ViewCompat.setElevation(mBinding.swipeLayout, visible ? ResUtil.dp2px(4) : 0f);
+        }
+        // 注意：detailActions 是 detailContent（垂直 LinearLayout）的子 View，
+        // 对它调用 bringToFront() 会把它挪到子 View 末尾（选集列表之后）而不是只改层级 ——
+        // 四个按钮会整行从首屏消失。按钮的点击由 Activity 层兜底保证，这里只确保可见。
+        if (mBinding.detailActions != null) mBinding.detailActions.setVisibility(View.VISIBLE);
+        for (View button : new View[]{mBinding.deferredPlay, mBinding.keepBtn, mBinding.quickBtn, mBinding.castBtn, mBinding.settingBtn}) {
+            if (button == null) continue;
+            button.setEnabled(true);
+            button.setClickable(true);
+        }
         setDetailLayout(visible);
         setVideoHeight();
     }
@@ -669,11 +803,14 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.detailDim.setAlpha(0.06f + 0.50f * ratio);
     }
 
-    /** 剧照已经整屏，详情态不再抬高播放器占位；起播后统一恢复 220dp */
+    /** 剧照已经整屏，详情态不再抬高播放器占位；
+     *  加载阶段的视频占位改用 16:9 比例，避免极扁占位造成「加载画面比真正播放宽」的视觉跳变，
+     *  起播后 changeHeight() 会按真实比例平滑微调。
+     *  平板（tag=land）是 400x225 的独立视频窗，走自身逻辑，跳过。 */
     private void setVideoHeight() {
-        if (isFullscreenForPlayback()) return;
+        if (isFullscreenForPlayback() || isLand()) return;
         ViewGroup.LayoutParams lp = mBinding.video.getLayoutParams();
-        int height = ResUtil.dp2px(220);
+        int height = (int) (ResUtil.getScreenWidth() * 9f / 16f);
         if (lp.height == height) return;
         lp.height = height;
         mBinding.video.setLayoutParams(lp);
@@ -769,7 +906,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     /**
-     * 详情页整屏剧照分级加载：
+     * 详情页剧照分级加载（手机整屏、平板视频窗内）：
      * ① 先用站源图（剥离缩略参数后的原图优先，失败回退原始 URL）保证立即有画面；
      * ② 后台按片名查豆瓣 /l/ 大图（≈1080×1914，正好全屏），命中后替换；
      * ③ 任何一级失败都由 ImgUtil.loadWithFallback 自动回退，最终兜底文字占位，不会黑屏。
@@ -1123,6 +1260,11 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void onCast() {
+        // 详情态还没起播，播放器里自然没有地址，直接告诉用户该怎么做
+        if (mBinding != null && mBinding.deferredPlay != null && mBinding.deferredPlay.getVisibility() == View.VISIBLE) {
+            Notify.show(R.string.cast_play_first);
+            return;
+        }
         if (TextUtils.isEmpty(player().getUrl())) {
             Notify.show(R.string.error_play_url);
             return;
@@ -1135,11 +1277,18 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void onKeep() {
+        // 播放器控制栏的收藏按钮也走这里，单独防连点：toggle 被触发两次会「加入→取消」互相抵消，
+        // 表现就是图标没变化却提示「已取消收藏」。
+        long now = SystemClock.uptimeMillis();
+        if (now - mLastKeepTime < 350) return;
+        mLastKeepTime = now;
         Keep keep = Keep.find(getHistoryKey());
-        Notify.show(keep != null ? R.string.keep_del : R.string.keep_add);
-        if (keep != null) keep.delete();
+        boolean kept = keep != null;
+        if (kept) keep.delete();
         else createKeep();
-        checkKeepImg();
+        Notify.show(kept ? R.string.keep_del : R.string.keep_add);
+        // 直接按本次结果刷 UI，不重新查库，避免写库时序导致图标不更新
+        setKeepState(!kept);
     }
 
     private void checkPlay() {
@@ -1529,10 +1678,16 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void checkKeepImg() {
-        boolean kept = Keep.find(getHistoryKey()) != null;
+        setKeepState(Keep.find(getHistoryKey()) != null);
+    }
+
+    /** 收藏态要一眼可见：实心星 + 暖色圆底 / 空心星 + 灰色圆底，不能只靠不明显的 tint 变化 */
+    private void setKeepState(boolean kept) {
         mBinding.control.keep.setImageResource(kept ? R.drawable.ic_control_keep_on : R.drawable.ic_control_keep_off);
         if (mBinding.keepBtn == null) return;
         mBinding.keepBtn.setSelected(kept);
+        mBinding.keepBtn.setImageResource(kept ? R.drawable.ic_control_keep_on : R.drawable.ic_control_keep_off);
+        mBinding.keepBtn.setBackgroundResource(kept ? R.drawable.shape_icon_circle_keep : R.drawable.shape_icon_circle);
     }
 
     private void checkLockImg() {
@@ -1547,8 +1702,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         Keep keep = new Keep();
         keep.setKey(getHistoryKey());
         keep.setCid(VodConfig.getCid());
-        keep.setVodPic(mHistory.getVodPic());
-        keep.setVodName(mHistory.getVodName());
+        // 详情态尚未起播时可能还没有历史记录，用列表页带过来的片名/海报兜底
+        keep.setVodPic(mHistory != null ? mHistory.getVodPic() : getPic());
+        keep.setVodName(mHistory != null ? mHistory.getVodName() : getName());
         keep.setSiteName(getSite().getName());
         keep.setCreateTime(System.currentTimeMillis());
         keep.save();

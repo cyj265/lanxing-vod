@@ -20,6 +20,7 @@ import com.bumptech.glide.load.DataSource;
 import com.bumptech.glide.load.engine.GlideException;
 import com.bumptech.glide.load.model.GlideUrl;
 import com.bumptech.glide.load.model.LazyHeaders;
+import com.bumptech.glide.load.resource.drawable.DrawableTransitionOptions;
 import com.bumptech.glide.request.RequestListener;
 import com.bumptech.glide.request.target.Target;
 import com.fongmi.android.tv.App;
@@ -112,7 +113,8 @@ public class ImgUtil {
         String url = urls.get(index);
         view.setScaleType(CENTER_CROP);
         try {
-            Glide.with(view).load(getUrl(url)).listener(new RequestListener<Drawable>() {
+            Drawable current = view.getDrawable();
+            RequestBuilder<Drawable> builder = Glide.with(view).load(getUrl(url)).listener(new RequestListener<Drawable>() {
                 @Override
                 public boolean onLoadFailed(@Nullable GlideException e, Object model, @NonNull Target<Drawable> target, boolean isFirstResource) {
                     // 回到主线程再发起下一级，避免在 Glide 回调里重入同一个 target
@@ -124,7 +126,10 @@ public class ImgUtil {
                 public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
                     return false;
                 }
-            }).centerCrop().into(view);
+            });
+            // 详情剧照会从列表小图换成豆瓣大图，用当前画面做占位淡入，避免硬切一下
+            if (current != null) builder = builder.placeholder(current);
+            builder.transition(DrawableTransitionOptions.withCrossFade(220)).centerCrop().into(view);
         } catch (Throwable e) {
             App.post(() -> loadStep(text, urls, index + 1, view));
         }

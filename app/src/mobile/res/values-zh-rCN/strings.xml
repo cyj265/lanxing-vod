@@ -114,4 +114,5 @@
     <string name="wall_remote">壁纸地址</string>
     <string name="wall_local_done">壁纸已更新</string>
     <string name="wall_local_fail">读取失败，换一个文件试试</string>
+    <string name="cast_play_first">请播放后再投屏</string>
 </resources>
