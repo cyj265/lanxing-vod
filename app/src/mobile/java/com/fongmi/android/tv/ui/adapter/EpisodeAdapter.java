@@ -100,11 +100,32 @@ public class EpisodeAdapter extends RecyclerView.Adapter<BaseEpisodeHolder> {
     @Override
     public void onBindViewHolder(@NonNull BaseEpisodeHolder holder, int position) {
         holder.initView(mItems.get(position));
-        if (theme != null && viewType == ViewType.GRID && holder.itemView instanceof TextView) {
+        if (theme != null && holder.itemView instanceof TextView) {
             TextView text = (TextView) holder.itemView;
             boolean selected = mItems.get(position).isSelected();
-            text.setBackground(theme.card(selected, ResUtil.dp2px(16)));
-            text.setTextColor(selected ? theme.accent : theme.onSurface);
+            int radius = ResUtil.dp2px(viewType == ViewType.HORI ? 10 : 16);
+            if (viewType == ViewType.GRID && text.getResources().getConfiguration().smallestScreenWidthDp >= 600) {
+                // 平板大屏：选集格子放大、留白更足
+                text.setTextSize(17);
+                text.setMinHeight(ResUtil.dp2px(62));
+                text.setPadding(ResUtil.dp2px(14), ResUtil.dp2px(10), ResUtil.dp2px(14), ResUtil.dp2px(10));
+                ViewGroup.LayoutParams lp = text.getLayoutParams();
+                if (lp instanceof ViewGroup.MarginLayoutParams) {
+                    int m = ResUtil.dp2px(8);
+                    ((ViewGroup.MarginLayoutParams) lp).setMargins(m, m, m, m);
+                    text.setLayoutParams(lp);
+                }
+            }
+            if (selected) {
+                android.graphics.drawable.GradientDrawable bg = new android.graphics.drawable.GradientDrawable();
+                bg.setCornerRadius(radius);
+                bg.setColor(theme.accent);
+                text.setBackground(bg);
+                text.setTextColor(theme.onAccent);
+            } else {
+                text.setBackground(theme.card(false, radius));
+                text.setTextColor(theme.onSurface);
+            }
         }
     }
 

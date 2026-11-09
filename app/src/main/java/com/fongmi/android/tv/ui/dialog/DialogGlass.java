@@ -16,11 +16,11 @@ import com.fongmi.android.tv.utils.ResUtil;
  */
 public final class DialogGlass {
 
-    private static final int GLASS_COLOR = 0x991B1E26;
+    private static final int GLASS_COLOR = 0xE61B1E26;
     private static final int STROKE_COLOR = 0x33FFFFFF;
     private static final int RADIUS_DP = 16;
-    // 24dp 会把背后的海报糊成一片色块，收敛到 12dp：仍是毛玻璃，但背后画面可辨
-    private static final int BLUR_DP = 12;
+    // 之前 60% 透明太透、背后内容看得太清；加厚到 90% 不透明，再配合 20dp 模糊做出霜面玻璃感
+    private static final int BLUR_DP = 20;
 
     private DialogGlass() {
     }

@@ -57,7 +57,6 @@ import androidx.viewbinding.ViewBinding;
 
 import com.bumptech.glide.Glide;
 import com.bumptech.glide.request.transition.Transition;
-import com.google.android.material.chip.Chip;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.Constant;
 import com.fongmi.android.tv.R;
@@ -449,8 +448,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         if (mBinding == null) return null;
         View[] views = {
                 mBinding.deferredPlay, mBinding.keepBtn, mBinding.quickBtn,
-                mBinding.castBtn, mBinding.settingBtn,
-                mBinding.getRoot().findViewById(R.id.player_btn)
+                mBinding.castBtn, mBinding.settingBtn
         };
         Rect rect = new Rect();
         int[] loc = new int[2];
@@ -481,7 +479,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         setLongClick(mBinding.content, view -> onCopy());
         setClick(mBinding.control.back, view -> onBack());
         setActionClick(mBinding.castBtn);
-        setActionClick(mBinding.getRoot().findViewById(R.id.player_btn));
         applyTextShadow();
         setClick(mBinding.control.info, view -> onInfo());
         setClick(mBinding.control.cast, view -> onCast());
@@ -538,11 +535,21 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.quick.setAdapter(mQuickAdapter = new QuickAdapter(this));
         mBinding.episode.setHasFixedSize(true);
         mBinding.episode.setItemAnimator(null);
+        // 平板：多列网格，放不下自动换行，绝不横向滚动
+        if (isLand()) mBinding.episode.setLayoutManager(new androidx.recyclerview.widget.GridLayoutManager(this, 6));
         mBinding.episode.setAdapter(mEpisodeAdapter = new EpisodeAdapter(this, ViewType.GRID));
         mBinding.quality.setHasFixedSize(true);
         mBinding.quality.setItemAnimator(null);
         mBinding.quality.addItemDecoration(new SpaceItemDecoration(8));
         mBinding.quality.setAdapter(mQualityAdapter = new QualityAdapter(this));
+        // 平板整屏剧照详情：选集、线路排成横向分带（TMDB 海报式布局），手机保持原样
+        if (isLand()) setHorizontal(mBinding.flag);
+    }
+
+    private void setHorizontal(RecyclerView view) {
+        RecyclerView.LayoutManager lm = view.getLayoutManager();
+        if (lm instanceof androidx.recyclerview.widget.LinearLayoutManager)
+            ((androidx.recyclerview.widget.LinearLayoutManager) lm).setOrientation(RecyclerView.HORIZONTAL);
     }
 
     private void setVideoView() {
@@ -563,7 +570,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mAnimator = new ValueAnimator();
         mAnimator.setInterpolator(new DecelerateInterpolator());
         mAnimator.addUpdateListener(animation -> {
-            if (isLand() || isFullscreen() || isInPictureInPictureMode()) return;
+            if (isFullscreen() || isInPictureInPictureMode()) return;
             mFrameParams.height = (int) animation.getAnimatedValue();
             mBinding.video.setLayoutParams(mFrameParams);
         });
@@ -872,7 +879,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     /** 剧照当整屏背景时，标题/评分等白字叠在图上，加一层深色投影保证任何画质下都看得清 */
     private void applyTextShadow() {
         if (mTheme != null) return;
-        for (TextView view : new TextView[]{mBinding.name, mBinding.other, mBinding.remark, mBinding.site}) {
+        for (TextView view : new TextView[]{mBinding.name, mBinding.other}) {
             if (view != null) view.setShadowLayer(6f, 0f, 1f, 0x99000000);
         }
     }
@@ -900,15 +907,11 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
                 view.setShadowLayer(0f, 0f, 0f, 0);
             }
         }
-        for (TextView view : new TextView[]{mBinding.other, mBinding.remark, mBinding.content, mBinding.director, mBinding.actor}) {
+        for (TextView view : new TextView[]{mBinding.other, mBinding.content, mBinding.director, mBinding.actor}) {
             if (view != null) {
                 view.setTextColor(theme.onVariant);
                 view.setShadowLayer(0f, 0f, 0f, 0);
             }
-        }
-        if (mBinding.site != null) {
-            mBinding.site.setTextColor(ColorUtils.setAlphaComponent(theme.onSurface, 0x80));
-            mBinding.site.setShadowLayer(0f, 0f, 0f, 0);
         }
         if (mBinding.reverse instanceof TextView) ((TextView) mBinding.reverse).setTextColor(theme.onVariant);
         for (View icon : new View[]{mBinding.iconContent, mBinding.iconFlag, mBinding.iconEpisode, mBinding.iconQuick, mBinding.more}) {
@@ -935,7 +938,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         if (mFlagAdapter != null) mFlagAdapter.setTheme(theme);
         if (mQualityAdapter != null) mQualityAdapter.setTheme(theme);
         if (mQuickAdapter != null) mQuickAdapter.setTheme(theme);
-        buildTypes();
         checkKeepImg();
     }
 
@@ -958,7 +960,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
                 mBinding.swipeLayout.setLayoutParams(rlp);
             }
         }
-        int top = deferred ? (int) (ResUtil.getScreenHeight() * 0.42f) : ResUtil.dp2px(36);
+        int top = deferred ? (int) (ResUtil.getScreenHeight() * (isLand() ? 0.30f : 0.42f)) : ResUtil.dp2px(36);
         View content = mBinding.detailContent;
         content.setPadding(content.getPaddingLeft(), top, content.getPaddingRight(), content.getPaddingBottom());
         mBinding.detailScrim.setVisibility(deferred ? View.VISIBLE : View.GONE);
@@ -984,9 +986,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     /** 剧照已经整屏，详情态不再抬高播放器占位。
      *  窗口尺寸优先跟随已知分辨率：播放器已报尺寸 > 已选视频轨的分辨率 > 16:9 兜底。
      *  这样缓冲阶段就能定到和起播后一致的大小，不会「加载时宽一截、起播后跳一下」。
-     *  平板（tag=land）是 400x225 的独立视频窗，走自身逻辑，跳过。 */
+     *  平板已改为整屏剧照详情，同样按此规则定尺寸。 */
     private void setVideoHeight() {
-        if (isFullscreenForPlayback() || isLand()) return;
+        if (isFullscreenForPlayback()) return;
         int height = knownVideoHeight();
         if (height <= 0) height = (int) (ResUtil.getScreenWidth() * 9f / 16f);
         ViewGroup.LayoutParams lp = mBinding.video.getLayoutParams();
@@ -1304,17 +1306,24 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         setText(mBinding.actor, R.string.detail_actor, item.getActor());
         setText(mBinding.content, 0, item.getContent());
         setMeta(mBinding.other, item);
-        buildTypes();
     }
 
     private void setText(TextView view, int resId, String text) {
         if (view == null) return;
         if (TextUtils.isEmpty(text) && !TextUtils.isEmpty(view.getText())) return;
-        view.setText(Sniffer.buildClickable(resId > 0 ? getString(resId, text) : text, this::clickableSpan), TextView.BufferType.SPANNABLE);
+        String plain = decodeEntities(text);
+        view.setText(Sniffer.buildClickable(resId > 0 ? getString(resId, plain) : plain, this::clickableSpan), TextView.BufferType.SPANNABLE);
         view.setVisibility(text.isEmpty() ? View.GONE : View.VISIBLE);
         if (view == mBinding.content) setContentVisible();
         view.setLinkTextColor(Color.WHITE);
         CustomMovement.bind(view);
+    }
+
+    /** 源的简介等文本常带 HTML 实体，直接显示会出现字面 &nbsp; */
+    private static String decodeEntities(String s) {
+        if (s == null) return "";
+        return s.replace("&nbsp;", " ").replace("&#160;", " ").replace("&quot;", "\"")
+                .replace("&#39;", "'").replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&");
     }
 
     private void setContentVisible() {
@@ -1339,43 +1348,10 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         if (!TextUtils.isEmpty(item.getRemarks())) parts.add(item.getRemarks());
         if (!TextUtils.isEmpty(item.getYear())) parts.add(item.getYear());
         if (!TextUtils.isEmpty(item.getArea())) parts.add(item.getArea());
-        // 平板有独立 chip 行，元信息里就不再重复类型
-        if (mBinding.types == null && !TextUtils.isEmpty(mTypeName)) parts.add(mTypeName.replace("/", " · "));
+        if (!TextUtils.isEmpty(mTypeName)) parts.add(mTypeName.replace("/", " · "));
         String text = TextUtils.join(" · ", parts);
         view.setText(text);
         view.setVisibility(text.isEmpty() ? View.GONE : View.VISIBLE);
-    }
-
-    /** 类型在手机版并进元信息一行，平板保留 chip */
-    private void buildTypes() {
-        if (mBinding.types == null) return;
-        mBinding.types.removeAllViews();
-        if (TextUtils.isEmpty(mTypeName)) {
-            mBinding.types.setVisibility(View.GONE);
-            return;
-        }
-        mBinding.types.setVisibility(View.VISIBLE);
-        for (String t : mTypeName.split("[/，,\\s]+")) {
-            t = t.trim();
-            if (t.isEmpty()) continue;
-            Chip chip = new Chip(this);
-            chip.setText(t);
-            chip.setCheckable(false);
-            chip.setClickable(false);
-            chip.setFocusable(false);
-            chip.setTextSize(12);
-            if (mTheme != null) {
-                chip.setTextColor(mTheme.onVariant);
-                chip.setChipBackgroundColor(ColorStateList.valueOf(mTheme.card));
-                chip.setChipStrokeColor(ColorStateList.valueOf(0x1FFFFFFF));
-            } else {
-                chip.setTextColor(Color.WHITE);
-                chip.setChipBackgroundColor(ColorStateList.valueOf(0x26FFFFFF));
-                chip.setChipStrokeColor(ColorStateList.valueOf(0x33FFFFFF));
-            }
-            chip.setChipStrokeWidth(1);
-            mBinding.types.addView(chip);
-        }
     }
 
     @Override
@@ -2138,7 +2114,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void changeHeight() {
-        if (isLand() || isFullscreen() || isInPictureInPictureMode()) return;
+        if (isFullscreen() || isInPictureInPictureMode()) return;
         int videoWidth = player().getVideoWidth();
         int videoHeight = player().getVideoHeight();
         if (videoWidth == 0 || videoHeight == 0) return;
@@ -2174,7 +2150,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
      *  否则占位是 16:9，遇到竖屏/非 16:9 片源起播就会缩一下。 */
     private void applyTrackSize() {
         if (service() == null) return;
-        if (isLand() || isFullscreen() || isInPictureInPictureMode()) return;
+        if (isFullscreen() || isInPictureInPictureMode()) return;
         if (player().getVideoWidth() > 0 && player().getVideoHeight() > 0) return;
         int[] size = trackVideoSize();
         if (size == null) return;

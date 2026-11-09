@@ -9,4 +9,11 @@
         android:layout_height="match_parent"
         android:scaleType="centerCrop" />
 
+    <View
+        android:id="@+id/scrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/scrim_wall"
+        android:visibility="gone" />
+
 </FrameLayout>

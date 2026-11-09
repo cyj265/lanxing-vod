@@ -98,11 +98,10 @@
 
     <string name="setting_wall_auto">Daily auto</string>
     <string-array name="select_wall">
-        <item>Default gradient</item>
-        <item>Wallpaper 1</item>
-        <item>Wallpaper 2</item>
-        <item>Wallpaper 3</item>
-        <item>Wallpaper 4</item>
+        <item>Morning Gold</item>
+        <item>Mist Blue</item>
+        <item>Lake Green</item>
+        <item>Twilight Violet</item>
     </string-array>
     <string name="setting_auto_play">Auto-play on open</string>
     <string name="play_deferred">Play</string>

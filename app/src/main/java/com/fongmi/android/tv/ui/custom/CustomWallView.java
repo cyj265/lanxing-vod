@@ -38,8 +38,8 @@ import pl.droidsonroids.gif.GifDrawable;
 
 public class CustomWallView extends FrameLayout implements DefaultLifecycleObserver {
 
-    private static final int[] WALL_PAPERS = {0, R.drawable.bg_global, R.drawable.wallpaper_1, R.drawable.wallpaper_2, R.drawable.wallpaper_3, R.drawable.wallpaper_4};
-    private static final int[] WALL_COLORS = {0, 0xFF404040, 0xFF40C090, 0xFF4870E0, 0xFF48B0C0, 0xFF7040B0};
+    private static final int[] WALL_PAPERS = {0, R.drawable.wallpaper_1, R.drawable.wallpaper_2, R.drawable.wallpaper_3, R.drawable.wallpaper_4};
+    private static final int[] WALL_COLORS = {0, 0xFFC99356, 0xFF8FA9C4, 0xFF6E9E8B, 0xFF9C8AB4};
     private static final int TYPE_RES = 0;
     private static final int TYPE_GIF = 1;
     private static final int TYPE_VIDEO = 2;
@@ -88,7 +88,7 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
     }
 
     /**
-     * 背景按设置加载：内置多套（第 1 套仍是原来的统一渐变）/ 订阅壁纸 / GIF / 视频。
+     * 背景按设置加载：内置 4 套光影壁纸 / 订阅壁纸 / GIF / 视频。
      * 订阅壁纸由 WallConfig 下载后发 ConfigEvent.WALL，这里刷新即可换图。
      */
     private void load() {
@@ -111,15 +111,24 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
 
     private void loadRes(int resId) {
         binding.image.setImageResource(resId);
+        setScrim(true);
+    }
+
+    /** 内置壁纸配色偏亮，压一层渐变暗色保证文字可读；自定义壁纸/视频不压，尊重原图 */
+    private void setScrim(boolean show) {
+        if (binding == null || binding.scrim == null) return;
+        binding.scrim.setVisibility(show ? VISIBLE : GONE);
     }
 
     private void loadImage() {
+        setScrim(false);
         Drawable cache = cache();
         if (cache != null) binding.image.setImageDrawable(cache);
         else binding.image.setImageResource(R.drawable.wallpaper_1);
     }
 
     private void loadVideo(File file) {
+        setScrim(false);
         ensurePlayer();
         ensureVideoView();
         video.setPlayer(player);
@@ -130,6 +139,7 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
     }
 
     private void loadGif(File file) {
+        setScrim(false);
         drawable = gif(file);
         if (drawable != null) binding.image.setImageDrawable(drawable);
         else loadImage();

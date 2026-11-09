@@ -40,7 +40,7 @@
     <color name="on_surface">@color/white</color>
     <color name="on_surface_variant">@color/white_60</color>
     <!-- 与 DialogGlass 的代码底板保持一致（60% 不透明） -->
-    <color name="sheet_bg">#991B1E26</color>
+    <color name="sheet_bg">#E61B1E26</color>
 
     <!-- 液态玻璃三层材质，见 ui/custom/GlassDrawable.java：底色 / 顶部高光线 / 圆角描边 -->
     <color name="glass_bg">#A6121212</color>

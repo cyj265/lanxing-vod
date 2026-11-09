@@ -89,11 +89,10 @@
 
     <string name="setting_wall_auto">每日自動更換</string>
     <string-array name="select_wall">
-        <item>預設漸層</item>
-        <item>內建桌布 1</item>
-        <item>內建桌布 2</item>
-        <item>內建桌布 3</item>
-        <item>內建桌布 4</item>
+        <item>晨光金</item>
+        <item>霧光藍</item>
+        <item>湖光青</item>
+        <item>暮光紫</item>
     </string-array>
     <string name="setting_auto_play">進入即播放</string>
     <string name="play_deferred">播放</string>
