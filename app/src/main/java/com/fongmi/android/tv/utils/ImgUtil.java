@@ -33,6 +33,7 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.net.HttpHeaders;
 
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -89,6 +90,107 @@ public class ImgUtil {
             else builder.fitCenter().into(view);
         } catch (Throwable e) {
             e.printStackTrace();
+        }
+    }
+
+    /**
+     * 按候选顺序加载，任一级失败自动回退到下一级，全部失败才显示文字占位。
+     * 用于详情页整屏背景：豆瓣大图 → 站源原图 → 站源原 URL。
+     * 刻意不写 failed 缓存：详情页的一次失败不该让列表页同一张海报在 5 分钟内变成色块。
+     */
+    public static void loadWithFallback(String text, List<String> urls, ImageView view) {
+        if (view == null || urls == null) return;
+        loadStep(text, urls, 0, view);
+    }
+
+    private static void loadStep(String text, List<String> urls, int index, ImageView view) {
+        if (index >= urls.size() || TextUtils.isEmpty(urls.get(index))) {
+            view.setScaleType(CENTER_CROP);
+            view.setImageDrawable(getTextDrawable(text, true));
+            return;
+        }
+        String url = urls.get(index);
+        view.setScaleType(CENTER_CROP);
+        try {
+            Glide.with(view).load(getUrl(url)).listener(new RequestListener<Drawable>() {
+                @Override
+                public boolean onLoadFailed(@Nullable GlideException e, Object model, @NonNull Target<Drawable> target, boolean isFirstResource) {
+                    // 回到主线程再发起下一级，避免在 Glide 回调里重入同一个 target
+                    App.post(() -> loadStep(text, urls, index + 1, view));
+                    return true;
+                }
+
+                @Override
+                public boolean onResourceReady(Drawable resource, Object model, Target<Drawable> target, DataSource dataSource, boolean isFirstResource) {
+                    return false;
+                }
+            }).centerCrop().into(view);
+        } catch (Throwable e) {
+            App.post(() -> loadStep(text, urls, index + 1, view));
+        }
+    }
+
+    /** 文件名里的 WordPress 式尺寸后缀，如 xxx-300x450.jpg / xxx_400x600.webp */
+    private static final Pattern SIZE_SUFFIX = Pattern.compile("(?i)[-_]\\d{2,4}x\\d{2,4}(?=\\.(?:jpg|jpeg|png|webp|gif|bmp)$)");
+    /** 又拍云图片处理分隔符，如 xxx.jpg!w300 */
+    private static final Pattern UPAI_SUFFIX = Pattern.compile("(?i)(\\.(?:jpg|jpeg|png|webp|gif))![^/]*$");
+
+    /**
+     * 站源图片 URL 归一化：剥掉常见的缩略/缩放参数，尝试取原图。
+     * <p>
+     * 只改 URL 字符串，不改 {@link #getUrl(String)} 的公共行为 —— 列表页本来就显示小图，
+     * 换原图会白耗流量并改变 Glide 缓存键。详情页整屏背景才会用本方法。
+     * 规则保守：只删明确的缩放参数和尺寸后缀，token / sign / 其它业务参数一律保留。
+     */
+    public static String original(String url) {
+        if (TextUtils.isEmpty(url) || url.startsWith("data:")) return url;
+        // @Referer= / @Cookie= / @Headers= 是本地图片语法，必须原样保留
+        int at = url.indexOf('@');
+        String body = at >= 0 ? url.substring(0, at) : url;
+        String tail = at >= 0 ? url.substring(at) : "";
+        return normalize(body) + tail;
+    }
+
+    private static String normalize(String body) {
+        int q = body.indexOf('?');
+        String path = q >= 0 ? body.substring(0, q) : body;
+        String query = q >= 0 ? body.substring(q + 1) : "";
+        path = SIZE_SUFFIX.matcher(path).replaceAll("");
+        path = UPAI_SUFFIX.matcher(path).replaceAll("$1");
+        if (!query.isEmpty()) {
+            StringBuilder kept = new StringBuilder();
+            for (String pair : query.split("&")) {
+                if (pair.isEmpty()) continue;
+                int eq = pair.indexOf('=');
+                String key = (eq >= 0 ? pair.substring(0, eq) : pair).toLowerCase(Locale.ROOT);
+                String value = eq >= 0 ? pair.substring(eq + 1) : "";
+                if (isScaleParam(key, value)) continue;
+                if (kept.length() > 0) kept.append('&');
+                kept.append(pair);
+            }
+            query = kept.toString();
+        }
+        return query.isEmpty() ? path : path + "?" + query;
+    }
+
+    private static boolean isScaleParam(String key, String value) {
+        String v = value.toLowerCase(Locale.ROOT);
+        switch (key) {
+            case "x-oss-process":
+                return v.contains("resize") || v.contains("thumbnail") || v.contains("imageview");
+            case "imagemogr2":
+                return v.contains("thumbnail") || v.contains("imageview");
+            case "w":
+            case "h":
+            case "width":
+            case "height":
+                return v.matches("\\d{1,4}");
+            case "thumb":
+            case "thumbnail":
+            case "size":
+                return v.isEmpty() || v.matches("(?i)(small|thumb|s|m|\\d{1,4})");
+            default:
+                return false;
         }
     }
 

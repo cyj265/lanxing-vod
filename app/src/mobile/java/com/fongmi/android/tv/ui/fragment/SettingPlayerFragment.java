@@ -10,6 +10,7 @@ import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.databinding.FragmentSettingPlayerBinding;
+import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.impl.BufferListener;
 import com.fongmi.android.tv.impl.UaListener;
 import com.fongmi.android.tv.setting.PlayerSetting;
@@ -19,11 +20,12 @@ import com.fongmi.android.tv.ui.base.BaseFragment;
 import com.fongmi.android.tv.ui.dialog.BufferDialog;
 import com.fongmi.android.tv.ui.dialog.UaDialog;
 import com.fongmi.android.tv.utils.ResUtil;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import com.fongmi.android.tv.ui.dialog.GlassAlertDialogBuilder;
 
 public class SettingPlayerFragment extends BaseFragment implements UaListener, BufferListener {
 
     private FragmentSettingPlayerBinding mBinding;
+    private String[] size;
     private String[] background;
     private String[] render;
     private String[] scale;
@@ -42,6 +44,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         setVisible();
         setPlaybackModeText();
         mBinding.adblockText.setText(Setting.getSwitch(Setting.isAdblock()));
+        mBinding.sizeText.setText((size = ResUtil.getStringArray(R.array.select_size))[PlayerSetting.getSize()]);
         mBinding.bufferText.setText(String.valueOf(PlayerSetting.getBuffer()));
         mBinding.scaleText.setText((scale = ResUtil.getStringArray(R.array.select_scale))[PlayerSetting.getScale()]);
         mBinding.backgroundText.setText((background = ResUtil.getStringArray(R.array.select_background))[PlayerSetting.getBackground()]);
@@ -49,6 +52,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
 
     @Override
     protected void initEvent() {
+        mBinding.size.setOnClickListener(this::setSize);
         mBinding.decode.setOnClickListener(this::onDecode);
         mBinding.adblock.setOnClickListener(this::setAdblock);
         mBinding.render.setOnClickListener(this::setRender);
@@ -66,6 +70,15 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
         mBinding.buffer.setVisibility(View.VISIBLE);
     }
 
+    private void setSize(View view) {
+        new GlassAlertDialogBuilder(requireActivity()).setTitle(R.string.setting_size).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(size, PlayerSetting.getSize(), (dialog, which) -> {
+            mBinding.sizeText.setText(size[which]);
+            PlayerSetting.putSize(which);
+            RefreshEvent.size();
+            dialog.dismiss();
+        }).show();
+    }
+
     private void setRender(View view) {
         int index = (PlayerSetting.getRender() + 1) % render.length;
         PlayerSetting.putRender(index);
@@ -78,7 +91,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
     }
 
     private void onScale(View view) {
-        new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.player_scale).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(scale, PlayerSetting.getScale(), (dialog, which) -> {
+        new GlassAlertDialogBuilder(requireActivity()).setTitle(R.string.player_scale).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(scale, PlayerSetting.getScale(), (dialog, which) -> {
             mBinding.scaleText.setText(scale[which]);
             PlayerSetting.putScale(which);
             dialog.dismiss();
@@ -96,7 +109,7 @@ public class SettingPlayerFragment extends BaseFragment implements UaListener, B
     }
 
     private void onBackground(View view) {
-        new MaterialAlertDialogBuilder(requireActivity()).setTitle(R.string.player_background).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(background, PlayerSetting.getBackground(), (dialog, which) -> {
+        new GlassAlertDialogBuilder(requireActivity()).setTitle(R.string.player_background).setNegativeButton(R.string.dialog_negative, null).setSingleChoiceItems(background, PlayerSetting.getBackground(), (dialog, which) -> {
             mBinding.backgroundText.setText(background[which]);
             PlayerSetting.putBackground(which);
             dialog.dismiss();

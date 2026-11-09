@@ -32,6 +32,7 @@ import com.fongmi.android.tv.impl.ConfigListener;
 import com.fongmi.android.tv.impl.FilterListener;
 import com.fongmi.android.tv.impl.SiteListener;
 import com.fongmi.android.tv.model.SiteViewModel;
+import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.activity.HistoryActivity;
 import com.fongmi.android.tv.ui.activity.KeepActivity;
 import com.fongmi.android.tv.ui.activity.SearchActivity;
@@ -117,6 +118,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         mBinding.type.setHasFixedSize(true);
         mBinding.type.setItemAnimator(null);
         mBinding.type.setAdapter(mAdapter = new TypeAdapter(this));
+        mAdapter.setShowDiscover(Setting.isHomeDiscover());
         mBinding.pager.setAdapter(new PageAdapter(getChildFragmentManager()));
     }
 
@@ -213,6 +215,22 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
             case CATEGORY:
                 if (mBinding.pager.getCurrentItem() > 0) getFragment().onRefresh();
                 break;
+            case SETTING: {
+                // 仅「豆瓣精选首页」开关变化时才重建 pager；其它展示类开关由各自订阅者处理。
+                // 虚拟的「首页」tab 随开关增删，不重新请求配置数据，切开关不转圈。
+                boolean show = Setting.isHomeDiscover();
+                if (mAdapter.isShowDiscover() == show) break;
+                int current = mBinding.pager.getCurrentItem();
+                mAdapter.setShowDiscover(show);
+                int max = Math.max(0, mAdapter.getItemCount() - 1);
+                int target = Math.max(0, Math.min(current + (show ? 1 : -1), max));
+                mBinding.pager.setAdapter(new PageAdapter(getChildFragmentManager()));
+                mBinding.pager.setCurrentItem(target, false);
+                mBinding.type.smoothScrollToPosition(target);
+                mAdapter.setSelected(target);
+                setFilterVisible();
+                break;
+            }
         }
     }
 
@@ -293,7 +311,7 @@ public class VodFragment extends BaseFragment implements ConfigListener, SiteLis
         @NonNull
         @Override
         public Fragment getItem(int position) {
-            if (position == 0) return DiscoverFragment.newInstance();
+            if (position == 0 && mAdapter.isShowDiscover()) return DiscoverFragment.newInstance();
             Class type = mAdapter.get(position);
             return FolderFragment.newInstance(getHome().getKey(), type, 4);
         }

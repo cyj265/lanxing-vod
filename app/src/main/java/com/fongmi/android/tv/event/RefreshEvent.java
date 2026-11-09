@@ -46,6 +46,11 @@ public class RefreshEvent {
         EventBus.getDefault().post(new RefreshEvent(Type.PLAYER));
     }
 
+    /** 首页展示类设置变更后通知首页刷新，不影响配置加载等原有事件 */
+    public static void setting() {
+        EventBus.getDefault().post(new RefreshEvent(Type.SETTING));
+    }
+
     public static void subtitle(String path) {
         EventBus.getDefault().post(new RefreshEvent(Type.SUBTITLE, path));
     }
@@ -85,6 +90,6 @@ public class RefreshEvent {
     }
 
     public enum Type {
-        HOME, CATEGORY, HISTORY, KEEP, SIZE, THEME, LIVE, DETAIL, PLAYER, SUBTITLE, DANMAKU, VOD
+        HOME, CATEGORY, HISTORY, KEEP, SIZE, THEME, LIVE, DETAIL, PLAYER, SUBTITLE, DANMAKU, VOD, SETTING
     }
 }

@@ -14,17 +14,21 @@ import android.os.Bundle;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.text.style.ClickableSpan;
+import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.Window;
 import android.view.animation.DecelerateInterpolator;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.appcompat.app.AlertDialog;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.widget.NestedScrollView;
 import androidx.fragment.app.DialogFragment;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentActivity;
@@ -100,11 +104,12 @@ import com.fongmi.android.tv.ui.dialog.ReceiveDialog;
 import com.fongmi.android.tv.ui.dialog.SpeedSettingDialog;
 import com.fongmi.android.tv.ui.dialog.TrackDialog;
 import com.fongmi.android.tv.utils.Clock;
+import com.fongmi.android.tv.utils.Douban;
 import com.fongmi.android.tv.utils.FileChooser;
 import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.ImgUtil;
-import com.fongmi.android.tv.utils.MediaQuality;
 import com.fongmi.android.tv.utils.Notify;
+import com.fongmi.android.tv.utils.OsdMode;
 import com.fongmi.android.tv.utils.PiP;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Sniffer;
@@ -112,10 +117,12 @@ import com.fongmi.android.tv.utils.Timer;
 import com.fongmi.android.tv.utils.Traffic;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.fongmi.android.tv.utils.Util;
+import com.fongmi.android.tv.ui.dialog.GlassAlertDialogBuilder;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -127,7 +134,12 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private FlagAdapter mFlagAdapter;
     private EpisodeAdapter mEpisodeAdapter;
     private QualityAdapter mQualityAdapter;
+    private Result mQualityResult;
     private QuickAdapter mQuickAdapter;
+    /** 首次进入详情页时暂存的播放请求：等用户点「播放」才真正发起 */
+    private VodPlayRequest mDeferredRequest;
+    /** 用户是否已主动要求播放（点播放/选集/切线路/切画质），一旦为 true 不再延后 */
+    private boolean mPlayConfirmed;
     private ViewGroup.LayoutParams mFrameParams;
     private ValueAnimator mAnimator;
     private CustomKeyDown mKeyDown;
@@ -339,6 +351,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         showProgress();
         setAnimator();
         checkId();
+        OsdMode.apply(mBinding.control.osd, mBinding.control.osdHost, mBinding.control.getRoot());
     }
 
     private void setClick(View view, View.OnClickListener listener) {
@@ -364,12 +377,13 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         setClick(mBinding.reverse, view -> onReverse());
         setClick(mBinding.director, view -> onDirector());
         setClick(mBinding.quickBtn, view -> onName());
-        setClick(mBinding.playerBtn, view -> onPlayer());
+        setClick(mBinding.deferredPlay, this::onDeferredPlay);
         setClick(mBinding.settingBtn, view -> onSetting());
         setLongClick(mBinding.name, view -> onChange());
         setLongClick(mBinding.content, view -> onCopy());
         setClick(mBinding.control.back, view -> onBack());
         setClick(mBinding.castBtn, view -> onCast());
+        applyTextShadow();
         setClick(mBinding.control.info, view -> onInfo());
         setClick(mBinding.control.keep, view -> onKeep());
         setClick(mBinding.control.play, view -> checkPlay());
@@ -397,12 +411,14 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         setClick(mBinding.control.action.edition, view -> onEdition());
         setClick(mBinding.control.action.chapter, view -> onChapter());
         setClick(mBinding.control.action.episodes, view -> onEpisodes());
+        setClick(mBinding.control.action.qualityPick, this::onQualityPick);
         setLongClick(mBinding.control.action.speed, view -> onSpeedLong());
         setLongClick(mBinding.control.action.ending, view -> onEndingReset());
         setLongClick(mBinding.control.action.opening, view -> onOpeningReset());
         setTouch(mBinding.video, (view, event) -> mKeyDown.onTouchEvent(event));
         setTouch(mBinding.control.action.getRoot(), this::onActionTouch);
         mBinding.swipeLayout.setOnRefreshListener(this::onSwipeRefresh);
+        mBinding.scroll.setOnScrollChangeListener((NestedScrollView.OnScrollChangeListener) (v, scrollX, scrollY, oldScrollX, oldScrollY) -> updateDetailDim(scrollY));
     }
 
     private WindowInsetsCompat setStatusBar(WindowInsetsCompat insets) {
@@ -430,7 +446,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void setVideoView() {
         PlayerEngineDialog.setText(mBinding.control.action.player);
-        PlayerEngineDialog.setText(mBinding.playerBtn);
         mBinding.control.action.danmaku.setVisibility(DanmakuSetting.isLoad() ? View.VISIBLE : View.GONE);
         mBinding.video.addOnLayoutChangeListener((view, left, top, right, bottom, oldLeft, oldTop, oldRight, oldBottom) -> mPiP.update(this, view));
     }
@@ -575,8 +590,101 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     public void requestPlayer(VodPlayRequest request) {
+        mDeferredRequest = request;
+        if (shouldDeferAutoPlay()) {
+            // 停在详情页：不发播放请求，先让用户看清简介和剧集，点播放才起播
+            renderDeferredPlay(true);
+            return;
+        }
+        renderDeferredPlay(false);
         mViewModel.playerContent(request);
         showProgress();
+    }
+
+    /** 只在「首次进入详情页 + 用户没主动操作 + 设置未开启进入即播放」时延后起播 */
+    private boolean shouldDeferAutoPlay() {
+        return mBinding != null && mBinding.deferredCover != null && !mPlayConfirmed && !PlayerSetting.isAutoPlay() && !isFullscreenForPlayback();
+    }
+
+    private void renderDeferredPlay(boolean visible) {
+        // 平板布局没有「剧照详情页」，直接走原有播放流程
+        if (mBinding == null || mBinding.deferredCover == null || mBinding.deferredPlay == null) return;
+        mBinding.deferredPlay.setVisibility(visible ? View.VISIBLE : View.GONE);
+        mBinding.deferredCover.setVisibility(visible ? View.VISIBLE : View.GONE);
+        // 剧照铺满整屏，播放器区和状态栏占位都要让开，否则会压出黑边
+        mBinding.video.setBackgroundColor(visible ? Color.TRANSPARENT : Color.BLACK);
+        mBinding.statusBar.setBackgroundColor(visible ? Color.TRANSPARENT : Color.BLACK);
+        if (visible) mBinding.deferredPlay.setText(mHistory != null && mHistory.getPosition() > 0 ? R.string.play_deferred_continue : R.string.play_deferred);
+        // 剧照整屏不透明铺底，淡出交给上层 scrim 做平滑过渡，避免半张图 + 硬线
+        mBinding.deferredCover.setFadeEnabled(false);
+        setDetailLayout(visible);
+        setVideoHeight();
+    }
+
+    /** 剧照当整屏背景时，标题/评分等白字叠在图上，加一层深色投影保证任何画质下都看得清 */
+    private void applyTextShadow() {
+        for (TextView view : new TextView[]{mBinding.name, mBinding.other, mBinding.remark, mBinding.site}) {
+            if (view != null) view.setShadowLayer(6f, 0f, 1f, 0x99000000);
+        }
+    }
+
+    /**
+     * 详情态把详情滚动区从「播放器下方」抬到整屏：内容靠顶部留白先落在剧照下半部，
+     * 向上滑时可以一直铺满全屏，不会像以前那样被播放器下沿那条线裁掉。
+     * 起播后恢复 layout_below=video，播放器正常占位。
+     */
+    private void setDetailLayout(boolean deferred) {
+        if (mBinding.detailScrim == null || mBinding.detailDim == null || mBinding.detailContent == null) return;
+        ViewGroup.LayoutParams lp = mBinding.swipeLayout.getLayoutParams();
+        if (lp instanceof RelativeLayout.LayoutParams) {
+            RelativeLayout.LayoutParams rlp = (RelativeLayout.LayoutParams) lp;
+            int below = rlp.getRule(RelativeLayout.BELOW);
+            if (deferred && below == R.id.video) {
+                rlp.removeRule(RelativeLayout.BELOW);
+                mBinding.swipeLayout.setLayoutParams(rlp);
+            } else if (!deferred && below != R.id.video) {
+                rlp.addRule(RelativeLayout.BELOW, R.id.video);
+                mBinding.swipeLayout.setLayoutParams(rlp);
+            }
+        }
+        int top = deferred ? (int) (ResUtil.getScreenHeight() * 0.42f) : ResUtil.dp2px(36);
+        View content = mBinding.detailContent;
+        content.setPadding(content.getPaddingLeft(), top, content.getPaddingRight(), content.getPaddingBottom());
+        mBinding.detailScrim.setVisibility(deferred ? View.VISIBLE : View.GONE);
+        mBinding.detailDim.setVisibility(deferred ? View.VISIBLE : View.GONE);
+        if (deferred) {
+            mBinding.scroll.scrollTo(0, 0);
+            updateDetailDim(0);
+        } else {
+            mBinding.detailDim.setAlpha(0f);
+        }
+    }
+
+    /** 内容越往上滑、越贴到清晰剧照区，整体压暗越重，白字始终看得清 */
+    private void updateDetailDim(int scrollY) {
+        if (mBinding == null || mBinding.detailDim == null || mBinding.detailDim.getVisibility() != View.VISIBLE) return;
+        float range = Math.max(1f, ResUtil.getScreenHeight() * 0.42f);
+        float ratio = Math.min(1f, Math.max(0f, scrollY / range));
+        // 首屏只压 6%（原 15% 会让整张低分辨率海报发灰）；上滑后逐步加深保证白字可读
+        mBinding.detailDim.setAlpha(0.06f + 0.50f * ratio);
+    }
+
+    /** 剧照已经整屏，详情态不再抬高播放器占位；起播后统一恢复 220dp */
+    private void setVideoHeight() {
+        if (isFullscreenForPlayback()) return;
+        ViewGroup.LayoutParams lp = mBinding.video.getLayoutParams();
+        int height = ResUtil.dp2px(220);
+        if (lp.height == height) return;
+        lp.height = height;
+        mBinding.video.setLayoutParams(lp);
+    }
+
+    private void onDeferredPlay(View view) {
+        mPlayConfirmed = true;
+        renderDeferredPlay(false);
+        mDeferredRequest = null;
+        // 走既有的刷新链路：内部会重新请求当前线路/集数的播放地址，状态衔接更稳
+        mVod.refresh();
     }
 
     @Override
@@ -627,6 +735,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     public void startPlayback(Result result, boolean useParse, long startPositionMs, MediaMetadata metadata) {
+        renderDeferredPlay(false);
         startPlayer(getHistoryKey(), result, useParse, getSite().getTimeout(), startPositionMs, metadata);
     }
 
@@ -653,10 +762,35 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.name.setText(item.getName());
         App.removeCallbacks(mR4);
         setArtwork(item.getPic());
-        ImgUtil.load(item.getName(), item.getPic(), mBinding.poster);
+        loadBackdrop(item.getName(), item.getYear(), item.getPic());
         checkKeepImg();
         setText(item);
         updateKeep();
+    }
+
+    /**
+     * 详情页整屏剧照分级加载：
+     * ① 先用站源图（剥离缩略参数后的原图优先，失败回退原始 URL）保证立即有画面；
+     * ② 后台按片名查豆瓣 /l/ 大图（≈1080×1914，正好全屏），命中后替换；
+     * ③ 任何一级失败都由 ImgUtil.loadWithFallback 自动回退，最终兜底文字占位，不会黑屏。
+     */
+    private void loadBackdrop(String name, String year, String pic) {
+        if (mBinding == null || mBinding.deferredCover == null) return;
+        List<String> base = new ArrayList<>();
+        String original = ImgUtil.original(pic);
+        if (!TextUtils.isEmpty(original) && !original.equals(pic)) base.add(original);
+        if (!TextUtils.isEmpty(pic)) base.add(pic);
+        ImgUtil.loadWithFallback(name, base, mBinding.deferredCover);
+        Douban.getLargePicAsync(name, year, large -> {
+            if (mBinding == null || mBinding.deferredCover == null) return;
+            // 已经起播、或期间切了片，就不要再替换背景
+            if (mPlayConfirmed || !name.equals(getVodName())) return;
+            if (TextUtils.isEmpty(large)) return;
+            List<String> chain = new ArrayList<>();
+            chain.add(large);
+            chain.addAll(base);
+            ImgUtil.loadWithFallback(name, chain, mBinding.deferredCover);
+        });
     }
 
     @Override
@@ -671,7 +805,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         if (!name.isEmpty()) mBinding.name.setText(name);
         if (!pic.isEmpty()) {
             setArtwork();
-            ImgUtil.load(name, pic, mBinding.poster);
         }
         updateKeep();
     }
@@ -718,6 +851,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     @Override
     public void renderQuality(Result result, boolean visible) {
         mBinding.swipeLayout.setRefreshing(false);
+        mQualityResult = result;
         mQualityAdapter.addAll(result);
         setQualityVisible(visible);
     }
@@ -877,22 +1011,26 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     @Override
     public void onItemClick(Flag item) {
+        mPlayConfirmed = true;
         mVod.selectFlag(item);
     }
 
     @Override
     public void onItemClick(Episode item) {
         if (shouldEnterFullscreen(item)) return;
+        mPlayConfirmed = true;
         mVod.selectEpisode(item);
     }
 
     @Override
     public void onItemClick(Result result) {
+        mPlayConfirmed = true;
         mVod.selectQuality(result);
     }
 
     @Override
     public void onItemClick(Vod item) {
+        mPlayConfirmed = true;
         mVod.selectSource(item);
     }
 
@@ -909,6 +1047,37 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private void setQualityVisible(boolean visible) {
         mBinding.qualityText.setVisibility(visible ? View.VISIBLE : View.GONE);
         mBinding.quality.setVisibility(visible ? View.VISIBLE : View.GONE);
+        boolean multi = visible && mQualityResult != null && mQualityResult.getUrl().isMulti();
+        mBinding.control.action.qualityPick.setVisibility(multi ? View.VISIBLE : View.GONE);
+    }
+
+    /** 全屏（竖屏 / 横屏）时详情页被播放器盖住，画质档按钮放到底部控制栏，选档列表也从底部弹出 */
+    private void onQualityPick(View view) {
+        Result result = mQualityResult;
+        if (result == null || !result.getUrl().isMulti()) return;
+        int count = result.getUrl().getValues().size();
+        String[] names = new String[count];
+        for (int i = 0; i < count; i++) {
+            String name = result.getUrl().n(i);
+            names[i] = TextUtils.isEmpty(name) ? getString(R.string.quality_option, i + 1) : name;
+        }
+        int checked = Math.max(-1, Math.min(result.getUrl().getPosition(), count - 1));
+        AlertDialog dialog = new GlassAlertDialogBuilder(this)
+                .setTitle(R.string.detail_quality)
+                .setSingleChoiceItems(names, checked, (d, which) -> {
+                    result.getUrl().set(which);
+                    mVod.selectQuality(result);
+                    mQualityAdapter.addAll(result);
+                    d.dismiss();
+                })
+                .setNegativeButton(R.string.dialog_negative, null)
+                .create();
+        dialog.show();
+        Window window = dialog.getWindow();
+        if (window != null) {
+            window.setGravity(Gravity.BOTTOM);
+            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        }
     }
 
     private void onName() {
@@ -1144,7 +1313,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void onPlayer() {
         PlayerEngineDialog.show(this, mBinding.control.action.player, player());
-        PlayerEngineDialog.setText(mBinding.playerBtn, player());
         hideControl();
     }
 
@@ -1288,6 +1456,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     /** 播放页右上屏显：分辨率 + 网速 + 电池（对齐影视仓），控制栏可见期间每秒刷新 */
     private void setOsd() {
         if (mBinding == null) return;
+        OsdMode.apply(mBinding.control.osd, mBinding.control.osdHost, mBinding.control.getRoot());
         Traffic.setSpeed(mBinding.control.speed);
         setBattery();
         if (isVisible(mBinding.control.getRoot())) App.post(mR7, 1000);
@@ -1300,7 +1469,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
         if (level < 0 || scale <= 0) return;
         mBinding.control.battery.setVisibility(View.VISIBLE);
-        mBinding.control.battery.setText(level * 100 / scale + "%");
+        mBinding.control.battery.setLevel(level * 100 / scale);
     }
 
     private void setOrient() {
@@ -1363,7 +1532,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         boolean kept = Keep.find(getHistoryKey()) != null;
         mBinding.control.keep.setImageResource(kept ? R.drawable.ic_control_keep_on : R.drawable.ic_control_keep_off);
         if (mBinding.keepBtn == null) return;
-        mBinding.keepBtn.setText(kept ? R.string.keep_done_btn : R.string.keep_add_btn);
         mBinding.keepBtn.setSelected(kept);
     }
 
@@ -1506,7 +1674,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.title.setSelected(true);
         boolean hasSize = size != null && size.width > 0 && size.height > 0;
         if (hasSize) {
-            mBinding.control.resolution.setText("[" + MediaQuality.label(size.width, size.height) + "]");
+            mBinding.control.resolution.setText("[" + size.width + "x" + size.height + "]");
             mBinding.control.resolution.setVisibility(View.VISIBLE);
         } else {
             mBinding.control.resolution.setVisibility(View.GONE);

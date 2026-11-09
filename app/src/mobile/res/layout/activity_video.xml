@@ -47,7 +47,34 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent" />
 
+        <!-- 首次进入不自动起播时：用剧照垫底 + 一个大播放按钮，等用户主动点 -->
     </FrameLayout>
+
+    <com.fongmi.android.tv.ui.custom.FadeImageView
+        android:id="@+id/deferredCover"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:scaleType="centerCrop"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+    <!-- 详情态：剧照整屏铺底，靠一层平滑渐变把下半部压暗，杜绝「半张图 + 硬分界线」 -->
+    <View
+        android:id="@+id/detailScrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@drawable/scrim_detail"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
+    <!-- 文字上滑到剧照清晰区时随滚动整体压暗，保证白字始终可读 -->
+    <View
+        android:id="@+id/detailDim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:alpha="0.06"
+        android:background="@color/black"
+        android:visibility="gone" />
 
     <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
         android:id="@+id/swipeLayout"
@@ -67,191 +94,188 @@
                 android:fillViewport="true">
 
                 <androidx.appcompat.widget.LinearLayoutCompat
+                    android:id="@+id/detailContent"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
+                    android:layout_height="wrap_content"
                     android:clipChildren="false"
                     android:clipToPadding="false"
                     android:orientation="vertical"
-                    android:paddingTop="12dp"
-                    android:paddingBottom="8dp">
+                    android:paddingTop="36dp"
+                    android:paddingBottom="100dp">
 
-                    <androidx.appcompat.widget.LinearLayoutCompat
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="horizontal"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="12dp">
-
-                        <androidx.appcompat.widget.AppCompatImageView
-                            android:id="@+id/poster"
-                            android:layout_width="92dp"
-                            android:layout_height="122dp"
-                            android:background="@drawable/shape_poster"
-                            android:clipToOutline="true"
-                            android:scaleType="centerCrop"
-                            tools:src="@drawable/artwork" />
-
-                        <androidx.appcompat.widget.LinearLayoutCompat
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="12dp"
-                            android:layout_weight="1"
-                            android:orientation="vertical">
-
-                            <com.google.android.material.textview.MaterialTextView
-                                android:id="@+id/name"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_marginEnd="8dp"
-                                android:ellipsize="end"
-                                android:maxLines="2"
-                                android:textColor="@color/white"
-                                android:textSize="18sp"
-                                android:textStyle="bold"
-                                tools:text="慶餘年第二季" />
-
-                            <com.google.android.material.textview.MaterialTextView
-                                android:id="@+id/other"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="4dp"
-                                android:singleLine="true"
-                                android:textColor="@color/white"
-                                android:textSize="13sp"
-                                tools:text="年份：2022 地區：台灣 類型：科幻" />
-
-                            <com.google.android.material.textview.MaterialTextView
-                                android:id="@+id/director"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:singleLine="true"
-                                android:textColor="@color/white"
-                                android:textSize="13sp"
-                                tools:text="導演：FongMi" />
-
-                            <com.google.android.material.textview.MaterialTextView
-                                android:id="@+id/actor"
-                                android:layout_width="match_parent"
-                                android:layout_height="wrap_content"
-                                android:layout_marginTop="2dp"
-                                android:ellipsize="end"
-                                android:maxLines="2"
-                                android:textColor="@color/white"
-                                android:textSize="13sp"
-                                tools:text="演員：FongMi" />
-
-                        </androidx.appcompat.widget.LinearLayoutCompat>
-
-                        <androidx.appcompat.widget.AppCompatTextView
-                            android:id="@+id/keep_btn"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="8dp"
-                            android:layout_marginTop="2dp"
-                            android:background="@drawable/shape_keep"
-                            android:paddingStart="10dp"
-                            android:paddingEnd="10dp"
-                            android:paddingTop="4dp"
-                            android:paddingBottom="4dp"
-                            android:text="@string/keep_add_btn"
-                            android:textColor="@color/black"
-                            android:textSize="12sp" />
-
-                    </androidx.appcompat.widget.LinearLayoutCompat>
-
-                    <androidx.appcompat.widget.LinearLayoutCompat
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginTop="10dp"
-                        android:orientation="horizontal"
-                        android:paddingStart="16dp"
-                        android:paddingEnd="16dp">
-
-                        <androidx.appcompat.widget.AppCompatTextView
-                            android:id="@+id/quick_btn"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:background="?attr/selectableItemBackground"
-                            android:gravity="center"
-                            android:paddingTop="8dp"
-                            android:paddingBottom="8dp"
-                            android:text="@string/video_quick"
-                            android:textColor="@color/white"
-                            android:textSize="14sp" />
-
-                        <androidx.appcompat.widget.AppCompatTextView
-                            android:id="@+id/player_btn"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:background="?attr/selectableItemBackground"
-                            android:gravity="center"
-                            android:paddingTop="8dp"
-                            android:paddingBottom="8dp"
-                            android:text="@string/video_player"
-                            android:textColor="@color/white"
-                            android:textSize="14sp" />
-
-                        <androidx.appcompat.widget.AppCompatTextView
-                            android:id="@+id/cast_btn"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:background="?attr/selectableItemBackground"
-                            android:gravity="center"
-                            android:paddingTop="8dp"
-                            android:paddingBottom="8dp"
-                            android:text="@string/video_cast"
-                            android:textColor="@color/white"
-                            android:textSize="14sp" />
-
-                        <androidx.appcompat.widget.AppCompatTextView
-                            android:id="@+id/setting_btn"
-                            android:layout_width="0dp"
-                            android:layout_height="wrap_content"
-                            android:layout_weight="1"
-                            android:background="?attr/selectableItemBackground"
-                            android:gravity="center"
-                            android:paddingTop="8dp"
-                            android:paddingBottom="8dp"
-                            android:text="@string/video_setting_btn"
-                            android:textColor="@color/white"
-                            android:textSize="14sp" />
-
-                    </androidx.appcompat.widget.LinearLayoutCompat>
-
+                    <!-- 剧名：源数据只有文字，没有艺术字 logo，用大号居中标题替代 -->
                     <com.google.android.material.textview.MaterialTextView
-                        android:id="@+id/remark"
-                        android:layout_width="wrap_content"
+                        android:id="@+id/name"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="24dp"
+                        android:layout_marginEnd="24dp"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:maxLines="2"
+                        android:textColor="@color/white"
+                        android:textSize="24sp"
+                        android:textStyle="bold"
+                        tools:text="唐朝诡事录" />
+
+                    <!-- 评分 / 年份 / 时长 -->
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/other"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="16dp"
-                        android:layout_marginTop="2dp"
+                        android:layout_marginTop="8dp"
                         android:layout_marginEnd="16dp"
+                        android:ellipsize="middle"
+                        android:gravity="center"
                         android:singleLine="true"
-                        android:textColor="@color/white"
+                        android:textColor="@color/white_70"
                         android:textSize="13sp"
-                        tools:text="更新到第二季" />
+                        tools:text="8.2  [15]  2022  45m" />
+
+                    <!-- 类型标签 / 更新备注 -->
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/remark"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="16dp"
+                        android:layout_marginTop="6dp"
+                        android:layout_marginEnd="16dp"
+                        android:ellipsize="end"
+                        android:gravity="center"
+                        android:singleLine="true"
+                        android:textColor="@color/white_70"
+                        android:textSize="12sp"
+                        tools:text="悬疑，犯罪，剧情，动作冒险" />
 
                     <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/site"
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="16dp"
-                        android:layout_marginTop="2dp"
+                        android:layout_marginTop="4dp"
                         android:layout_marginEnd="16dp"
+                        android:gravity="center"
                         android:singleLine="true"
-                        android:textColor="@color/white"
-                        android:textSize="13sp"
+                        android:textColor="@color/white_50"
+                        android:textSize="11sp"
                         tools:text="站源：泥巴" />
 
+                    <!-- 播放 / 继续播放：宽胶囊 -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/deferredPlay"
+                        android:layout_width="match_parent"
+                        android:layout_height="48dp"
+                        android:layout_marginStart="24dp"
+                        android:layout_marginTop="18dp"
+                        android:layout_marginEnd="24dp"
+                        android:backgroundTint="#2EFFFFFF"
+                        android:text="@string/play_deferred"
+                        android:textColor="@color/white"
+                        android:textSize="15sp"
+                        android:visibility="gone"
+                        app:cornerRadius="24dp"
+                        app:icon="@drawable/ic_play_arrow"
+                        app:iconGravity="textStart"
+                        app:iconTint="@color/white"
+                        tools:visibility="visible" />
+
+                    <!-- 圆形操作图标：收藏 / 搜索 / 投屏 / 设置 -->
+                    <androidx.appcompat.widget.LinearLayoutCompat
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="16dp"
+                        android:gravity="center"
+                        android:orientation="horizontal">
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/keepBtn"
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:layout_marginStart="10dp"
+                            android:layout_marginEnd="10dp"
+                            android:background="@drawable/shape_icon_circle"
+                            android:padding="12dp"
+                            android:src="@drawable/ic_action_keep"
+                            app:tint="@color/selector_control" />
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/quickBtn"
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:layout_marginStart="10dp"
+                            android:layout_marginEnd="10dp"
+                            android:background="@drawable/shape_icon_circle"
+                            android:padding="12dp"
+                            android:src="@drawable/ic_action_search"
+                            app:tint="@color/white_70" />
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/castBtn"
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:layout_marginStart="10dp"
+                            android:layout_marginEnd="10dp"
+                            android:background="@drawable/shape_icon_circle"
+                            android:padding="12dp"
+                            android:src="@drawable/ic_control_cast"
+                            app:tint="@color/white_70" />
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/settingBtn"
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:layout_marginStart="10dp"
+                            android:layout_marginEnd="10dp"
+                            android:background="@drawable/shape_icon_circle"
+                            android:padding="12dp"
+                            android:src="@drawable/ic_action_setting"
+                            app:tint="@color/white_70" />
+
+                    </androidx.appcompat.widget.LinearLayoutCompat>
+
+                    <!-- 简介 -->
+                    <androidx.appcompat.widget.LinearLayoutCompat
+                        android:id="@+id/content_layout"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical">
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="20dp"
+                            android:layout_marginTop="24dp"
+                            android:layout_marginEnd="20dp"
+                            android:text="@string/detail_content"
+                            android:textColor="@color/white"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/content"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="20dp"
+                            android:layout_marginTop="8dp"
+                            android:layout_marginEnd="20dp"
+                            android:layout_marginBottom="4dp"
+                            android:ellipsize="end"
+                            android:lineSpacingExtra="6dp"
+                            android:maxLines="2"
+                            android:textColor="@color/white_70"
+                            android:textSize="14sp"
+                            tools:text="該劇改編自作家魏風華同名原著，講述了在繁華的大唐盛世之下發生的一系列奇聞異事。" />
+
+                    </androidx.appcompat.widget.LinearLayoutCompat>
+
+                    <!-- 线路 -->
                     <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
-                        android:layout_marginTop="10dp"
-                        android:layout_marginEnd="16dp"
+                        android:layout_marginStart="20dp"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginEnd="20dp"
                         android:text="@string/detail_flag"
                         android:textColor="@color/white"
                         android:textSize="15sp" />
@@ -272,9 +296,9 @@
                         android:id="@+id/quality_text"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
-                        android:layout_marginTop="10dp"
-                        android:layout_marginEnd="16dp"
+                        android:layout_marginStart="20dp"
+                        android:layout_marginTop="12dp"
+                        android:layout_marginEnd="20dp"
                         android:text="@string/detail_quality"
                         android:textColor="@color/white"
                         android:textSize="15sp"
@@ -295,12 +319,13 @@
                         app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                         tools:visibility="visible" />
 
+                    <!-- 选集 -->
                     <androidx.appcompat.widget.LinearLayoutCompat
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
-                        android:layout_marginTop="10dp"
-                        android:layout_marginEnd="12dp"
+                        android:layout_marginStart="20dp"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginEnd="16dp"
                         android:gravity="center_vertical">
 
                         <com.google.android.material.textview.MaterialTextView
@@ -349,38 +374,31 @@
                         app:layoutManager="androidx.recyclerview.widget.GridLayoutManager"
                         app:spanCount="4" />
 
-                    <androidx.appcompat.widget.LinearLayoutCompat
-                        android:id="@+id/content_layout"
+                    <!-- 演职人员：源数据只有文字，没有头像 -->
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/director"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:orientation="vertical">
+                        android:layout_marginStart="20dp"
+                        android:layout_marginTop="8dp"
+                        android:layout_marginEnd="20dp"
+                        android:singleLine="true"
+                        android:textColor="@color/white_70"
+                        android:textSize="13sp"
+                        tools:text="导演：郭世民" />
 
-                        <com.google.android.material.textview.MaterialTextView
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="16dp"
-                            android:layout_marginTop="8dp"
-                            android:layout_marginEnd="16dp"
-                            android:text="@string/detail_content"
-                            android:textColor="@color/white"
-                            android:textSize="15sp" />
-
-                        <com.google.android.material.textview.MaterialTextView
-                            android:id="@+id/content"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:layout_marginStart="16dp"
-                            android:layout_marginTop="6dp"
-                            android:layout_marginEnd="16dp"
-                            android:layout_marginBottom="8dp"
-                            android:ellipsize="end"
-                            android:lineSpacingExtra="4dp"
-                            android:maxLines="2"
-                            android:textColor="@color/white"
-                            android:textSize="13sp"
-                            tools:text="一個身世神秘的少年范閒（張若昀飾），因對自身身世的好奇而離開故鄉澹州，前赴南慶京都。范閒在京中各大勢力之間遊走，以探查自己屢遭刺殺的原因。其間結識靖王世子、二皇子，與太子、長公主等人對抗，並遊歷四方、闖蕩江湖，卻意外發現這世界隱藏著的秘密。本劇第一季上半部主要描述范閒在南慶京都追查刺殺的幕後黑手，京中各式人等對范閒繼承內庫的態度和應對，以及監察院院長陳萍萍希望范閒接掌監察院所做的一切舉動。下半部劇情發生在北齊上京。南慶駐北齊上京諜報首領言冰雲被北齊官方抓獲，慶帝與陳萍萍同意用已被關在監察院大牢多年的前北魏諜報首領肖恩交換言冰雲，並派范閒親率南慶使團負責此事。" />
-
-                    </androidx.appcompat.widget.LinearLayoutCompat>
+                    <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/actor"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="20dp"
+                        android:layout_marginTop="4dp"
+                        android:layout_marginEnd="20dp"
+                        android:ellipsize="end"
+                        android:maxLines="2"
+                        android:textColor="@color/white_70"
+                        android:textSize="13sp"
+                        tools:text="演员：杨旭文 杨志刚 郜思雯" />
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/quick"

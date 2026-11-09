@@ -69,6 +69,23 @@ public final class CrashLog {
         return latest(dir(context));
     }
 
+    /** 设置页「查看日志」用：读最近一份崩溃日志全文，没有则返回空字符串 */
+    public static String readLatest(Context context) {
+        File file = latest(context);
+        if (file == null) return "";
+        StringBuilder text = new StringBuilder();
+        try (java.io.BufferedReader reader = new java.io.BufferedReader(
+                new java.io.InputStreamReader(new java.io.FileInputStream(file), StandardCharsets.UTF_8))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                if (text.length() > 0) text.append('\n');
+                text.append(line);
+            }
+        } catch (Exception ignored) {
+        }
+        return text.toString();
+    }
+
     private static File save(Context context, Thread thread, Throwable throwable) {
         StringWriter trace = new StringWriter();
         if (throwable != null) throwable.printStackTrace(new PrintWriter(trace));

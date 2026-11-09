@@ -7,7 +7,7 @@ import com.github.catvod.utils.Prefers;
 public class Setting {
 
     private static final int MIN_WALL = 0;
-    private static final int MAX_WALL = 4;
+    private static final int MAX_WALL = 5;
     private static final int MIN_WALL_TYPE = 0;
     private static final int MAX_WALL_TYPE = 2;
     private static final int MIN_SITE_MODE = 0;
@@ -81,6 +81,15 @@ public class Setting {
         Prefers.put("wall", Math.clamp(wall, MIN_WALL, MAX_WALL));
     }
 
+    /** 壁纸每日自动轮换：开启后忽略手动选中的那一套，按日期在内置壁纸间轮换 */
+    public static boolean isWallAuto() {
+        return Prefers.getBoolean("wall_auto");
+    }
+
+    public static void putWallAuto(boolean auto) {
+        Prefers.put("wall_auto", auto);
+    }
+
     public static int getWallType() {
         return Math.clamp(Prefers.getInt("wall_type", 0), MIN_WALL_TYPE, MAX_WALL_TYPE);
     }
@@ -125,6 +134,33 @@ public class Setting {
 
     public static void putSyncMode(int mode) {
         Prefers.put("sync_mode", Math.clamp(mode, MIN_SYNC_MODE, MAX_SYNC_MODE));
+    }
+
+    /** 首页样式开关：开=豆瓣精选推荐页，关=普通点播分类网格（第 0 个 tab 内容切换）；默认关，升级后保持原有分类首页 */
+    public static boolean isHomeDiscover() {
+        return Prefers.getBoolean("home_discover", false);
+    }
+
+    public static void putHomeDiscover(boolean value) {
+        Prefers.put("home_discover", value);
+    }
+
+    /** 首页「继续观看」横条开关：默认关，右上角已有观看历史，避免升级后首屏多占一块 */
+    public static boolean isHomeContinue() {
+        return Prefers.getBoolean("home_continue", false);
+    }
+
+    public static void putHomeContinue(boolean value) {
+        Prefers.put("home_continue", value);
+    }
+
+    /** 播放页「网速/电量」位置：0 右上（默认）/ 1 左下 / 2 隐藏；分辨率固定右上角，不受此开关影响 */
+    public static int getOsdMode() {
+        return Math.clamp(Prefers.getInt("osd_mode", 0), 0, 2);
+    }
+
+    public static void putOsdMode(int mode) {
+        Prefers.put("osd_mode", Math.clamp(mode, 0, 2));
     }
 
     public static boolean isIncognito() {

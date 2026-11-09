@@ -38,8 +38,8 @@ import pl.droidsonroids.gif.GifDrawable;
 
 public class CustomWallView extends FrameLayout implements DefaultLifecycleObserver {
 
-    private static final int[] WALL_PAPERS = {0, R.drawable.wallpaper_1, R.drawable.wallpaper_2, R.drawable.wallpaper_3, R.drawable.wallpaper_4};
-    private static final int[] WALL_COLORS = {0, 0xFF40C090, 0xFF4870E0, 0xFF48B0C0, 0xFF404040};
+    private static final int[] WALL_PAPERS = {0, R.drawable.bg_global, R.drawable.wallpaper_1, R.drawable.wallpaper_2, R.drawable.wallpaper_3, R.drawable.wallpaper_4};
+    private static final int[] WALL_COLORS = {0, 0xFF404040, 0xFF40C090, 0xFF4870E0, 0xFF48B0C0, 0xFF7040B0};
     private static final int TYPE_RES = 0;
     private static final int TYPE_GIF = 1;
     private static final int TYPE_VIDEO = 2;
@@ -88,11 +88,25 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
     }
 
     /**
-     * 统一背景：不再加载主题图片/GIF/视频壁纸，
-     * 全部页面垫底渲染同一张渐变背景，保证全页面背景统一。
+     * 背景按设置加载：内置多套（第 1 套仍是原来的统一渐变）/ 订阅壁纸 / GIF / 视频。
+     * 订阅壁纸由 WallConfig 下载后发 ConfigEvent.WALL，这里刷新即可换图。
      */
     private void load() {
-        binding.image.setImageResource(R.drawable.bg_global);
+        if (Setting.isWallAuto()) {
+            loadRes(WALL_PAPERS[1 + Math.floorMod(dayNumber(), WALL_PAPERS.length - 1)]);
+            return;
+        }
+        int wall = Setting.getWall();
+        int type = Setting.getWallType();
+        if (isBuiltIn(wall, type)) loadRes(WALL_PAPERS[wall]);
+        else if (type == TYPE_VIDEO) loadVideo(FileUtil.getWall(wall));
+        else if (type == TYPE_GIF) loadGif(FileUtil.getWall(wall));
+        else loadImage();
+    }
+
+    /** 每日自动换壁纸：同一天所有页面取到同一套，避免切页面时背景跳变 */
+    private int dayNumber() {
+        return Integer.parseInt(new java.text.SimpleDateFormat("yyyyMMdd", java.util.Locale.getDefault()).format(new java.util.Date()));
     }
 
     private void loadRes(int resId) {

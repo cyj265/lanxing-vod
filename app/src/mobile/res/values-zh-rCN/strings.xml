@@ -78,4 +78,40 @@
     <string name="live_program_all">全部节目 &gt;</string>
     <string name="live_program_collapse">收起 &gt;</string>
 
+    <!-- 首页 / 显示设置 -->
+    <string name="setting_home_discover">豆瓣精选首页</string>
+    <string name="setting_home_continue">首页继续观看</string>
+    <string name="setting_osd_mode">网速/电量位置</string>
+    <string name="setting_view_log">查看日志</string>
+    <string name="log_title">最近一次崩溃日志</string>
+    <string name="log_empty">暂无崩溃日志</string>
+    <string name="log_copy">复制日志</string>
+    <string name="log_copied">日志已复制</string>
+
+    <string-array name="select_osd_mode">
+        <item>右上角</item>
+        <item>左下角</item>
+        <item>隐藏</item>
+    </string-array>
+
+    <string name="setting_wall_auto">每日自动更换</string>
+    <string-array name="select_wall">
+        <item>默认渐变</item>
+        <item>内置壁纸 1</item>
+        <item>内置壁纸 2</item>
+        <item>内置壁纸 3</item>
+        <item>内置壁纸 4</item>
+    </string-array>
+    <string name="setting_auto_play">进入即播放</string>
+    <string name="play_deferred">播放</string>
+    <string name="play_deferred_continue">继续播放</string>
+    <string name="setting_ui">界面</string>
+    <string name="setting_privacy">隐私与网络</string>
+    <string name="setting_storage">存储与备份</string>
+    <string name="setting_about">关于</string>
+    <string name="wall_custom">自定义</string>
+    <string name="wall_local">从本地选择</string>
+    <string name="wall_remote">壁纸地址</string>
+    <string name="wall_local_done">壁纸已更新</string>
+    <string name="wall_local_fail">读取失败，换一个文件试试</string>
 </resources>

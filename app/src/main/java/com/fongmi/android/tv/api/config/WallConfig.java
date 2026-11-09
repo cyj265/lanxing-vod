@@ -14,6 +14,7 @@ import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.utils.Download;
 import com.fongmi.android.tv.utils.FileUtil;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.Task;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.github.catvod.utils.Path;
 
@@ -50,6 +51,26 @@ public class WallConfig extends BaseConfig {
         if (config.isEmpty()) return this;
         this.sync = config.getUrl().equals(VodConfig.get().getWall());
         return this;
+    }
+
+    /** 把本地图片 / GIF / 视频设为壁纸：复制到 wallpaper_0、生成快照后通知界面刷新 */
+    public static void setLocal(String path, Callback callback) {
+        Task.execute(() -> {
+            try {
+                File src = new File(path);
+                if (!src.exists()) throw new FileNotFoundException(path);
+                File dest = Path.wall(0);
+                FileUtil.copyAtomically(src, dest);
+                setWallType(dest);
+                setSnapshot(dest);
+                Setting.putWallAuto(false);
+                Setting.putWall(0);
+                ConfigEvent.wall();
+                App.post(callback::success);
+            } catch (Throwable e) {
+                App.post(callback::error);
+            }
+        });
     }
 
     public void load() {
@@ -92,13 +113,13 @@ public class WallConfig extends BaseConfig {
         if (!Path.exists(file)) throw new FileNotFoundException();
     }
 
-    private void setWallType(File file) {
+    private static void setWallType(File file) {
         Setting.putWallType(0);
         if (isGif(file)) Setting.putWallType(1);
         else if (isVideo(file)) Setting.putWallType(2);
     }
 
-    private void setSnapshot(File file) throws Throwable {
+    private static void setSnapshot(File file) throws Throwable {
         Bitmap bitmap = Glide.with(App.get()).asBitmap().frame(0).load(file).override(ResUtil.getScreenWidth(), ResUtil.getScreenHeight()).skipMemoryCache(true).diskCacheStrategy(DiskCacheStrategy.NONE).submit().get();
         try (FileOutputStream fos = new FileOutputStream(Path.wallCache())) {
             bitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
@@ -107,7 +128,7 @@ public class WallConfig extends BaseConfig {
         }
     }
 
-    private boolean isVideo(File file) {
+    private static boolean isVideo(File file) {
         try (MediaMetadataRetriever retriever = new MediaMetadataRetriever()) {
             retriever.setDataSource(file.getAbsolutePath());
             return "yes".equalsIgnoreCase(retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO));
@@ -116,7 +137,7 @@ public class WallConfig extends BaseConfig {
         }
     }
 
-    private boolean isGif(File file) {
+    private static boolean isGif(File file) {
         try {
             BitmapFactory.Options options = new BitmapFactory.Options();
             options.inJustDecodeBounds = true;

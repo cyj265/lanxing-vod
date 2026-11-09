@@ -2,6 +2,7 @@ package com.fongmi.android.tv.utils;
 
 import android.text.TextUtils;
 
+import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.bean.Vod;
 import com.github.catvod.net.OkHttp;
 
@@ -13,6 +14,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.regex.Pattern;
 
 public class Douban {
 
@@ -74,6 +79,83 @@ public class Douban {
         } catch (Exception e) {
             return "";
         }
+    }
+
+    /**
+     * 详情页整屏背景用的高清海报。
+     * <p>
+     * 豆瓣 subject_suggest 返回的 img 是 s_ratio_poster（实测 270×404），把 URL 里的尺寸段
+     * 换成 /l/ 即可拿到原尺寸大图（实测 1080×1914，≈ 手机全屏，无需插值放大）。
+     * 图片 CDN 必须带 Referer，否则 418；ImgUtil 原生支持 @Referer= 后缀。
+     */
+    private static final Pattern PHOTO_SIZE = Pattern.compile("/view/photo/[^/]+/");
+    private static final String PHOTO_LARGE = "/view/photo/l/";
+    private static final String PIC_REFERER = "@Referer=https://movie.douban.com/";
+    private static final ConcurrentHashMap<String, String> PIC_CACHE = new ConcurrentHashMap<>();
+    private static final ExecutorService PIC_EXECUTOR = Executors.newSingleThreadExecutor();
+
+    public interface PicCallback {
+        void onResult(String url);
+    }
+
+    /** 后台按片名查高清海报，结果回到主线程；空串表示未命中，调用方应回退站源图 */
+    public static void getLargePicAsync(String name, String year, PicCallback callback) {
+        PIC_EXECUTOR.execute(() -> {
+            String url = getLargePic(name, year);
+            if (callback != null) App.post(() -> callback.onResult(url));
+        });
+    }
+
+    public static String getLargePic(String name, String year) {
+        String key = name + "|" + year;
+        String cached = PIC_CACHE.get(key);
+        if (cached != null) return cached;
+        String result = queryLargePic(name, year);
+        PIC_CACHE.put(key, result);
+        return result;
+    }
+
+    private static String queryLargePic(String name, String year) {
+        String clean = cleanName(name);
+        if (TextUtils.isEmpty(clean)) return "";
+        try {
+            Map<String, String> headers = new HashMap<>();
+            headers.put("User-Agent", UA);
+            headers.put("Referer", REFERER);
+            throttle();
+            String json = OkHttp.string(String.format(SUGGEST, URLEncoder.encode(clean, "UTF-8")), headers);
+            JSONArray arr = new JSONArray(json);
+            JSONObject best = null;
+            int bestScore = -1;
+            for (int i = 0; i < arr.length(); i++) {
+                JSONObject item = arr.optJSONObject(i);
+                if (item == null) continue;
+                // 只接受片名完全一致；同名续作/系列片宁可回退站源图，也不贴错海报
+                if (!clean.equals(item.optString("title", ""))) continue;
+                int score = 1;
+                String y = item.optString("year", "");
+                if (!TextUtils.isEmpty(year) && year.equals(y)) score = 3;
+                else if (TextUtils.isEmpty(y)) score = 2;
+                if (score > bestScore) {
+                    bestScore = score;
+                    best = item;
+                }
+            }
+            if (best == null) return "";
+            String img = best.optString("img", "");
+            if (TextUtils.isEmpty(img) || !img.contains("/view/photo/")) return "";
+            return PHOTO_SIZE.matcher(img).replaceAll(PHOTO_LARGE) + PIC_REFERER;
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /** 站点片名常带「更新至 40 集」「HD」等尾巴，先清洗再去 suggest */
+    private static String cleanName(String name) {
+        if (name == null) return "";
+        return name.trim()
+                .replaceAll("(?i)\\s*(更新至\\s*\\d+\\s*集|共\\s*\\d+\\s*集|全\\s*\\d+\\s*集|HD|BD|4K|1080P|720P|完结|全集)\\s*$", "")
+                .trim();
     }
 
     /**

@@ -28,7 +28,8 @@ public abstract class BaseAlertDialog extends DialogFragment {
     }
 
     protected MaterialAlertDialogBuilder builder() {
-        return new MaterialAlertDialogBuilder(requireActivity());
+        // 统一玻璃底板：所有 BaseAlertDialog 子类由 GlassAlertDialogBuilder 的 OnShowListener 注入
+        return new GlassAlertDialogBuilder(requireActivity());
     }
 
     protected void initView() {

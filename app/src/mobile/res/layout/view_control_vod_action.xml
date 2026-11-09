@@ -18,6 +18,14 @@
             style="@style/Control"
             android:text="@string/detail_episode" />
 
+        <!-- 全屏（竖屏 / 横屏）时详情页被播放器盖住，控制栏补一个画质档选择入口 -->
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/qualityPick"
+            style="@style/Control"
+            android:text="@string/detail_quality"
+            android:visibility="gone"
+            tools:visibility="visible" />
+
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/parse"
             style="@style/Control"

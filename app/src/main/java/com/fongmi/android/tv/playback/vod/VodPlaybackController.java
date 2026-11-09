@@ -3,6 +3,8 @@ package com.fongmi.android.tv.playback.vod;
 import androidx.media3.common.C;
 import androidx.media3.common.MediaMetadata;
 
+import android.text.TextUtils;
+
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Episode;
 import com.fongmi.android.tv.bean.Flag;
@@ -208,8 +210,8 @@ public class VodPlaybackController {
 
     private boolean shouldShowQuality(Result result) {
         if (result.getUrl().getValues().isEmpty()) return false;
-        // 多档永远显示；单档只在直链播放时显示「原画」，解析网页时画质未知，不冒充。
-        return result.getUrl().isMulti() || (!state.isUseParse() && !result.getUrl().isEmpty());
+        // 多档永远显示；单档只在源自己给了档名时才显示，不再替源编假的档位名。
+        return result.getUrl().isMulti() || !TextUtils.isEmpty(result.getUrl().n(0));
     }
 
     public void selectParse(Parse item) {

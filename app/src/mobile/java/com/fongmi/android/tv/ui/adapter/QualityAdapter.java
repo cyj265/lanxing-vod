@@ -52,7 +52,7 @@ public class QualityAdapter extends RecyclerView.Adapter<QualityAdapter.ViewHold
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         boolean multiple = result.getUrl().isMulti();
         String name = result.getUrl().n(position);
-        if (TextUtils.isEmpty(name)) name = multiple ? ResUtil.getString(R.string.quality_option, position + 1) : ResUtil.getString(R.string.quality_original);
+        if (TextUtils.isEmpty(name) && multiple) name = ResUtil.getString(R.string.quality_option, position + 1);
         holder.binding.text.setText(name);
         holder.binding.text.setSelected(!multiple || result.getUrl().getPosition() == position);
         holder.binding.text.setClickable(multiple);

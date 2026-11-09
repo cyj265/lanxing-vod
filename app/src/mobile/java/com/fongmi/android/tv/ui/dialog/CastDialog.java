@@ -131,10 +131,19 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
     @Override
     protected void initView() {
         binding.scan.setVisibility(fm ? View.VISIBLE : View.GONE);
-        setWidth(0.85f);
         setRecyclerView();
         showLoading();
         ensureLocalNetworkPermission();
+    }
+
+    /**
+     * 玻璃底板与模糊已统一交给 GlassAlertDialogBuilder / DialogGlass 处理；
+     * 这里只补设宽度 —— setWidth 依赖 getDialog()，同样必须等 show 之后才有效。
+     */
+    @Override
+    public void onStart() {
+        super.onStart();
+        setWidth(0.85f);
     }
 
     private void startCast() {

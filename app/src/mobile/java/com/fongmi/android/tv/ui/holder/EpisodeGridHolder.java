@@ -6,6 +6,7 @@ import com.fongmi.android.tv.bean.Episode;
 import com.fongmi.android.tv.databinding.AdapterEpisodeGridBinding;
 import com.fongmi.android.tv.ui.adapter.EpisodeAdapter;
 import com.fongmi.android.tv.ui.base.BaseEpisodeHolder;
+import com.fongmi.android.tv.utils.Notify;
 
 public class EpisodeGridHolder extends BaseEpisodeHolder {
 
@@ -21,7 +22,12 @@ public class EpisodeGridHolder extends BaseEpisodeHolder {
     @Override
     public void initView(Episode item) {
         binding.text.setSelected(item.isSelected());
-        binding.text.setText(item.getDesc().concat(item.getName()));
+        String name = item.getDesc().concat(item.getName());
+        binding.text.setText(name);
         binding.text.setOnClickListener(v -> listener.onItemClick(item));
+        binding.text.setOnLongClickListener(v -> {
+            Notify.show(name);
+            return true;
+        });
     }
 }

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <!-- 顶部 36% 完全透明（人脸/剧照保持清晰），之后平滑加深到深色底。
+         清晰区比 v15 更大，避免整屏压暗让低分辨率海报显得更「糊」；
+         文字可读性交给文字投影 + 随滚动加深的 detailDim，不靠大面积黑蒙层 -->
+    <gradient
+        android:angle="270"
+        android:centerColor="#00000000"
+        android:centerY="0.36"
+        android:endColor="#E6121212"
+        android:startColor="#00000000"
+        android:type="linear" />
+</shape>

@@ -18,6 +18,15 @@ public class PlayerSetting {
     private static final int MIN_BACKGROUND = 0;
     private static final int MAX_BACKGROUND = 2;
 
+    /** 进入详情页是否立刻起播：默认 false，先看详情、点播放才播（对齐影视仓等同类 App） */
+    public static boolean isAutoPlay() {
+        return Prefers.getBoolean("auto_play");
+    }
+
+    public static void putAutoPlay(boolean autoPlay) {
+        Prefers.put("auto_play", autoPlay);
+    }
+
     public static int getEngine() {
         return ENGINE_EXO;
     }

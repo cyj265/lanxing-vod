@@ -6,6 +6,7 @@ import com.fongmi.android.tv.bean.Episode;
 import com.fongmi.android.tv.databinding.AdapterEpisodeHoriBinding;
 import com.fongmi.android.tv.ui.adapter.EpisodeAdapter;
 import com.fongmi.android.tv.ui.base.BaseEpisodeHolder;
+import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 
 public class EpisodeHoriHolder extends BaseEpisodeHolder {
@@ -25,7 +26,12 @@ public class EpisodeHoriHolder extends BaseEpisodeHolder {
     public void initView(Episode item) {
         binding.text.setMaxWidth(maxWidth);
         binding.text.setSelected(item.isSelected());
-        binding.text.setText(item.getDesc().concat(item.getName()));
+        String name = item.getDesc().concat(item.getName());
+        binding.text.setText(name);
         binding.text.setOnClickListener(v -> listener.onItemClick(item));
+        binding.text.setOnLongClickListener(v -> {
+            Notify.show(name);
+            return true;
+        });
     }
 }

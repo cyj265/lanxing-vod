@@ -41,14 +41,19 @@ import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.custom.FragmentStateManager;
 import com.fongmi.android.tv.ui.custom.GlassDrawable;
 import com.fongmi.android.tv.ui.fragment.HistoryFragment;
+import com.fongmi.android.tv.ui.fragment.SettingAboutFragment;
 import com.fongmi.android.tv.ui.fragment.SettingDanmakuFragment;
 import com.fongmi.android.tv.ui.fragment.SettingDecodeFragment;
 import com.fongmi.android.tv.ui.fragment.SettingFragment;
 import com.fongmi.android.tv.ui.fragment.SettingPlayerFragment;
 import com.fongmi.android.tv.ui.fragment.SettingPreloadFragment;
+import com.fongmi.android.tv.ui.fragment.SettingPrivacyFragment;
+import com.fongmi.android.tv.ui.fragment.SettingStorageFragment;
+import com.fongmi.android.tv.ui.fragment.SettingUiFragment;
 import com.fongmi.android.tv.ui.fragment.VodFragment;
 import com.fongmi.android.tv.utils.FileChooser;
 import com.fongmi.android.tv.utils.Notify;
+import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.PermissionUtil;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.fongmi.android.tv.utils.Util;
@@ -68,6 +73,7 @@ public class HomeActivity extends BaseActivity {
     private GlassDrawable mGlass;
     private int orientation;
     private int mSelected = TAB_VOD;
+    private boolean navHidden;
 
     @Override
     protected ViewBinding getBinding() {
@@ -147,6 +153,10 @@ public class HomeActivity extends BaseActivity {
             case 4 -> SettingDanmakuFragment.newInstance();
             case 5 -> SettingPreloadFragment.newInstance();
             case 6 -> SettingDecodeFragment.newInstance();
+            case 7 -> SettingUiFragment.newInstance();
+            case 8 -> SettingPrivacyFragment.newInstance();
+            case 9 -> SettingStorageFragment.newInstance();
+            case 10 -> SettingAboutFragment.newInstance();
             default -> null;
         });
         if (savedInstanceState == null) change(TAB_VOD);
@@ -205,7 +215,17 @@ public class HomeActivity extends BaseActivity {
             mSelected = position;
             updateNav();
         }
+        setNavBarVisible(true);
         mManager.change(position);
+    }
+
+    /** 长列表滚动时收起/展开底部导航；收起只是位移，不改变选中态 */
+    public void setNavBarVisible(boolean visible) {
+        if (mBinding == null) return;
+        if (visible == !navHidden) return;
+        navHidden = !visible;
+        float distance = mBinding.navBottom.getHeight() + ResUtil.dp2px(12);
+        mBinding.navBottom.animate().translationY(visible ? 0 : distance).setDuration(180).start();
     }
 
     private void updateNav() {
@@ -265,7 +285,7 @@ public class HomeActivity extends BaseActivity {
     protected void onBackInvoked() {
         if (mManager.isVisible(6) || mManager.isVisible(5)) {
             change(3);
-        } else if (mManager.isVisible(4) || mManager.isVisible(3)) {
+        } else if (mManager.isVisible(10) || mManager.isVisible(9) || mManager.isVisible(8) || mManager.isVisible(7) || mManager.isVisible(4) || mManager.isVisible(3)) {
             change(2);
         } else if (mManager.isVisible(2) || mManager.isVisible(1)) {
             change(TAB_VOD);

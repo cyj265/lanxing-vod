@@ -1,6 +1,8 @@
 package com.fongmi.android.tv.ui.dialog;
 
 import android.app.Dialog;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -15,6 +17,7 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.viewbinding.ViewBinding;
 
+import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Util;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
@@ -77,8 +80,19 @@ public abstract class BaseBottomSheetDialog extends BottomSheetDialogFragment {
     private void setSheet(BottomSheetDialog dialog) {
         FrameLayout sheet = dialog.findViewById(com.google.android.material.R.id.design_bottom_sheet);
         if (sheet == null) return;
+        // 系统 sheet 自带不透明底色，会把半透明底板和模糊全挡住
+        sheet.setBackgroundColor(Color.TRANSPARENT);
+        // 内容根统一换成同一套玻璃底板，各布局 XML 里的 @color/bg / shape_sheet 不再各自为政
+        if (sheet.getChildCount() > 0) DialogGlass.applySheet(sheet.getChildAt(0));
+        applyBlur(dialog.getWindow());
         setHeight(sheet, getMaxHeight());
         setBehavior(sheet);
+    }
+
+    /** Android 12+ 给弹窗加背后模糊，配合半透明底板形成毛玻璃；旧版本自动退化为半透明 */
+    private void applyBlur(Window window) {
+        if (window == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return;
+        window.setBackgroundBlurRadius(ResUtil.dp2px(24));
     }
 
     private void setHeight(FrameLayout sheet, int maxHeight) {

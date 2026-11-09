@@ -14,6 +14,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.view.MenuProvider;
 import androidx.lifecycle.Lifecycle;
 import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.api.config.VodConfig;
@@ -23,6 +24,7 @@ import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.FragmentCollectBinding;
+import com.fongmi.android.tv.search.SearchRanker;
 import com.fongmi.android.tv.db.AppDatabase;
 import com.fongmi.android.tv.impl.Callback;
 import com.fongmi.android.tv.search.MultiConfigSearchEngine;
@@ -53,6 +55,8 @@ public class CollectFragment extends BaseFragment implements
     private CollectAdapter mCollectAdapter;
     private SearchAdapter mSearchAdapter;
     private MultiConfigSearchEngine mSearch;
+    /** 用户是否主动滑过结果列表：没滑过就一直保持顶部，滑过之后不再打扰 */
+    private boolean mUserScrolled;
 
     private final List<Config> mLines = new ArrayList<>();
     private final Map<Integer, Collect> mCollects = new HashMap<>();
@@ -128,6 +132,13 @@ public class CollectFragment extends BaseFragment implements
         mBinding.recycler.setItemAnimator(null);
         mBinding.recycler.setAdapter(mSearchAdapter = new SearchAdapter(this));
         ((GridLayoutManager) mBinding.recycler.getLayoutManager()).setSpanCount(getCount());
+        mBinding.recycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                // 只有手指拖动才算「用户接管」，程序化 scrollToPosition 不会走到这里
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) mUserScrolled = true;
+            }
+        });
     }
 
     private void loadBlocked() {
@@ -292,18 +303,29 @@ public class CollectFragment extends BaseFragment implements
         String childKey = siteLineKey(config, site);
         boolean childBlocked = total && mBlocked.contains(childKey);
 
-        if (!childBlocked) group.getList().addAll(items);
+        String keyword = getKeyword();
+
+        if (!childBlocked) {
+            group.getList().addAll(items);
+            SearchRanker.sort(group.getList(), keyword);
+        }
 
         if (total) {
             ensureSiteLine(config, site);
             Collect child = mSiteCollects.get(childKey);
-            if (child != null) child.getList().addAll(items);
+            if (child != null) {
+                child.getList().addAll(items);
+                SearchRanker.sort(child.getList(), keyword);
+            }
         }
 
         Collect all = mCollectAdapter.getItem(0);
         if (!mBlocked.contains(lineKey(config)) && !childBlocked) {
             all.getList().addAll(items);
+            SearchRanker.sort(all.getList(), keyword);
         }
+
+        mSearchAdapter.setKeyword(keyword);
 
         Collect active = mCollectAdapter.getActivated();
         String activeKey = active.getSite().getKey();
@@ -314,6 +336,12 @@ public class CollectFragment extends BaseFragment implements
             if (!childBlocked) mSearchAdapter.addAll(items);
         } else if (activeKey.equals(childKey)) {
             mSearchAdapter.addAll(items);
+        }
+
+        // 相关性排序会把高分结果插到位置 0，RecyclerView 为保持可见项会把视图整体下推；
+        // 用户还没自己滑过时，每批结果落地后都拉回顶部。
+        if (!mUserScrolled && mBinding != null) {
+            mBinding.recycler.post(() -> mBinding.recycler.scrollToPosition(0));
         }
     }
 
@@ -346,6 +374,7 @@ public class CollectFragment extends BaseFragment implements
         String activeKey = active.getSite().getKey();
 
         if ("all".equals(activeKey)) {
+            SearchRanker.sort(all.getList(), getKeyword());
             mSearchAdapter.setItems(all.getList(), () -> mBinding.recycler.scrollToPosition(0));
         } else {
             // 当前如果正好是被改变的多 Site Config/子源，也立即刷新。
@@ -356,6 +385,7 @@ public class CollectFragment extends BaseFragment implements
     @Override
     public void onItemClick(int position, Collect item) {
         mCollectAdapter.setSelected(position);
+        mUserScrolled = false;
         mSearchAdapter.setItems(item.getList(), () -> mBinding.recycler.scrollToPosition(0));
     }
 

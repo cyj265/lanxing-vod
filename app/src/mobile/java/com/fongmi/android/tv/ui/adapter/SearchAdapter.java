@@ -9,14 +9,32 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.bumptech.glide.Glide;
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.AdapterSearchBinding;
+import com.fongmi.android.tv.search.SearchRanker;
 import com.fongmi.android.tv.utils.ImgUtil;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class SearchAdapter extends BaseDiffAdapter<Vod, SearchAdapter.ViewHolder> {
 
     private final OnClickListener listener;
+    private String keyword = "";
 
     public SearchAdapter(OnClickListener listener) {
         this.listener = listener;
+    }
+
+    /** 关键词用于相关性排序，避免名字相近的短剧/衍生片盖过正片 */
+    public void setKeyword(String keyword) {
+        this.keyword = keyword == null ? "" : keyword;
+    }
+
+    @Override
+    public void addAll(List<Vod> items, Runnable runnable) {
+        List<Vod> current = new ArrayList<>(getItems());
+        current.addAll(items);
+        SearchRanker.sort(current, keyword);
+        setItems(current, runnable);
     }
 
     public interface OnClickListener {

@@ -76,8 +76,8 @@ import com.fongmi.android.tv.ui.dialog.SpeedSettingDialog;
 import com.fongmi.android.tv.ui.dialog.TrackDialog;
 import com.fongmi.android.tv.utils.Biometric;
 import com.fongmi.android.tv.utils.ImgUtil;
-import com.fongmi.android.tv.utils.MediaQuality;
 import com.fongmi.android.tv.utils.Notify;
+import com.fongmi.android.tv.utils.OsdMode;
 import com.fongmi.android.tv.utils.PiP;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Traffic;
@@ -192,6 +192,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         checkLive();
         applyPanelLayout();
         mBinding.video.post(this::applyPanelLayout);
+        OsdMode.apply(mBinding.control.osd, mBinding.control.osdHost, mBinding.control.getRoot());
     }
 
     @Override
@@ -723,6 +724,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
 
     /** 控制栏右上屏显：分辨率 + 网速 + 电池（与点播竖屏一致），控制栏可见期间每秒刷新 */
     private void setOsd() {
+        OsdMode.apply(mBinding.control.osd, mBinding.control.osdHost, mBinding.control.getRoot());
         Traffic.setSpeed(mBinding.control.speed);
         setBattery();
         if (isVisible(mBinding.control.getRoot())) App.post(mR5, 1000);
@@ -735,14 +737,14 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
         if (level < 0 || scale <= 0) return;
         mBinding.control.battery.setVisibility(View.VISIBLE);
-        mBinding.control.battery.setText(level * 100 / scale + "%");
+        mBinding.control.battery.setLevel(level * 100 / scale);
     }
 
     @Override
     protected void onSizeChanged(VideoSize size) {
         boolean hasSize = size != null && size.width > 0 && size.height > 0;
         if (hasSize) {
-            mBinding.control.resolution.setText("[" + MediaQuality.label(size.width, size.height) + "]");
+            mBinding.control.resolution.setText("[" + size.width + "x" + size.height + "]");
             mBinding.control.resolution.setVisibility(View.VISIBLE);
         } else {
             mBinding.control.resolution.setVisibility(View.GONE);

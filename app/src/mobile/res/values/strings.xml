@@ -87,4 +87,40 @@
     <string name="live_program_all">All &gt;</string>
     <string name="live_program_collapse">Close &gt;</string>
 
+    <!-- Home / display settings -->
+    <string name="setting_home_discover">Discover home</string>
+    <string name="setting_home_continue">Home continue watching</string>
+    <string name="setting_osd_mode">Player status position</string>
+    <string name="setting_view_log">View crash log</string>
+    <string name="log_title">Latest crash log</string>
+    <string name="log_empty">No crash log yet</string>
+    <string name="log_copy">Copy log</string>
+    <string name="log_copied">Log copied</string>
+
+    <string-array name="select_osd_mode">
+        <item>Top right</item>
+        <item>Bottom left</item>
+        <item>Hidden</item>
+    </string-array>
+
+    <string name="setting_wall_auto">Daily auto</string>
+    <string-array name="select_wall">
+        <item>Default gradient</item>
+        <item>Wallpaper 1</item>
+        <item>Wallpaper 2</item>
+        <item>Wallpaper 3</item>
+        <item>Wallpaper 4</item>
+    </string-array>
+    <string name="setting_auto_play">Auto-play on open</string>
+    <string name="play_deferred">Play</string>
+    <string name="play_deferred_continue">Resume</string>
+    <string name="setting_ui">Interface</string>
+    <string name="setting_privacy">Privacy and network</string>
+    <string name="setting_storage">Storage and backup</string>
+    <string name="setting_about">About</string>
+    <string name="wall_custom">Custom</string>
+    <string name="wall_local">Pick from device</string>
+    <string name="wall_remote">Wallpaper URL</string>
+    <string name="wall_local_done">Wallpaper updated</string>
+    <string name="wall_local_fail">Failed to read that file</string>
 </resources>
