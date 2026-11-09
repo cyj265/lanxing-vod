@@ -495,4 +495,9 @@
     <string name="live_decode_hard">Hardware</string>
     <string name="live_decode_soft">Software</string>
 
+    <string name="setting_cat_source">源配置</string>
+    <string name="setting_cat_play">播放</string>
+    <string name="setting_cat_ui">界面与隐私</string>
+    <string name="setting_cat_storage">存储与关于</string>
+
 </resources>

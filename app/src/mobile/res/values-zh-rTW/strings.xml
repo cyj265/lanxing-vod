@@ -81,18 +81,11 @@
     <!-- 首頁 / 顯示設定 -->
     <string name="setting_home_discover">豆瓣精選首頁</string>
     <string name="setting_home_continue">首頁繼續觀看</string>
-    <string name="setting_osd_mode">網速/電量位置</string>
     <string name="setting_view_log">查看日誌</string>
     <string name="log_title">最近一次崩潰日誌</string>
     <string name="log_empty">暫無崩潰日誌</string>
     <string name="log_copy">複製日誌</string>
     <string name="log_copied">日誌已複製</string>
-
-    <string-array name="select_osd_mode">
-        <item>右上角</item>
-        <item>左下角</item>
-        <item>隱藏</item>
-    </string-array>
 
     <string name="setting_wall_auto">每日自動更換</string>
     <string-array name="select_wall">
@@ -115,4 +108,9 @@
     <string name="wall_local_done">桌布已更新</string>
     <string name="wall_local_fail">讀取失敗，換一個檔案試試</string>
     <string name="cast_play_first">請播放後再投屏</string>
+    <string name="detail_source">換源</string>
+    <string name="detail_flag_count">共 %d 個視頻</string>
+    <string name="history_watched">已看 %d%%</string>
+    <string name="record_tab_history">歷史</string>
+    <string name="record_tab_keep">收藏</string>
 </resources>

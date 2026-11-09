@@ -77,7 +77,6 @@ import com.fongmi.android.tv.ui.dialog.TrackDialog;
 import com.fongmi.android.tv.utils.Biometric;
 import com.fongmi.android.tv.utils.ImgUtil;
 import com.fongmi.android.tv.utils.Notify;
-import com.fongmi.android.tv.utils.OsdMode;
 import com.fongmi.android.tv.utils.PiP;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Traffic;
@@ -192,7 +191,6 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         checkLive();
         applyPanelLayout();
         mBinding.video.post(this::applyPanelLayout);
-        OsdMode.apply(mBinding.control.osd, mBinding.control.osdHost, mBinding.control.getRoot());
     }
 
     @Override
@@ -700,6 +698,7 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         if (service() == null || isInPictureInPictureMode()) return;
         boolean port = isHalfPanel();
         mBinding.control.info.setVisibility(player().isEmpty() ? View.GONE : View.VISIBLE);
+        mBinding.control.osd.setVisibility(port ? View.GONE : View.VISIBLE);
         // 竖屏对齐点播：窗口内只留 返回/标题+OSD/信息/收藏/设置/暂停/全屏/进度条，投屏等功能移到窗口下方
         mBinding.control.cast.setVisibility(port || player().isEmpty() ? View.GONE : View.VISIBLE);
         mBinding.control.prev.setVisibility(port ? View.GONE : View.VISIBLE);
@@ -713,38 +712,20 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
         mBinding.control.top.setVisibility(isLock() ? View.GONE : View.VISIBLE);
         mBinding.control.getRoot().setVisibility(View.VISIBLE);
         setR1Callback();
-        setOsd();
+        if (!port) setOsd();
         hideInfo();
     }
 
     private void hideControl() {
         mBinding.control.getRoot().setVisibility(View.GONE);
-        App.removeCallbacks(mR1);
-    }
-
-    /** 控制栏右上屏显：分辨率 + 网速 + 电池（与点播竖屏一致），控制栏可见期间每秒刷新 */
-    private void setOsd() {
-        OsdMode.apply(mBinding.control.osd, mBinding.control.osdHost, mBinding.control.getRoot());
-        Traffic.setSpeed(mBinding.control.speed);
-        setBattery();
-        if (isVisible(mBinding.control.getRoot())) App.post(mR5, 1000);
-    }
-
-    private void setBattery() {
-        Intent intent = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-        if (intent == null) return;
-        int level = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-        int scale = intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-        if (level < 0 || scale <= 0) return;
-        mBinding.control.battery.setVisibility(View.VISIBLE);
-        mBinding.control.battery.setLevel(level * 100 / scale);
+        App.removeCallbacks(mR1, mR5);
     }
 
     @Override
     protected void onSizeChanged(VideoSize size) {
         boolean hasSize = size != null && size.width > 0 && size.height > 0;
         if (hasSize) {
-            mBinding.control.resolution.setText("[" + size.width + "x" + size.height + "]");
+            mBinding.control.resolution.setText(size.width + "x" + size.height);
             mBinding.control.resolution.setVisibility(View.VISIBLE);
         } else {
             mBinding.control.resolution.setVisibility(View.GONE);
@@ -768,6 +749,27 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     private void setTraffic() {
         Traffic.setSpeed(mBinding.progress.traffic);
         App.post(mR2, 1000);
+    }
+
+    /** 横屏全屏才显示网速/电量：竖屏半屏和控件收起时都不刷新 */
+    private void setOsd() {
+        App.removeCallbacks(mR5);
+        if (isHalfPanel() || !isVisible(mBinding.control.getRoot())) return;
+        Traffic.setSpeed(mBinding.control.speed);
+        setBattery();
+        App.post(mR5, 1000);
+    }
+
+    private void setBattery() {
+        Intent intent = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        int level = intent == null ? -1 : intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+        int scale = intent == null ? -1 : intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
+        if (level < 0 || scale <= 0) {
+            mBinding.control.battery.setVisibility(View.GONE);
+            return;
+        }
+        mBinding.control.battery.setVisibility(View.VISIBLE);
+        mBinding.control.battery.setLevel(level * 100 / scale);
     }
 
     private void setR1Callback() {

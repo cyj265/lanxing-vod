@@ -90,18 +90,11 @@
     <!-- Home / display settings -->
     <string name="setting_home_discover">Discover home</string>
     <string name="setting_home_continue">Home continue watching</string>
-    <string name="setting_osd_mode">Player status position</string>
     <string name="setting_view_log">View crash log</string>
     <string name="log_title">Latest crash log</string>
     <string name="log_empty">No crash log yet</string>
     <string name="log_copy">Copy log</string>
     <string name="log_copied">Log copied</string>
-
-    <string-array name="select_osd_mode">
-        <item>Top right</item>
-        <item>Bottom left</item>
-        <item>Hidden</item>
-    </string-array>
 
     <string name="setting_wall_auto">Daily auto</string>
     <string-array name="select_wall">
@@ -124,4 +117,9 @@
     <string name="wall_local_done">Wallpaper updated</string>
     <string name="wall_local_fail">Failed to read that file</string>
     <string name="cast_play_first">Start playback before casting</string>
+    <string name="detail_source">Sources</string>
+    <string name="detail_flag_count">%d videos</string>
+    <string name="history_watched">Watched %d%%</string>
+    <string name="record_tab_history">History</string>
+    <string name="record_tab_keep">Keep</string>
 </resources>

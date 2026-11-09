@@ -83,7 +83,7 @@
 
             <!-- 收藏胶囊保留在视频窗右上角（不挡字幕区域） -->
             <androidx.appcompat.widget.AppCompatTextView
-                android:id="@+id/keep_btn"
+                android:id="@+id/keepBtnTablet"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="end"
@@ -112,7 +112,7 @@
             android:orientation="horizontal">
 
             <androidx.appcompat.widget.AppCompatTextView
-                android:id="@+id/quick_btn"
+                android:id="@+id/quickBtnTablet"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -138,7 +138,7 @@
                 android:textSize="14sp" />
 
             <androidx.appcompat.widget.AppCompatTextView
-                android:id="@+id/cast_btn"
+                android:id="@+id/castBtnTablet"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -151,7 +151,7 @@
                 android:textSize="14sp" />
 
             <androidx.appcompat.widget.AppCompatTextView
-                android:id="@+id/setting_btn"
+                android:id="@+id/settingBtnTablet"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -217,11 +217,23 @@
             android:textSize="14sp"
             tools:text="年份：2022 地區：台灣 類型：科幻" />
 
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/types"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/other"
+            android:layout_alignStart="@+id/name"
+            android:layout_marginTop="10dp"
+            android:layout_marginEnd="16dp"
+            app:chipSpacingHorizontal="8dp"
+            app:chipSpacingVertical="6dp"
+            app:singleLine="false" />
+
         <com.google.android.material.textview.MaterialTextView
             android:id="@+id/director"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_below="@+id/other"
+            android:layout_below="@+id/types"
             android:layout_alignStart="@+id/name"
             android:layout_marginTop="8dp"
             android:layout_marginEnd="16dp"
@@ -280,6 +292,7 @@
                         tools:src="@drawable/artwork" />
 
                     <com.google.android.material.textview.MaterialTextView
+                        android:id="@+id/headerFlag"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="16dp"
@@ -336,6 +349,7 @@
                         android:gravity="center_vertical">
 
                         <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/headerEpisode"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/detail_episode"
@@ -388,6 +402,7 @@
                         android:orientation="vertical">
 
                         <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/headerContent"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="16dp"

@@ -154,15 +154,6 @@ public class Setting {
         Prefers.put("home_continue", value);
     }
 
-    /** 播放页「网速/电量」位置：0 右上（默认）/ 1 左下 / 2 隐藏；分辨率固定右上角，不受此开关影响 */
-    public static int getOsdMode() {
-        return Math.clamp(Prefers.getInt("osd_mode", 0), 0, 2);
-    }
-
-    public static void putOsdMode(int mode) {
-        Prefers.put("osd_mode", Math.clamp(mode, 0, 2));
-    }
-
     public static boolean isIncognito() {
         return Prefers.getBoolean("incognito");
     }

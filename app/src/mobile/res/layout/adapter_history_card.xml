@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_margin="8dp"
+    android:background="@drawable/shape_card"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="12dp">
+
+    <com.google.android.material.card.MaterialCardView
+        android:layout_width="72dp"
+        android:layout_height="100dp"
+        app:cardCornerRadius="12dp"
+        app:cardElevation="0dp">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/image"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop"
+            tools:src="@drawable/artwork" />
+
+    </com.google.android.material.card.MaterialCardView>
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="12dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/name"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="#F3EFEB"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            tools:text="嫁金钗" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/remark"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="#99F3EFEB"
+            android:textSize="13sp"
+            tools:text="第05集彩蛋 · 已看 88%" />
+
+        <com.google.android.material.progressindicator.LinearProgressIndicator
+            android:id="@+id/progress"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            app:trackCornerRadius="2dp"
+            app:trackThickness="4dp" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/meta"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:ellipsize="end"
+            android:singleLine="true"
+            android:textColor="#80F3EFEB"
+            android:textSize="12sp"
+            tools:text="5 分钟前 · 星海丨APP" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
+
+    <FrameLayout
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:layout_marginStart="8dp">
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/play"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/shape_icon_circle"
+            android:padding="12dp"
+            android:src="@drawable/ic_play_arrow"
+            app:tint="@color/white" />
+
+        <androidx.appcompat.widget.AppCompatImageView
+            android:id="@+id/delete"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@drawable/shape_icon_circle"
+            android:padding="12dp"
+            android:src="@drawable/ic_action_delete"
+            android:visibility="gone"
+            app:tint="#B3261E"
+            tools:visibility="visible" />
+
+    </FrameLayout>
+
+</androidx.appcompat.widget.LinearLayoutCompat>

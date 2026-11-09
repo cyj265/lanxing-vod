@@ -2,6 +2,7 @@ package com.fongmi.android.tv.ui.activity;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -9,10 +10,9 @@ import android.view.MenuItem;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.Toolbar;
-import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.viewbinding.ViewBinding;
 
-import com.fongmi.android.tv.Product;
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Config;
@@ -24,6 +24,8 @@ import com.fongmi.android.tv.ui.adapter.KeepAdapter;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.dialog.SyncDialog;
 import com.fongmi.android.tv.utils.Notify;
+import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.VodTheme;
 import com.fongmi.android.tv.ui.dialog.GlassAlertDialogBuilder;
 
 import org.greenrobot.eventbus.Subscribe;
@@ -33,6 +35,7 @@ public class KeepActivity extends BaseActivity implements KeepAdapter.OnClickLis
 
     private ActivityKeepBinding mBinding;
     private KeepAdapter mAdapter;
+    private VodTheme mTheme;
 
     public static void start(Activity activity) {
         activity.startActivity(new Intent(activity, KeepActivity.class));
@@ -53,15 +56,33 @@ public class KeepActivity extends BaseActivity implements KeepAdapter.OnClickLis
     protected void initView(Bundle savedInstanceState) {
         setSupportActionBar(mBinding.toolbar);
         setRecyclerView();
+        applyTheme(VodTheme.glass());
         getKeep();
     }
 
     private void setRecyclerView() {
         mBinding.recycler.setHasFixedSize(true);
         mBinding.recycler.setItemAnimator(null);
-        mBinding.recycler.setLayoutManager(new GridLayoutManager(this, Product.getColumn(this)));
+        mBinding.recycler.setLayoutManager(new LinearLayoutManager(this));
         mBinding.recycler.setAdapter(mAdapter = new KeepAdapter(this));
-        mAdapter.setSize(Product.getSpec(this));
+    }
+
+    private void applyTheme(VodTheme theme) {
+        mTheme = theme;
+        mBinding.getRoot().setBackgroundColor(android.graphics.Color.TRANSPARENT);
+        mBinding.toolbar.setTitleTextColor(theme.onSurface);
+        mBinding.toolbar.setNavigationIconTint(theme.onSurface);
+        mBinding.progressLayout.setEmptyTextColor(theme.onVariant);
+        tintMenu(mBinding.toolbar.getMenu());
+        mAdapter.setTheme(theme);
+    }
+
+    private void tintMenu(Menu menu) {
+        if (mTheme == null) return;
+        for (int i = 0; i < menu.size(); i++) {
+            Drawable icon = menu.getItem(i).getIcon();
+            if (icon != null) icon.setTint(mTheme.onSurface);
+        }
     }
 
     private void getKeep() {
@@ -123,6 +144,7 @@ public class KeepActivity extends BaseActivity implements KeepAdapter.OnClickLis
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_keep, menu);
+        tintMenu(menu);
         return true;
     }
 

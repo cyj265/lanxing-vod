@@ -11,12 +11,14 @@ import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.databinding.AdapterQualityBinding;
 import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.VodTheme;
 
 public class QualityAdapter extends RecyclerView.Adapter<QualityAdapter.ViewHolder> {
 
     private final OnClickListener listener;
     private Result result;
     private int position;
+    private VodTheme theme;
 
     public QualityAdapter(OnClickListener listener) {
         this.listener = listener;
@@ -48,13 +50,23 @@ public class QualityAdapter extends RecyclerView.Adapter<QualityAdapter.ViewHold
         return new ViewHolder(AdapterQualityBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
     }
 
+    public void setTheme(VodTheme theme) {
+        this.theme = theme;
+        notifyDataSetChanged();
+    }
+
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         boolean multiple = result.getUrl().isMulti();
         String name = result.getUrl().n(position);
         if (TextUtils.isEmpty(name) && multiple) name = ResUtil.getString(R.string.quality_option, position + 1);
         holder.binding.text.setText(name);
-        holder.binding.text.setSelected(!multiple || result.getUrl().getPosition() == position);
+        boolean selected = !multiple || result.getUrl().getPosition() == position;
+        holder.binding.text.setSelected(selected);
+        if (theme != null) {
+            holder.binding.text.setBackground(theme.card(selected, ResUtil.dp2px(16)));
+            holder.binding.text.setTextColor(selected ? theme.accent : theme.onSurface);
+        }
         holder.binding.text.setClickable(multiple);
         holder.binding.text.setOnClickListener(multiple ? v -> onItemClick(position) : null);
     }

@@ -27,6 +27,17 @@
             android:paddingEnd="16dp"
             android:paddingBottom="100dp">
 
+            <!-- 分类：源配置 -->
+            <com.google.android.material.textview.MaterialTextView
+                style="?attr/textAppearanceTitleSmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="4dp"
+                android:layout_marginBottom="4dp"
+                android:text="@string/setting_cat_source"
+                android:textColor="@color/white_70" />
+
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -40,7 +51,16 @@
                     android:layout_marginEnd="12dp"
                     android:layout_weight="1"
                     android:background="@drawable/shape_item"
-                    android:orientation="horizontal">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp">
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_marginEnd="14dp"
+                        android:src="@drawable/ic_action_site"
+                        app:tint="@color/white_70" />
 
                     <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
@@ -85,7 +105,7 @@
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="12dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
@@ -96,7 +116,16 @@
                     android:layout_marginEnd="12dp"
                     android:layout_weight="1"
                     android:background="@drawable/shape_item"
-                    android:orientation="horizontal">
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingStart="12dp">
+
+                    <androidx.appcompat.widget.AppCompatImageView
+                        android:layout_width="22dp"
+                        android:layout_height="22dp"
+                        android:layout_marginEnd="14dp"
+                        android:src="@drawable/ic_cast_tv"
+                        app:tint="@color/white_70" />
 
                     <com.google.android.material.textview.MaterialTextView
                         android:layout_width="wrap_content"
@@ -138,13 +167,33 @@
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 
+            <!-- 分类：播放 -->
+            <com.google.android.material.textview.MaterialTextView
+                style="?attr/textAppearanceTitleSmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="4dp"
+                android:text="@string/setting_cat_play"
+                android:textColor="@color/white_70" />
+
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/player"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="12dp"
                 android:background="@drawable/shape_item"
-                android:orientation="horizontal">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginEnd="14dp"
+                    android:src="@drawable/ic_play_arrow"
+                    app:tint="@color/white_70" />
 
                 <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
@@ -159,9 +208,18 @@
                 android:id="@+id/danmaku"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="12dp"
                 android:background="@drawable/shape_item"
-                android:orientation="horizontal">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginEnd="14dp"
+                    android:src="@drawable/ic_danmaku_setting"
+                    app:tint="@color/white_70" />
 
                 <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
@@ -172,13 +230,33 @@
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 
+            <!-- 分类：界面与隐私 -->
+            <com.google.android.material.textview.MaterialTextView
+                style="?attr/textAppearanceTitleSmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="4dp"
+                android:text="@string/setting_cat_ui"
+                android:textColor="@color/white_70" />
+
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/ui"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="12dp"
                 android:background="@drawable/shape_item"
-                android:orientation="horizontal">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginEnd="14dp"
+                    android:src="@drawable/ic_control_rotate"
+                    app:tint="@color/white_70" />
 
                 <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
@@ -193,9 +271,18 @@
                 android:id="@+id/privacy"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="12dp"
                 android:background="@drawable/shape_item"
-                android:orientation="horizontal">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginEnd="14dp"
+                    android:src="@drawable/ic_control_lock_off"
+                    app:tint="@color/white_70" />
 
                 <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
@@ -206,13 +293,33 @@
 
             </androidx.appcompat.widget.LinearLayoutCompat>
 
+            <!-- 分类：存储与关于 -->
+            <com.google.android.material.textview.MaterialTextView
+                style="?attr/textAppearanceTitleSmall"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginBottom="4dp"
+                android:text="@string/setting_cat_storage"
+                android:textColor="@color/white_70" />
+
             <androidx.appcompat.widget.LinearLayoutCompat
                 android:id="@+id/storage"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="12dp"
                 android:background="@drawable/shape_item"
-                android:orientation="horizontal">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginEnd="14dp"
+                    android:src="@drawable/ic_action_sync"
+                    app:tint="@color/white_70" />
 
                 <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"
@@ -227,9 +334,18 @@
                 android:id="@+id/about"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
+                android:layout_marginTop="12dp"
                 android:background="@drawable/shape_item"
-                android:orientation="horizontal">
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:paddingStart="12dp">
+
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="22dp"
+                    android:layout_height="22dp"
+                    android:layout_marginEnd="14dp"
+                    android:src="@drawable/ic_control_info"
+                    app:tint="@color/white_70" />
 
                 <com.google.android.material.textview.MaterialTextView
                     android:layout_width="wrap_content"

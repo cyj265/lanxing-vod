@@ -67,6 +67,15 @@
         android:visibility="gone"
         tools:visibility="visible" />
 
+    <!-- 顶部压暗：状态栏白色图标压在亮剧照上也能看清 -->
+    <View
+        android:id="@+id/topScrim"
+        android:layout_width="match_parent"
+        android:layout_height="140dp"
+        android:background="@drawable/shape_top_scrim"
+        android:visibility="gone"
+        tools:visibility="visible" />
+
     <!-- 文字上滑到剧照清晰区时随滚动整体压暗，保证白字始终可读 -->
     <View
         android:id="@+id/detailDim"
@@ -118,69 +127,46 @@
                         android:textStyle="bold"
                         tools:text="唐朝诡事录" />
 
-                    <!-- 评分 / 年份 / 时长 -->
+                    <!-- 元信息一行：更新备注 · 年份 · 地区 · 类型（由 Java 动态拼接） -->
                     <com.google.android.material.textview.MaterialTextView
                         android:id="@+id/other"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
+                        android:layout_marginStart="20dp"
                         android:layout_marginTop="8dp"
-                        android:layout_marginEnd="16dp"
-                        android:ellipsize="middle"
-                        android:gravity="center"
-                        android:singleLine="true"
-                        android:textColor="@color/white_70"
-                        android:textSize="13sp"
-                        tools:text="8.2  [15]  2022  45m" />
-
-                    <!-- 类型标签 / 更新备注 -->
-                    <com.google.android.material.textview.MaterialTextView
-                        android:id="@+id/remark"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
-                        android:layout_marginTop="6dp"
-                        android:layout_marginEnd="16dp"
+                        android:layout_marginEnd="20dp"
                         android:ellipsize="end"
                         android:gravity="center"
                         android:singleLine="true"
                         android:textColor="@color/white_70"
-                        android:textSize="12sp"
-                        tools:text="悬疑，犯罪，剧情，动作冒险" />
+                        android:textSize="12.5sp"
+                        tools:text="更新至30 · 2026 · 中国大陆 · 古装" />
 
-                    <com.google.android.material.textview.MaterialTextView
-                        android:id="@+id/site"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="16dp"
-                        android:layout_marginTop="4dp"
-                        android:layout_marginEnd="16dp"
-                        android:gravity="center"
-                        android:singleLine="true"
-                        android:textColor="@color/white_50"
-                        android:textSize="11sp"
-                        tools:text="站源：泥巴" />
-
-                    <!-- 播放 / 继续播放：宽胶囊 -->
+                    <!-- 播放 / 继续播放：宽胶囊（实心主题色，由 Java 上色）。高度随字号自适应，避免大字体下集数换行被裁 -->
                     <com.google.android.material.button.MaterialButton
                         android:id="@+id/deferredPlay"
                         android:layout_width="match_parent"
-                        android:layout_height="48dp"
+                        android:layout_height="wrap_content"
                         android:layout_marginStart="24dp"
-                        android:layout_marginTop="18dp"
+                        android:layout_marginTop="20dp"
                         android:layout_marginEnd="24dp"
-                        android:backgroundTint="#2EFFFFFF"
+                        android:backgroundTint="@color/primary"
+                        android:gravity="center"
+                        android:maxLines="2"
+                        android:minHeight="50dp"
+                        android:paddingTop="6dp"
+                        android:paddingBottom="6dp"
                         android:text="@string/play_deferred"
-                        android:textColor="@color/white"
+                        android:textColor="@color/black"
                         android:textSize="15sp"
                         android:visibility="gone"
-                        app:cornerRadius="24dp"
+                        app:cornerRadius="25dp"
                         app:icon="@drawable/ic_play_arrow"
                         app:iconGravity="textStart"
-                        app:iconTint="@color/white"
+                        app:iconTint="@color/black"
                         tools:visibility="visible" />
 
-                    <!-- 圆形操作图标：收藏 / 搜索 / 投屏 / 设置（MD3 色调 FAB） -->
+                    <!-- 圆形操作图标：搜索 / 收藏 / 投屏 / 设置 -->
                     <androidx.appcompat.widget.LinearLayoutCompat
                         android:id="@+id/detailActions"
                         android:layout_width="match_parent"
@@ -190,35 +176,39 @@
                         android:orientation="horizontal">
 
                         <androidx.appcompat.widget.AppCompatImageView
-                            android:id="@+id/keepBtn"
-                            android:layout_width="44dp"
-                            android:layout_height="44dp"
-                            android:layout_marginStart="10dp"
-                            android:layout_marginEnd="10dp"
-                            android:background="@drawable/shape_icon_circle_keep"
-                            android:padding="12dp"
-                            android:src="@drawable/ic_control_keep_off"
-                            app:tint="@color/selector_control" />
-
-                        <androidx.appcompat.widget.AppCompatImageView
                             android:id="@+id/quickBtn"
                             android:layout_width="44dp"
                             android:layout_height="44dp"
-                            android:layout_marginStart="10dp"
-                            android:layout_marginEnd="10dp"
+                            android:layout_marginStart="12dp"
+                            android:layout_marginEnd="12dp"
                             android:background="@drawable/shape_icon_circle"
-                            android:padding="12dp"
+                            android:elevation="2dp"
+                            android:padding="11dp"
                             android:src="@drawable/ic_action_search"
+                            app:tint="@color/white_70" />
+
+                        <!-- 收藏是自己的状态按钮：未收藏细描边星，已收藏实心暖金圆底 -->
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/keepBtn"
+                            android:layout_width="44dp"
+                            android:layout_height="44dp"
+                            android:layout_marginStart="12dp"
+                            android:layout_marginEnd="12dp"
+                            android:background="@drawable/shape_icon_circle"
+                            android:elevation="2dp"
+                            android:padding="11dp"
+                            android:src="@drawable/ic_control_keep_off"
                             app:tint="@color/white_70" />
 
                         <androidx.appcompat.widget.AppCompatImageView
                             android:id="@+id/castBtn"
                             android:layout_width="44dp"
                             android:layout_height="44dp"
-                            android:layout_marginStart="10dp"
-                            android:layout_marginEnd="10dp"
+                            android:layout_marginStart="12dp"
+                            android:layout_marginEnd="12dp"
                             android:background="@drawable/shape_icon_circle"
-                            android:padding="12dp"
+                            android:elevation="2dp"
+                            android:padding="11dp"
                             android:src="@drawable/ic_control_cast"
                             app:tint="@color/white_70" />
 
@@ -226,10 +216,11 @@
                             android:id="@+id/settingBtn"
                             android:layout_width="44dp"
                             android:layout_height="44dp"
-                            android:layout_marginStart="10dp"
-                            android:layout_marginEnd="10dp"
+                            android:layout_marginStart="12dp"
+                            android:layout_marginEnd="12dp"
                             android:background="@drawable/shape_icon_circle"
-                            android:padding="12dp"
+                            android:elevation="2dp"
+                            android:padding="11dp"
                             android:src="@drawable/ic_action_setting"
                             app:tint="@color/white_70" />
 
@@ -242,16 +233,32 @@
                         android:layout_height="wrap_content"
                         android:orientation="vertical">
 
-                        <com.google.android.material.textview.MaterialTextView
-                            android:layout_width="wrap_content"
+                        <androidx.appcompat.widget.LinearLayoutCompat
+                            android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginStart="20dp"
                             android:layout_marginTop="24dp"
                             android:layout_marginEnd="20dp"
-                            android:text="@string/detail_content"
-                            android:textColor="@color/white"
-                            android:textSize="16sp"
-                            android:textStyle="bold" />
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <androidx.appcompat.widget.AppCompatImageView
+                                android:id="@+id/iconContent"
+                                android:layout_width="20dp"
+                                android:layout_height="20dp"
+                                android:layout_marginEnd="8dp"
+                                android:src="@drawable/ic_control_info" />
+
+                            <com.google.android.material.textview.MaterialTextView
+                                android:id="@+id/headerContent"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="@string/detail_content"
+                                android:textColor="@color/white"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+
+                        </androidx.appcompat.widget.LinearLayoutCompat>
 
                         <com.google.android.material.textview.MaterialTextView
                             android:id="@+id/content"
@@ -271,15 +278,31 @@
                     </androidx.appcompat.widget.LinearLayoutCompat>
 
                     <!-- 线路 -->
-                    <com.google.android.material.textview.MaterialTextView
-                        android:layout_width="wrap_content"
+                    <androidx.appcompat.widget.LinearLayoutCompat
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginStart="20dp"
                         android:layout_marginTop="16dp"
                         android:layout_marginEnd="20dp"
-                        android:text="@string/detail_flag"
-                        android:textColor="@color/white"
-                        android:textSize="15sp" />
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/iconFlag"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_marginEnd="8dp"
+                            android:src="@drawable/ic_site_change" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/headerFlag"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/detail_flag"
+                            android:textColor="@color/white"
+                            android:textSize="15sp" />
+
+                    </androidx.appcompat.widget.LinearLayoutCompat>
 
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/flag"
@@ -329,20 +352,34 @@
                         android:layout_marginEnd="16dp"
                         android:gravity="center_vertical">
 
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/iconEpisode"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_marginEnd="8dp"
+                            android:src="@drawable/ic_action_more" />
+
                         <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/headerEpisode"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/detail_episode"
                             android:textColor="@color/white"
                             android:textSize="15sp" />
 
-                        <androidx.appcompat.widget.AppCompatImageView
+                        <com.google.android.material.textview.MaterialTextView
                             android:id="@+id/reverse"
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
-                            android:layout_marginStart="8dp"
-                            android:background="?attr/selectableItemBackgroundBorderless"
-                            android:src="@drawable/ic_action_reverse"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:background="@drawable/shape_pill"
+                            android:paddingStart="10dp"
+                            android:paddingTop="4dp"
+                            android:paddingEnd="10dp"
+                            android:paddingBottom="4dp"
+                            android:text="@string/play_reverse"
+                            android:textColor="@color/white_70"
+                            android:textSize="11sp"
                             android:visibility="gone"
                             tools:visibility="visible" />
 
@@ -401,6 +438,35 @@
                         android:textSize="13sp"
                         tools:text="演员：杨旭文 杨志刚 郜思雯" />
 
+                    <androidx.appcompat.widget.LinearLayoutCompat
+                        android:id="@+id/quickHeader"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="20dp"
+                        android:layout_marginTop="16dp"
+                        android:layout_marginEnd="20dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:visibility="gone"
+                        tools:visibility="visible">
+
+                        <androidx.appcompat.widget.AppCompatImageView
+                            android:id="@+id/iconQuick"
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_marginEnd="8dp"
+                            android:src="@drawable/ic_action_sync" />
+
+                        <com.google.android.material.textview.MaterialTextView
+                            android:id="@+id/headerQuick"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="@string/detail_source"
+                            android:textColor="@color/white"
+                            android:textSize="15sp" />
+
+                    </androidx.appcompat.widget.LinearLayoutCompat>
+
                     <androidx.recyclerview.widget.RecyclerView
                         android:id="@+id/quick"
                         android:layout_width="match_parent"
@@ -420,4 +486,20 @@
             </androidx.core.widget.NestedScrollView>
         </com.fongmi.android.tv.ui.custom.ProgressLayout>
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <!-- 详情态悬浮控件：剧照铺满整屏时也能直接返回/收藏，不用先找按钮 -->
+    <androidx.appcompat.widget.AppCompatImageView
+        android:id="@+id/detailBack"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
+        android:layout_below="@id/statusBar"
+        android:layout_marginStart="12dp"
+        android:layout_marginTop="8dp"
+        android:background="@drawable/shape_circle_scrim"
+        android:padding="9dp"
+        android:src="@drawable/ic_control_back"
+        android:visibility="gone"
+        app:tint="@color/white"
+        tools:visibility="visible" />
+
 </RelativeLayout>

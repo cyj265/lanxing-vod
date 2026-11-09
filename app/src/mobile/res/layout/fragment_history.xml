@@ -2,6 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/historyRoot"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
@@ -14,6 +15,39 @@
         app:navigationIconTint="@android:color/white"
         app:title="@string/app_history"
         app:titleTextAppearance="@style/ToolbarTextAppearance" />
+
+    <androidx.appcompat.widget.LinearLayoutCompat
+        android:id="@+id/segment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="8dp"
+        android:background="@drawable/shape_segment_track"
+        android:orientation="horizontal"
+        android:padding="4dp">
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tabHistory"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:padding="10dp"
+            android:text="@string/record_tab_history"
+            android:textSize="14sp" />
+
+        <com.google.android.material.textview.MaterialTextView
+            android:id="@+id/tabKeep"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:gravity="center"
+            android:padding="10dp"
+            android:text="@string/record_tab_keep"
+            android:textSize="14sp" />
+
+    </androidx.appcompat.widget.LinearLayoutCompat>
 
     <com.fongmi.android.tv.ui.custom.ProgressLayout
         android:id="@+id/progressLayout"

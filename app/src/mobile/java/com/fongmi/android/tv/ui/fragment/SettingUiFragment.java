@@ -34,7 +34,6 @@ import java.util.List;
 public class SettingUiFragment extends BaseFragment {
 
     private FragmentSettingUiBinding mBinding;
-    private String[] osdModes;
     private String[] walls;
 
     private final ActivityResultLauncher<Intent> wallLauncher = registerForActivityResult(
@@ -55,7 +54,6 @@ public class SettingUiFragment extends BaseFragment {
         mBinding.autoPlayText.setText(Setting.getSwitch(PlayerSetting.isAutoPlay()));
         mBinding.homeDiscoverText.setText(Setting.getSwitch(Setting.isHomeDiscover()));
         mBinding.homeContinueText.setText(Setting.getSwitch(Setting.isHomeContinue()));
-        mBinding.osdModeText.setText((osdModes = ResUtil.getStringArray(R.array.select_osd_mode))[Setting.getOsdMode()]);
         setWallText();
     }
 
@@ -64,7 +62,6 @@ public class SettingUiFragment extends BaseFragment {
         mBinding.autoPlay.setOnClickListener(this::setAutoPlay);
         mBinding.homeDiscover.setOnClickListener(this::setHomeDiscover);
         mBinding.homeContinue.setOnClickListener(this::setHomeContinue);
-        mBinding.osdMode.setOnClickListener(this::setOsdMode);
         mBinding.wall.setOnClickListener(this::onWall);
     }
 
@@ -83,17 +80,6 @@ public class SettingUiFragment extends BaseFragment {
         Setting.putHomeContinue(!Setting.isHomeContinue());
         mBinding.homeContinueText.setText(Setting.getSwitch(Setting.isHomeContinue()));
         com.fongmi.android.tv.event.RefreshEvent.setting();
-    }
-
-    private void setOsdMode(View view) {
-        new GlassAlertDialogBuilder(requireActivity())
-                .setTitle(R.string.setting_osd_mode)
-                .setNegativeButton(R.string.dialog_negative, null)
-                .setSingleChoiceItems(osdModes, Setting.getOsdMode(), (dialog, which) -> {
-                    Setting.putOsdMode(which);
-                    mBinding.osdModeText.setText(osdModes[which]);
-                    dialog.dismiss();
-                }).show();
     }
 
     private void setWallText() {

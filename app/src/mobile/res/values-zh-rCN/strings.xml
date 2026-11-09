@@ -81,18 +81,11 @@
     <!-- 首页 / 显示设置 -->
     <string name="setting_home_discover">豆瓣精选首页</string>
     <string name="setting_home_continue">首页继续观看</string>
-    <string name="setting_osd_mode">网速/电量位置</string>
     <string name="setting_view_log">查看日志</string>
     <string name="log_title">最近一次崩溃日志</string>
     <string name="log_empty">暂无崩溃日志</string>
     <string name="log_copy">复制日志</string>
     <string name="log_copied">日志已复制</string>
-
-    <string-array name="select_osd_mode">
-        <item>右上角</item>
-        <item>左下角</item>
-        <item>隐藏</item>
-    </string-array>
 
     <string name="setting_wall_auto">每日自动更换</string>
     <string-array name="select_wall">
@@ -115,4 +108,9 @@
     <string name="wall_local_done">壁纸已更新</string>
     <string name="wall_local_fail">读取失败，换一个文件试试</string>
     <string name="cast_play_first">请播放后再投屏</string>
+    <string name="detail_source">换源</string>
+    <string name="detail_flag_count">共 %d 个视频</string>
+    <string name="history_watched">已看 %d%%</string>
+    <string name="record_tab_history">历史</string>
+    <string name="record_tab_keep">收藏</string>
 </resources>

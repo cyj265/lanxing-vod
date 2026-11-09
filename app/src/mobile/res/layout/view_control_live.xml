@@ -23,68 +23,68 @@
             android:scaleType="center"
             android:src="@drawable/ic_control_back" />
 
+        <!-- 标题 + 分辨率竖排：分辨率跟随标题左对齐，完整显示 -->
         <androidx.appcompat.widget.LinearLayoutCompat
-            android:id="@+id/osdHost"
+            android:id="@+id/titleHost"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
             android:layout_marginStart="4dp"
-            android:layout_marginEnd="4dp"
+            android:layout_marginEnd="8dp"
             android:layout_weight="1"
-            android:gravity="end|center_vertical"
-            android:orientation="horizontal">
+            android:orientation="vertical">
 
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/title"
-                android:layout_width="0dp"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_weight="1"
                 android:ellipsize="marquee"
                 android:singleLine="true"
                 android:textColor="@color/white"
                 android:textSize="16sp"
                 tools:text="CCTV-4K" />
 
-            <!-- 分辨率固定在右上角，不随「网速/电量位置」开关移动或隐藏 -->
             <com.google.android.material.textview.MaterialTextView
                 android:id="@+id/resolution"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFeatureSettings="tnum"
-                android:textColor="@color/primary"
+                android:singleLine="true"
+                android:textColor="@color/white"
                 android:textSize="12sp"
                 android:visibility="gone"
-                tools:text="[1920x1080]"
+                tools:text="1920x1080"
                 tools:visibility="visible" />
 
-            <androidx.appcompat.widget.LinearLayoutCompat
-                android:id="@+id/osd"
+        </androidx.appcompat.widget.LinearLayoutCompat>
+
+        <!-- 网速 + 电量：只在横屏全屏时出现，竖屏半屏态不占位 -->
+        <androidx.appcompat.widget.LinearLayoutCompat
+            android:id="@+id/osd"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:layout_marginEnd="4dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <com.google.android.material.textview.MaterialTextView
+                android:id="@+id/speed"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:gravity="center_vertical"
-                android:orientation="horizontal">
+                android:fontFeatureSettings="tnum"
+                android:textColor="@color/white_70"
+                android:textSize="12sp"
+                tools:text="1.2 MB/s" />
 
-                <com.google.android.material.textview.MaterialTextView
-                    android:id="@+id/speed"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:fontFeatureSettings="tnum"
-                    android:textColor="@color/white_70"
-                    android:textSize="12sp"
-                    android:visibility="gone"
-                    tools:text="1.2 MB/s"
-                    tools:visibility="visible" />
-
-                <com.fongmi.android.tv.ui.custom.BatteryView
-                    android:id="@+id/battery"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:visibility="gone"
-                    tools:visibility="visible" />
-
-            </androidx.appcompat.widget.LinearLayoutCompat>
+            <com.fongmi.android.tv.ui.custom.BatteryView
+                android:id="@+id/battery"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="10dp"
+                tools:visibility="visible" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 

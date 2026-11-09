@@ -8,6 +8,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.databinding.AdapterQuickBinding;
+import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.VodTheme;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,6 +18,7 @@ public class QuickAdapter extends RecyclerView.Adapter<QuickAdapter.ViewHolder> 
 
     private final OnClickListener listener;
     private final List<Vod> mItems;
+    private VodTheme theme;
 
     public QuickAdapter(OnClickListener listener) {
         this.listener = listener;
@@ -62,12 +65,23 @@ public class QuickAdapter extends RecyclerView.Adapter<QuickAdapter.ViewHolder> 
         return new ViewHolder(AdapterQuickBinding.inflate(LayoutInflater.from(parent.getContext()), parent, false));
     }
 
+    public void setTheme(VodTheme theme) {
+        this.theme = theme;
+        notifyDataSetChanged();
+    }
+
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         Vod item = mItems.get(position);
         holder.binding.name.setText(item.getName());
         holder.binding.site.setText(item.getSiteName());
         holder.binding.remark.setText(item.getRemarks());
+        if (theme != null) {
+            holder.binding.getRoot().setBackground(theme.card(false, ResUtil.dp2px(16)));
+            holder.binding.name.setTextColor(theme.onSurface);
+            holder.binding.site.setTextColor(theme.onVariant);
+            holder.binding.remark.setTextColor(theme.onVariant);
+        }
         holder.binding.getRoot().setOnClickListener(v -> listener.onItemClick(item));
     }
 

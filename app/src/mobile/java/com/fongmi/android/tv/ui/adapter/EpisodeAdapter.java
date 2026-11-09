@@ -2,6 +2,7 @@ package com.fongmi.android.tv.ui.adapter;
 
 import android.view.LayoutInflater;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.recyclerview.widget.RecyclerView;
@@ -13,6 +14,8 @@ import com.fongmi.android.tv.ui.base.BaseEpisodeHolder;
 import com.fongmi.android.tv.ui.base.ViewType;
 import com.fongmi.android.tv.ui.holder.EpisodeGridHolder;
 import com.fongmi.android.tv.ui.holder.EpisodeHoriHolder;
+import com.fongmi.android.tv.utils.ResUtil;
+import com.fongmi.android.tv.utils.VodTheme;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +25,7 @@ public class EpisodeAdapter extends RecyclerView.Adapter<BaseEpisodeHolder> {
     private final OnClickListener listener;
     private final List<Episode> mItems;
     private final int viewType;
+    private VodTheme theme;
 
     public EpisodeAdapter(OnClickListener listener, int viewType) {
         this(listener, viewType, new ArrayList<>());
@@ -88,9 +92,20 @@ public class EpisodeAdapter extends RecyclerView.Adapter<BaseEpisodeHolder> {
         return viewType;
     }
 
+    public void setTheme(VodTheme theme) {
+        this.theme = theme;
+        notifyDataSetChanged();
+    }
+
     @Override
     public void onBindViewHolder(@NonNull BaseEpisodeHolder holder, int position) {
         holder.initView(mItems.get(position));
+        if (theme != null && viewType == ViewType.GRID && holder.itemView instanceof TextView) {
+            TextView text = (TextView) holder.itemView;
+            boolean selected = mItems.get(position).isSelected();
+            text.setBackground(theme.card(selected, ResUtil.dp2px(16)));
+            text.setTextColor(selected ? theme.accent : theme.onSurface);
+        }
     }
 
     @NonNull

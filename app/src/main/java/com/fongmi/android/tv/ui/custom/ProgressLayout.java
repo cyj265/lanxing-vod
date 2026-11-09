@@ -23,6 +23,7 @@ public class ProgressLayout extends RelativeLayout {
 
     private List<View> mContentViews;
     private View mProgressView;
+    private ViewEmptyBinding mEmptyBinding;
     private View mEmptyView;
     private State mState;
 
@@ -47,7 +48,8 @@ public class ProgressLayout extends RelativeLayout {
     }
 
     private void initView() {
-        mEmptyView = ViewEmptyBinding.inflate(LayoutInflater.from(getContext())).getRoot();
+        mEmptyBinding = ViewEmptyBinding.inflate(LayoutInflater.from(getContext()));
+        mEmptyView = mEmptyBinding.getRoot();
         mEmptyView.setTag(TAG_PROGRESS);
         mEmptyView.setVisibility(GONE);
         mProgressView = ViewProgressBinding.inflate(LayoutInflater.from(getContext())).getRoot();
@@ -69,6 +71,10 @@ public class ProgressLayout extends RelativeLayout {
 
     public void showProgress() {
         switchState(State.PROGRESS);
+    }
+
+    public void setEmptyTextColor(int color) {
+        mEmptyBinding.text.setTextColor(color);
     }
 
     public void showEmpty() {
