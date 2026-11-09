@@ -26,7 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * DLNA 发送端发现：基于 jupnp 的 UpnpService（与影视仓同款网络栈，在一加等机型上可正常收发组播）。
+ * DLNA 发送端发现：基于 jupnp 的 UpnpService（同款网络栈，在一加等机型上可正常收发组播）。
  * 由 DLNACastService 承载 AndroidUpnpService，本类 bind 后监听 Registry 发现 MediaRenderer。
  * 设备控制仍走 DLNACast（SOAP SetAVTransportURI），故发现时把 AVTransport 控制地址写入 Device.url/ip。
  */

@@ -93,7 +93,7 @@ public class Config {
     public static Config vod() {
         Config item = AppDatabase.get().getConfigDao().findOne(0);
 
-        // OK影视内置多线路入口：chenlong.jpg 实际为 urls[] depot。
+        // 内置多线路入口：chenlong.jpg 实际为 urls[] depot。
         if (item == null) {
             return create(0, BuiltinDepot.URL, BuiltinDepot.NAME);
         }

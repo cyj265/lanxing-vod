@@ -49,7 +49,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.Response;
 
 /**
- * 选择投屏设备对话框：居中弹窗、搜索 loading、设备列表、点击连接、已连接标记（对齐影视仓）。
+ * 选择投屏设备对话框：居中弹窗、搜索 loading、设备列表、点击连接、已连接标记。
  */
 public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClickListener, ScanTask.Listener, DLNACastManager.DeviceListener, Callback {
 

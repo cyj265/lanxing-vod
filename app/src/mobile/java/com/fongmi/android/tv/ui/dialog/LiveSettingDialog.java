@@ -24,7 +24,7 @@ import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ResUtil;
 
 /**
- * 直播专属设置（对齐影视仓胶囊直选风格）：解码 / 画面缩放 / 超时换源 / EPG地址。
+ * 直播专属设置（胶囊直选风格）：解码 / 画面缩放 / 超时换源 / EPG地址。
  * 每项一排胶囊选项，点选即生效，无二级菜单。
  */
 public class LiveSettingDialog extends BaseBottomSheetDialog {

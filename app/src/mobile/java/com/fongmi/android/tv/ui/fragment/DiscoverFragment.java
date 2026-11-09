@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * 内置精选首页：豆瓣榜单数据，不依赖用户配置的源
- * 参照影视仓首页布局：多个榜单横滑 + 更多跳转
+ * 参照同类播放器首页布局：多个榜单横滑 + 更多跳转
  */
 public class DiscoverFragment extends Fragment {
 

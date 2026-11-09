@@ -27,7 +27,7 @@ import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Timer;
 
 /**
- * 播放设置（对齐影视仓胶囊直选风格）：解码/画面缩放/倍速播放/音效模式 + 片头/片尾/重播/刷新。
+ * 播放设置（胶囊直选风格）：解码/画面缩放/倍速播放/音效模式 + 片头/片尾/重播/刷新。
  * 选择项点选即生效；动作项转发给底部功能栏对应按钮（直播布局缺的行自动隐藏）。
  */
 public class ControlDialog extends BaseBottomSheetDialog {

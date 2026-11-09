@@ -146,7 +146,7 @@ public class CollectActivity extends BaseActivity implements CollectAdapter.OnCl
         Config current = VodConfig.get().getConfig();
         if (current != null && !current.getUrl().isEmpty()) moveConfig(source, order, current.getUrl());
 
-        // OK影视的 yyy 聚合接口第二优先，但 UI 仍按“谁先返回谁先出现”。
+        // 内置的 yyy 聚合接口第二优先，但 UI 仍按“谁先返回谁先出现”。
         moveConfig(source, order, BuiltinDepot.EXTRA_YL_URL);
         order.addAll(source);
         return order;

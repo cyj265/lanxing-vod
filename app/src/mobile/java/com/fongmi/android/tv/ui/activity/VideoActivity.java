@@ -1851,7 +1851,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private void setR1Callback() {
         if (isScrubbing()) return;
         App.removeCallbacks(mR1);
-        // 对齐影视仓交互：暂停/加载时常驻显示控制栏，仅播放中倒计时自动隐藏。
+        // 暂停/加载时常驻显示控制栏，仅播放中倒计时自动隐藏。
         if (player().isPlaying()) App.post(mR1, Constant.INTERVAL_HIDE);
     }
 
