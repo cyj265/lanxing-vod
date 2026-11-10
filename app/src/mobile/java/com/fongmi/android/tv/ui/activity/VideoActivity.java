@@ -181,6 +181,12 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private String mTypeName;
     private boolean mDeferredShown;
     private ValueAnimator mDeferredAnimator;
+    /** 详情态/播放态的目标布局，过渡期间以它为准，不靠 View 可见性反复判定 */
+    private boolean mDetailMode;
+    /** 过渡期间锁定的播放器高度：动画终点和结束态布局共用，避免差一截 */
+    private int mLockedVideoHeight = -1;
+    /** 过渡期间上报的真实视频尺寸先记下，动画结束再平滑应用 */
+    private int mPendingVideoHeight = -1;
     private boolean fullscreen;
     private boolean useParse;
     private boolean rotate;
@@ -756,22 +762,39 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private void renderDeferredPlay(boolean visible) {
         if (mBinding == null || mBinding.deferredCover == null || mBinding.deferredPlay == null) return;
         boolean phone = mBinding.deferredCover.getParent() != mBinding.video;
-        boolean was = mBinding.deferredCover.getVisibility() == View.VISIBLE;
-        if (phone && mDeferredShown && was != visible) {
-            animateDeferred(visible);
+        boolean first = !mDeferredShown;
+        // 手机同态重复请求（点播放后播放链路会连着回调多次）只刷新按钮文案，绝不再动布局。
+        // 否则会在过渡动画中途改写 padding 和 BELOW 规则，与逐帧 padding 互相覆盖，
+        // 表现就是下方详情/选集「跳一下」。
+        if (phone && mDeferredShown && mDetailMode == visible) {
+            if (visible && mBinding.deferredPlay != null) mBinding.deferredPlay.setText(playLabel());
             return;
         }
         mDeferredShown = true;
+        mDetailMode = visible;
+        if (phone && !first) {
+            animateDeferred(visible);
+            return;
+        }
         applyDeferredState(visible);
     }
 
     /** 详情↔播放双向过渡：盖层交叉淡入淡出 + 内容首屏留白连续变化，避免布局硬切 */
     private void animateDeferred(boolean toDetail) {
-        if (mDeferredAnimator != null) mDeferredAnimator.cancel();
+        if (mDeferredAnimator != null) {
+            ValueAnimator old = mDeferredAnimator;
+            mDeferredAnimator = null; // 旧动画的结束回调随之失效，不抢占新动画状态
+            old.cancel();
+            mLockedVideoHeight = -1;
+            mPendingVideoHeight = -1;
+        }
+        // 过渡期间锁定播放器高度：动画终点与结束态布局共用同一个值，
+        // 视频轨稍后上报的真实比例延到动画结束后平滑应用。
+        mLockedVideoHeight = targetVideoHeight();
+        setVideoHeight();
         View content = mBinding.detailContent;
-        int padDetail = (int) (ResUtil.getScreenHeight() * 0.42f);
-        int padPlay = mBinding.video.getHeight() + ResUtil.dp2px(36);
-        if (padPlay <= ResUtil.dp2px(36)) padPlay = (int) (ResUtil.getScreenWidth() * 9f / 16f) + ResUtil.dp2px(36);
+        int padDetail = detailTopPadding();
+        int padPlay = mLockedVideoHeight + ResUtil.dp2px(36);
         int from = toDetail ? padPlay : content.getPaddingTop();
         int to = toDetail ? padDetail : padPlay;
         if (toDetail) {
@@ -779,23 +802,29 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
             content.setPadding(content.getPaddingLeft(), from, content.getPaddingRight(), content.getPaddingBottom());
             setDeferredAlpha(0f);
         }
-        mDeferredAnimator = ValueAnimator.ofFloat(0f, 1f);
-        mDeferredAnimator.setDuration(300);
-        mDeferredAnimator.setInterpolator(new DecelerateInterpolator());
-        mDeferredAnimator.addUpdateListener(a -> {
+        ValueAnimator anim = ValueAnimator.ofFloat(0f, 1f);
+        anim.setDuration(300);
+        anim.setInterpolator(new DecelerateInterpolator());
+        anim.addUpdateListener(a -> {
             float t = (float) a.getAnimatedValue();
             setDeferredAlpha(toDetail ? t : 1f - t);
             content.setPadding(content.getPaddingLeft(), (int) (from + (to - from) * t), content.getPaddingRight(), content.getPaddingBottom());
         });
-        mDeferredAnimator.addListener(new AnimatorListenerAdapter() {
+        anim.addListener(new AnimatorListenerAdapter() {
             @Override
             public void onAnimationEnd(Animator animation) {
+                if (mDeferredAnimator != animation) return;
                 mDeferredAnimator = null;
                 setDeferredAlpha(1f);
                 applyDeferredState(toDetail);
+                mLockedVideoHeight = -1;
+                int height = mPendingVideoHeight > 0 ? mPendingVideoHeight : (toDetail ? -1 : targetVideoHeight());
+                mPendingVideoHeight = -1;
+                if (height > 0) applyVideoHeight(height, true);
             }
         });
-        mDeferredAnimator.start();
+        mDeferredAnimator = anim;
+        anim.start();
     }
 
     private void setDeferredAlpha(float alpha) {
@@ -858,8 +887,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
             button.setEnabled(true);
             button.setClickable(true);
         }
-        setDetailLayout(visible);
+        // 先定稿播放器高度，再排下方内容；反过来会按旧高度摆一次、再改高度，出现一帧错位
         setVideoHeight();
+        setDetailLayout(visible);
     }
 
     /** 继续播放时把集数也带上，用户不用点进选集确认播哪一集 */
@@ -960,7 +990,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
                 mBinding.swipeLayout.setLayoutParams(rlp);
             }
         }
-        int top = deferred ? (int) (ResUtil.getScreenHeight() * (isLand() ? 0.30f : 0.42f)) : ResUtil.dp2px(36);
+        int top = deferred ? detailTopPadding() : ResUtil.dp2px(36);
         View content = mBinding.detailContent;
         content.setPadding(content.getPaddingLeft(), top, content.getPaddingRight(), content.getPaddingBottom());
         mBinding.detailScrim.setVisibility(deferred ? View.VISIBLE : View.GONE);
@@ -971,6 +1001,11 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         } else {
             mBinding.detailDim.setAlpha(0f);
         }
+    }
+
+    /** 详情态内容起点，横屏留出更多剧照；过渡动画与结束态布局必须共用这个口径 */
+    private int detailTopPadding() {
+        return (int) (ResUtil.getScreenHeight() * (isLand() ? 0.30f : 0.42f));
     }
 
     /** 内容越往上滑、越贴到清晰剧照区，整体压暗越重，白字始终看得清 */
@@ -989,12 +1024,18 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
      *  平板已改为整屏剧照详情，同样按此规则定尺寸。 */
     private void setVideoHeight() {
         if (isFullscreenForPlayback()) return;
-        int height = knownVideoHeight();
-        if (height <= 0) height = (int) (ResUtil.getScreenWidth() * 9f / 16f);
+        if (mAnimator != null && mAnimator.isRunning()) return; // 尺寸过渡中不要抢占动画的高度
+        int height = mLockedVideoHeight > 0 ? mLockedVideoHeight : targetVideoHeight();
         ViewGroup.LayoutParams lp = mBinding.video.getLayoutParams();
         if (lp.height == height) return;
         lp.height = height;
         mBinding.video.setLayoutParams(lp);
+    }
+
+    /** 过渡动画的终点与结束态布局必须按同一个高度算，否则会差一截 */
+    private int targetVideoHeight() {
+        int height = knownVideoHeight();
+        return height > 0 ? height : (int) (ResUtil.getScreenWidth() * 9f / 16f);
     }
 
     /** 已经知道的比例优先，拿不到返回 0 */
@@ -2135,6 +2176,11 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void applyVideoHeight(int finalHeight, boolean animate) {
         if (finalHeight == mBinding.video.getHeight()) return;
+        // 详情↔播放过渡中先记下尺寸，等动画结束再平滑应用，避免把下方详情一起拽动
+        if (mDeferredAnimator != null || mLockedVideoHeight > 0) {
+            mPendingVideoHeight = finalHeight;
+            return;
+        }
         if (mAnimator.isRunning()) mAnimator.cancel();
         if (!animate) {
             mFrameParams.height = finalHeight;
