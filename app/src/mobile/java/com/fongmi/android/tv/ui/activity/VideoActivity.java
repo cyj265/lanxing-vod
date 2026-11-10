@@ -1836,6 +1836,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.control.getRoot().setAlpha(0f);
         mBinding.control.getRoot().animate().alpha(1f).setDuration(200).start();
         setR1Callback();
+        // 控制栏每次弹出都重取一次分辨率，避免尺寸回调早于元数据而被清掉
+        updateTitle(null);
         if (isFullscreen()) setOsd();
     }
 
@@ -2102,16 +2104,29 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void updateTitle(VideoSize size) {
+        if (mBinding == null) return;
         mBinding.control.title.setVisibility(View.VISIBLE);
         mBinding.control.title.setText(mPlayTitle);
         mBinding.control.title.setSelected(true);
-        boolean hasSize = size != null && size.width > 0 && size.height > 0;
-        if (hasSize) {
-            mBinding.control.resolution.setText(size.width + "x" + size.height);
-            mBinding.control.resolution.setVisibility(View.VISIBLE);
-        } else {
+        int[] video = currentVideoSize(size);
+        if (video == null) {
             mBinding.control.resolution.setVisibility(View.GONE);
+        } else {
+            mBinding.control.resolution.setText(video[0] + "x" + video[1]);
+            mBinding.control.resolution.setVisibility(View.VISIBLE);
         }
+    }
+
+    /** 标题下方的分辨率不能只依赖一次尺寸回调：起播后的元数据刷新会传 null 重刷标题，
+     *  旧写法会顺势把已显示的分辨率清掉且不再恢复。
+     *  优先用回调尺寸，其次播放器当前视频尺寸，最后退回已选视频轨的 Format。 */
+    private int[] currentVideoSize(VideoSize size) {
+        if (size != null && size.width > 0 && size.height > 0) return new int[]{size.width, size.height};
+        if (service() == null) return null;
+        int width = player().getVideoWidth();
+        int height = player().getVideoHeight();
+        if (width > 0 && height > 0) return new int[]{width, height};
+        return trackVideoSize();
     }
 
     @Override
