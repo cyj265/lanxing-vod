@@ -108,14 +108,14 @@ public class Updater implements Download.Callback, UpdateListener {
     }
 
     public Updater force() {
+        // 手动检查只绕过自动检查开关与「忽略版本」限制，不再改动设置项
         forced = true;
         Notify.show(R.string.update_check);
-        Setting.putUpdate(true);
         return this;
     }
 
     public void start(FragmentActivity activity) {
-        if (!Setting.getUpdate()) return;
+        if (!forced && !Setting.getUpdate()) return;
         Task.execute(() -> doInBackground(activity));
     }
 
@@ -131,6 +131,8 @@ public class Updater implements Download.Callback, UpdateListener {
             String desc = release.optString("desc", "");
             if (apkUrl == null || apkUrl.isEmpty() || version.isEmpty()) return;
             if (!isNewer(version)) return;
+            // 点「取消」只忽略当前版本，下个新版本仍会自动提示；手动检查不受此限制
+            if (!forced && version.equals(Setting.getIgnoreUpdateVersion())) return;
             App.post(() -> show(activity, version, desc));
         } catch (Exception e) {
             // 自动检查路径(非 forced)静默，但必须留日志，否则"为什么没提示更新"无从排查
@@ -554,7 +556,7 @@ public class Updater implements Download.Callback, UpdateListener {
 
     @Override
     public void onCancel(View view) {
-        Setting.putUpdate(false);
+        if (version != null && !version.isEmpty()) Setting.putIgnoreUpdateVersion(version);
         dismiss();
     }
 

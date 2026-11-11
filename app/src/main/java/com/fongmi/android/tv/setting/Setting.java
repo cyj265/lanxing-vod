@@ -14,6 +14,7 @@ public class Setting {
     private static final int MAX_SITE_MODE = 1;
     private static final int MIN_SYNC_MODE = 0;
     private static final int MAX_SYNC_MODE = 2;
+    private static final String UPDATE_MIGRATED = "update_migrated_v2";
 
     public static String getSwitch(boolean value) {
         return ResUtil.getString(value ? R.string.setting_on : R.string.setting_off);
@@ -163,11 +164,34 @@ public class Setting {
     }
 
     public static boolean getUpdate() {
+        // 旧版把更新弹窗的「取消」实现成永久关闭自动检查（onCancel → putUpdate(false)），
+        // 而设置页没有任何恢复入口。这里一次性把历史 false 复位，之后该开关只由设置页控制。
+        if (!Prefers.getBoolean(UPDATE_MIGRATED, false)) {
+            Prefers.put(UPDATE_MIGRATED, true);
+            if (!Prefers.getBoolean("update", true)) Prefers.put("update", true);
+        }
         return Prefers.getBoolean("update", true);
     }
 
     public static void putUpdate(boolean update) {
         Prefers.put("update", update);
+    }
+
+    /** 「取消」只忽略当前版本，下个新版本仍会提示 */
+    public static String getIgnoreUpdateVersion() {
+        return Prefers.getString("update_ignore_version", "");
+    }
+
+    public static void putIgnoreUpdateVersion(String version) {
+        Prefers.put("update_ignore_version", version);
+    }
+
+    public static long getLastUpdateCheck() {
+        return Prefers.getLong("update_last_check", 0);
+    }
+
+    public static void putLastUpdateCheck(long time) {
+        Prefers.put("update_last_check", time);
     }
 
     public static boolean isAdblock() {

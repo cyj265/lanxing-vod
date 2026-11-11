@@ -37,6 +37,7 @@ import com.fongmi.android.tv.player.extractor.Source;
 import com.fongmi.android.tv.receiver.ShortcutReceiver;
 import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.service.PlaybackService;
+import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.base.BaseActivity;
 import com.fongmi.android.tv.ui.custom.FragmentStateManager;
 import com.fongmi.android.tv.ui.custom.GlassDrawable;
@@ -67,6 +68,7 @@ public class HomeActivity extends BaseActivity {
     private static final int TAB_VOD = 0;
     private static final int TAB_HISTORY = 1;
     private static final int TAB_SETTING = 2;
+    private static final long UPDATE_CHECK_INTERVAL = 6 * 60 * 60 * 1000L;
 
     private FragmentStateManager mManager;
     private ActivityHomeBinding mBinding;
@@ -101,7 +103,6 @@ public class HomeActivity extends BaseActivity {
         setNavigation();
         PermissionUtil.requestNotify(this);
         initFragment(savedInstanceState);
-        Updater.create().start(this);
         initConfig();
     }
 
@@ -109,6 +110,16 @@ public class HomeActivity extends BaseActivity {
     protected void onResume() {
         super.onResume();
         if (mGlass != null) mGlass.setActive(true);
+        checkUpdateIfNeeded();
+    }
+
+    /** 回到前台时节流检查更新，避免 App 长期不重启就一直收不到新版本提示 */
+    private void checkUpdateIfNeeded() {
+        if (!Setting.getUpdate()) return;
+        long now = System.currentTimeMillis();
+        if (now - Setting.getLastUpdateCheck() < UPDATE_CHECK_INTERVAL) return;
+        Setting.putLastUpdateCheck(now);
+        Updater.create().start(this);
     }
 
     @Override

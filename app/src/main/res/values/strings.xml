@@ -276,6 +276,7 @@
     <string name="setting_cache">Cache</string>
     <string name="setting_backup">Backup</string>
     <string name="setting_restore">Restore</string>
+    <string name="setting_update_check">Auto check for updates</string>
     <string name="setting_version">Version</string>
     <string name="setting_choose">Choose</string>
     <string name="setting_off">Off</string>
