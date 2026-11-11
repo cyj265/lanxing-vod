@@ -14,6 +14,7 @@ import com.fongmi.android.tv.bean.Live;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.player.extractor.Source;
 import com.fongmi.android.tv.utils.Formatters;
+import com.fongmi.android.tv.utils.AppLog;
 import com.github.catvod.net.OkHttp;
 
 import java.time.LocalDate;
@@ -61,7 +62,7 @@ public class LiveApi {
             EpgParser.start(item, url);
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            AppLog.e(e);
             return false;
         }
     }

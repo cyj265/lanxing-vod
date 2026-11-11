@@ -18,6 +18,7 @@ import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.impl.Callback;
 import com.fongmi.android.tv.setting.LiveSetting;
 import com.fongmi.android.tv.utils.UrlUtil;
+import com.fongmi.android.tv.utils.AppLog;
 import com.github.catvod.bean.Header;
 import com.github.catvod.bean.Proxy;
 import com.github.catvod.utils.Json;
@@ -132,7 +133,7 @@ public class LiveConfig extends BaseConfig {
             LiveApi.parse(getHome());
             LiveApi.parseXml(getHome());
         } catch (Throwable e) {
-            e.printStackTrace();
+            AppLog.e(e);
         }
     }
 

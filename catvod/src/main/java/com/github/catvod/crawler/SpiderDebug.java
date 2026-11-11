@@ -1,6 +1,7 @@
 package com.github.catvod.crawler;
 
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.orhanobut.logger.Logger;
 
@@ -15,7 +16,7 @@ public class SpiderDebug {
     }
 
     public static void log(Throwable th) {
-        if (th != null) th.printStackTrace();
+        if (th != null) Log.e(TAG, "spider error", th);
     }
 
     public static void log(String msg) {

@@ -9,6 +9,7 @@ import com.fongmi.android.tv.bean.Drm;
 import com.fongmi.android.tv.bean.Group;
 import com.fongmi.android.tv.bean.Live;
 import com.fongmi.android.tv.utils.UrlUtil;
+import com.fongmi.android.tv.utils.AppLog;
 import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Json;
 
@@ -206,7 +207,7 @@ public class LiveParser {
                 if (line.contains("user-agent=")) ua = line.split("(?i)user-agent=")[1].trim().replace("\"", "");
                 if (line.contains("ua=")) ua = line.split("ua=")[1].trim().replace("\"", "");
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
                 ua = null;
             }
         }
@@ -215,7 +216,7 @@ public class LiveParser {
             try {
                 referer = line.split("(?i)referer=")[1].trim().replace("\"", "");
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
                 referer = null;
             }
         }
@@ -224,7 +225,7 @@ public class LiveParser {
             try {
                 referer = line.split("(?i)referrer=")[1].trim().replace("\"", "");
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
                 referer = null;
             }
         }
@@ -233,7 +234,7 @@ public class LiveParser {
             try {
                 parse = Integer.parseInt(line.split("parse=")[1].trim());
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
                 parse = null;
             }
         }
@@ -242,7 +243,7 @@ public class LiveParser {
             try {
                 click = line.split("click=")[1].trim();
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
                 click = null;
             }
         }
@@ -254,7 +255,7 @@ public class LiveParser {
                 if ("mpd".equals(format) || "dash".equals(format)) format = MimeTypes.APPLICATION_MPD;
                 if ("hls".equals(format)) format = MimeTypes.APPLICATION_M3U8;
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
                 format = null;
             }
         }
@@ -263,7 +264,7 @@ public class LiveParser {
             try {
                 header.put("Cookie", line.split("(?i)cookie=")[1].trim().replace("\"", ""));
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
             }
         }
 
@@ -271,7 +272,7 @@ public class LiveParser {
             try {
                 origin = line.split("(?i)origin=")[1].trim();
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
                 origin = null;
             }
         }
@@ -282,7 +283,7 @@ public class LiveParser {
                 if (key.startsWith("http")) httpKey();
                 else localKey();
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
                 key = null;
             }
         }
@@ -291,7 +292,7 @@ public class LiveParser {
             try {
                 type = line.contains("license_type=") ? line.split("license_type=")[1].trim() : line;
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
                 type = null;
             }
         }
@@ -303,7 +304,7 @@ public class LiveParser {
                 type(split[0].trim());
                 key(split[1].trim());
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
                 type = null;
                 key = null;
             }
@@ -314,7 +315,7 @@ public class LiveParser {
                 if (line.contains("#EXTHTTP:")) header.putAll(Json.toMap(Json.parse(line.split("#EXTHTTP:")[1].trim())));
                 if (line.contains("header=")) header.putAll(Json.toMap(Json.parse(line.split("header=")[1].trim())));
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
             }
         }
 
@@ -324,7 +325,7 @@ public class LiveParser {
                 else if (line.contains("|")) for (String text : line.split("\\|")) headers(text);
                 else headers(header, line.trim().split("&"));
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
             }
         }
 
@@ -333,7 +334,7 @@ public class LiveParser {
                 if (line.contains("|")) for (String text : line.split("\\|")) drmHeaders(text);
                 else headers(drmHeader, line.trim().split("&"));
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
             }
         }
 
@@ -353,7 +354,7 @@ public class LiveParser {
             try {
                 forceKey = Boolean.parseBoolean(line.split("forceKey=")[1].trim());
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
             }
         }
 

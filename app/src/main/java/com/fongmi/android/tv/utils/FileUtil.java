@@ -149,7 +149,7 @@ public class FileUtil {
             Path.move(temp, target);
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
+            AppLog.e(e);
             return false;
         } finally {
             Path.clear(temp);
@@ -168,7 +168,7 @@ public class FileUtil {
             Path.move(temp, target);
             return true;
         } catch (IOException e) {
-            e.printStackTrace();
+            AppLog.e(e);
             return false;
         } finally {
             Path.clear(temp);
@@ -179,7 +179,7 @@ public class FileUtil {
         try (GZIPInputStream is = new GZIPInputStream(new BufferedInputStream(new FileInputStream(file)))) {
             return Path.read(is);
         } catch (IOException e) {
-            e.printStackTrace();
+            AppLog.e(e);
             return "";
         }
     }
@@ -212,7 +212,7 @@ public class FileUtil {
             }
             return true;
         } catch (Exception e) {
-            e.printStackTrace();
+            AppLog.e(e);
             return false;
         }
     }

@@ -21,7 +21,7 @@ public class MainActivity extends Service {
             checkLibrary();
             System.loadLibrary("mitv");
         } catch (Throwable t) {
-            t.printStackTrace();
+            android.util.Log.e("MainActivity", "init failed", t);
         }
     }
 

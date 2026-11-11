@@ -14,6 +14,7 @@ import com.fongmi.android.tv.ui.custom.CustomWebView;
 import com.fongmi.android.tv.utils.Task;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.fongmi.android.tv.utils.WebViewUtil;
+import com.fongmi.android.tv.utils.AppLog;
 import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Json;
 import com.github.catvod.utils.Util;
@@ -150,7 +151,7 @@ public class ParseJob implements ParseCallback {
         try {
             jsonParse(item, webUrl, false);
         } catch (Exception e) {
-            e.printStackTrace();
+            AppLog.e(e);
         } finally {
             latch.countDown();
         }

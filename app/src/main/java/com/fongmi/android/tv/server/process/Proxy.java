@@ -3,6 +3,7 @@ package com.fongmi.android.tv.server.process;
 import com.fongmi.android.tv.api.loader.BaseLoader;
 import com.fongmi.android.tv.server.Nano;
 import com.fongmi.android.tv.server.impl.Process;
+import com.fongmi.android.tv.utils.AppLog;
 
 import java.io.InputStream;
 import java.util.Map;
@@ -31,7 +32,7 @@ public class Proxy implements Process {
             params.putAll(files);
             return createResponse(BaseLoader.get().proxy(params));
         } catch (Throwable e) {
-            e.printStackTrace();
+            AppLog.e(e);
             return Nano.error(Objects.toString(e.getMessage(), e.toString()));
         }
     }

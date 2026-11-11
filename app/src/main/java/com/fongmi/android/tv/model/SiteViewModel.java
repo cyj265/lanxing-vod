@@ -10,6 +10,7 @@ import com.fongmi.android.tv.api.config.VodConfig;
 import com.fongmi.android.tv.bean.Result;
 import com.fongmi.android.tv.bean.Site;
 import com.fongmi.android.tv.exception.ExtractException;
+import com.fongmi.android.tv.utils.AppLog;
 import com.github.catvod.utils.Trans;
 
 import java.util.HashMap;
@@ -80,7 +81,7 @@ public class SiteViewModel extends ViewModel {
         tasks.execute(type, Constant.TIMEOUT_VOD, callable, liveData::postValue, error -> {
             if (error instanceof ExtractException) liveData.postValue(Result.error(error.getMessage()));
             else liveData.postValue(Result.empty());
-            error.printStackTrace();
+            AppLog.e(error);
         });
     }
 

@@ -5,6 +5,7 @@ import android.content.Context;
 import com.fongmi.android.tv.App;
 import com.fongmi.android.tv.utils.Download;
 import com.fongmi.android.tv.utils.UrlUtil;
+import com.fongmi.android.tv.utils.AppLog;
 import com.github.catvod.crawler.Spider;
 import com.github.catvod.crawler.SpiderNull;
 import com.github.catvod.net.OkHttp;
@@ -67,7 +68,7 @@ public class JarLoader {
             Method method = clz.getMethod("init", Context.class);
             method.invoke(clz, App.get());
         } catch (Throwable e) {
-            e.printStackTrace();
+            AppLog.e(e);
         }
     }
 
@@ -77,7 +78,7 @@ public class JarLoader {
             Method method = clz.getMethod("proxy", Map.class);
             methods.put(key, method);
         } catch (Throwable e) {
-            e.printStackTrace();
+            AppLog.e(e);
         }
     }
 
@@ -107,7 +108,7 @@ public class JarLoader {
             parseJar(jaKey, jar);
             return loaders.get(jaKey);
         } catch (Throwable e) {
-            e.printStackTrace();
+            AppLog.e(e);
             return null;
         }
     }
@@ -125,7 +126,7 @@ public class JarLoader {
                 spider.init(App.get(), ext);
                 return spider;
             } catch (Throwable e) {
-                e.printStackTrace();
+                AppLog.e(e);
                 return new SpiderNull();
             }
         });
@@ -164,7 +165,7 @@ public class JarLoader {
         try {
             return method == null ? null : (Object[]) method.invoke(null, params);
         } catch (Throwable e) {
-            e.printStackTrace();
+            AppLog.e(e);
             return null;
         }
     }

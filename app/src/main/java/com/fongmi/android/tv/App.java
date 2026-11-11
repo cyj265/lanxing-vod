@@ -20,6 +20,7 @@ import com.fongmi.android.tv.utils.CrashLog;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.ReleaseTrust;
 import com.fongmi.hook.Hook;
+import com.fongmi.android.tv.utils.AppLog;
 import com.github.catvod.Init;
 import com.google.gson.Gson;
 import com.tencent.bugly.crashreport.CrashReport;
@@ -117,7 +118,7 @@ public class App extends Application implements Application.ActivityLifecycleCal
                 if (ReleaseTrust.isTrustedCert(signature.toByteArray())) return true;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            AppLog.e(e);
         }
         return false;
     }
@@ -139,7 +140,7 @@ public class App extends Application implements Application.ActivityLifecycleCal
             CrashReport.initCrashReport(getApplicationContext(), BuildConfig.BUGLY_APP_ID, false, strategy);
         } catch (Exception e) {
             // 初始化失败不影响 App 正常运行
-            e.printStackTrace();
+            AppLog.e(e);
         }
     }
 

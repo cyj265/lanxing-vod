@@ -12,6 +12,7 @@ import com.fongmi.android.tv.bean.Vod;
 import com.fongmi.android.tv.event.RefreshEvent;
 import com.fongmi.android.tv.impl.NewPipeImpl;
 import com.fongmi.android.tv.utils.UrlUtil;
+import com.fongmi.android.tv.utils.AppLog;
 
 import org.schabi.newpipe.extractor.ListExtractor;
 import org.schabi.newpipe.extractor.MediaFormat;
@@ -308,7 +309,7 @@ public class YouTube implements Source.Extractor {
                 try {
                     add(extractor, episodes, extractor.getPage(page.getNextPage()));
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    AppLog.e(e);
                 }
             }
         }

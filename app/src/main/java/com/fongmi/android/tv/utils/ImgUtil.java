@@ -56,7 +56,7 @@ public class ImgUtil {
         try {
             Glide.with(view).load(UrlUtil.convert(VodConfig.get().getConfig().getLogo())).circleCrop().override(Target.SIZE_ORIGINAL, Target.SIZE_ORIGINAL).error(R.drawable.ic_logo).into(view);
         } catch (Throwable e) {
-            e.printStackTrace();
+            AppLog.e(e);
         }
     }
 
@@ -64,7 +64,7 @@ public class ImgUtil {
         try {
             Glide.with(App.get()).asBitmap().load(getUrl(url)).override(ResUtil.dp2px(96), ResUtil.dp2px(96)).error(R.drawable.artwork).into(target);
         } catch (Throwable e) {
-            e.printStackTrace();
+            AppLog.e(e);
         }
     }
 
@@ -72,7 +72,7 @@ public class ImgUtil {
         try {
             Glide.with(context).load(getUrl(url)).override(ResUtil.getScreenWidth(), ResUtil.getScreenHeight()).error(R.drawable.artwork).into(target);
         } catch (Throwable e) {
-            e.printStackTrace();
+            AppLog.e(e);
         }
     }
 
@@ -90,7 +90,7 @@ public class ImgUtil {
             if (vod) builder.centerCrop().into(view);
             else builder.fitCenter().into(view);
         } catch (Throwable e) {
-            e.printStackTrace();
+            AppLog.e(e);
         }
     }
 

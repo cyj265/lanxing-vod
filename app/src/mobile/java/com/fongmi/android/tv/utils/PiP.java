@@ -54,7 +54,7 @@ public class PiP {
             builder.setSourceRectHint(rect);
             activity.setPictureInPictureParams(builder.build());
         } catch (Exception e) {
-            e.printStackTrace();
+            AppLog.e(e);
         }
     }
 
@@ -67,7 +67,7 @@ public class PiP {
             actions.add(buildRemoteAction(activity, R.drawable.exo_icon_next, R.string.exo_controls_next_description, ActionEvent.NEXT));
             activity.setPictureInPictureParams(builder.setActions(actions).build());
         } catch (Exception e) {
-            e.printStackTrace();
+            AppLog.e(e);
         }
     }
 
@@ -80,7 +80,7 @@ public class PiP {
             else builder.setAspectRatio(getRational(width, height));
             activity.enterPictureInPictureMode(builder.build());
         } catch (Exception e) {
-            e.printStackTrace();
+            AppLog.e(e);
         }
     }
 

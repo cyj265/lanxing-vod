@@ -13,6 +13,7 @@ import com.fongmi.android.tv.playback.vod.VodPlayRequest;
 import com.fongmi.android.tv.playback.vod.VodPlaybackController;
 import com.fongmi.android.tv.playback.vod.VodPlaybackHost;
 import com.fongmi.android.tv.playback.vod.VodPlaybackState;
+import com.fongmi.android.tv.utils.AppLog;
 
 public class VideoViewModel extends SiteViewModel {
 
@@ -74,7 +75,7 @@ public class VideoViewModel extends SiteViewModel {
     }
 
     private Result handleError(Throwable error) {
-        error.printStackTrace();
+        AppLog.e(error);
         return error instanceof ExtractException ? Result.error(error.getMessage()) : Result.empty();
     }
 

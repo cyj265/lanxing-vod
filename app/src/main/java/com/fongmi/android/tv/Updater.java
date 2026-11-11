@@ -19,6 +19,7 @@ import com.fongmi.android.tv.utils.ReleaseSource;
 import com.fongmi.android.tv.utils.ReleaseTrust;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Task;
+import com.fongmi.android.tv.utils.AppLog;
 import com.github.catvod.net.OkHttp;
 import com.github.catvod.utils.Path;
 
@@ -133,7 +134,7 @@ public class Updater implements Download.Callback, UpdateListener {
             App.post(() -> show(activity, version, desc));
         } catch (Exception e) {
             // 自动检查路径(非 forced)静默，但必须留日志，否则"为什么没提示更新"无从排查
-            e.printStackTrace();
+            AppLog.e(e);
             if (forced) App.post(() -> Notify.show("检查更新失败，请稍后重试"));
         }
     }
@@ -172,7 +173,7 @@ public class Updater implements Download.Callback, UpdateListener {
             JSONObject found = fetchGiteeRelease();
             if (found != null) return found;
         } catch (Exception e) {
-            e.printStackTrace(); // Gitee 兜底失败：沿用 GitHub 侧最后一个异常
+            AppLog.e(e); // Gitee 兜底失败：沿用 GitHub 侧最后一个异常
             if (last != null) throw last;
         }
         if (last != null) throw last;
@@ -268,7 +269,7 @@ public class Updater implements Download.Callback, UpdateListener {
             try {
                 ranked = probeRanked();
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
                 ranked = null;
             }
             final List<String> r = ranked;
@@ -682,7 +683,7 @@ public class Updater implements Download.Callback, UpdateListener {
             android.util.Log.w("Updater", "signature mismatch: " + file.getName() + " from " + nameOf(mirrorIndex));
             return ApkCheck.MISMATCH;
         } catch (Exception e) {
-            e.printStackTrace();
+            AppLog.e(e);
             return ApkCheck.INVALID;
         }
     }
@@ -702,7 +703,7 @@ public class Updater implements Download.Callback, UpdateListener {
                 // 多 signer 时 getSigningCertificateHistory() 按契约返回 null，改用 contents signers
                 addAll(out, signing.hasMultipleSigners() ? signing.getApkContentsSigners() : signing.getSigningCertificateHistory());
             } catch (Exception e) {
-                e.printStackTrace();
+                AppLog.e(e);
             }
         }
         return out;

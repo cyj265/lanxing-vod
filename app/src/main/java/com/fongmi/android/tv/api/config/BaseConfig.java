@@ -11,6 +11,7 @@ import com.fongmi.android.tv.server.Server;
 import com.fongmi.android.tv.utils.Notify;
 import com.fongmi.android.tv.utils.Task;
 import com.fongmi.android.tv.utils.UrlUtil;
+import com.fongmi.android.tv.utils.AppLog;
 import com.github.catvod.bean.Header;
 import com.github.catvod.bean.Proxy;
 import com.github.catvod.net.OkHttp;
@@ -51,7 +52,7 @@ abstract class BaseConfig {
             Server.get().start();
             load(config);
         } catch (Throwable e) {
-            e.printStackTrace();
+            AppLog.e(e);
         }
     }
 
@@ -96,7 +97,7 @@ abstract class BaseConfig {
             App.post(() -> Notify.show(config.getNotice()));
             App.post(callback::success);
         } catch (Throwable e) {
-            e.printStackTrace();
+            AppLog.e(e);
             if (isCanceled(e)) return;
             if (taskId.get() != id) return;
             if (TextUtils.isEmpty(config.getUrl())) App.post(() -> callback.error(""));

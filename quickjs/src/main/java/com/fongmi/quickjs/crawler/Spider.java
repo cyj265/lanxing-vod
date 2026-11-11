@@ -1,6 +1,7 @@
 package com.fongmi.quickjs.crawler;
 
 import android.content.Context;
+import android.util.Log;
 
 import com.fongmi.quickjs.bean.Res;
 import com.fongmi.quickjs.method.Console;
@@ -129,12 +130,12 @@ public class Spider extends com.github.catvod.crawler.Spider {
         try {
             call("destroy");
         } catch (Throwable e) {
-            e.printStackTrace();
+            Log.e("Spider", "destroy failed", e);
         }
         try {
             releaseJS();
         } catch (Throwable e) {
-            e.printStackTrace();
+            Log.e("Spider", "releaseJS failed", e);
         } finally {
             executor.shutdownNow();
         }
