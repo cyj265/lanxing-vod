@@ -1,13 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 内置壁纸上的一层压暗：顶部/底部更深（保住状态栏与片名可读），中间大面积留亮 -->
+<!-- 内置壁纸上的压暗层：所有页面都透出同一张壁纸，正文区域也有白字（分区标题/片名/更多），
+     因此整屏保持足够压暗；上下略深以托住状态栏、工具栏与底部悬浮胶囊。自定义图片/GIF/视频不加载本层。 -->
 <shape xmlns:android="http://schemas.android.com/apk/res/android"
     android:shape="rectangle">
 
     <gradient
         android:angle="270"
-        android:centerColor="#1A000000"
-        android:centerY="0.34"
-        android:endColor="#66000000"
+        android:centerColor="#73000000"
+        android:centerY="0.5"
+        android:endColor="#8C000000"
         android:startColor="#8C000000"
         android:type="linear" />
 
