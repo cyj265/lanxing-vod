@@ -6,7 +6,6 @@ import android.animation.ValueAnimator;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
@@ -14,7 +13,6 @@ import android.graphics.Color;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
-import android.os.BatteryManager;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.provider.Settings;
@@ -126,7 +124,6 @@ import com.fongmi.android.tv.utils.PiP;
 import com.fongmi.android.tv.utils.ResUtil;
 import com.fongmi.android.tv.utils.Sniffer;
 import com.fongmi.android.tv.utils.Timer;
-import com.fongmi.android.tv.utils.Traffic;
 import com.fongmi.android.tv.utils.UrlUtil;
 import com.fongmi.android.tv.utils.Util;
 import com.fongmi.android.tv.utils.VodTheme;
@@ -169,12 +166,11 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private Clock mClock;
     private PiP mPiP;
     private Runnable mR1;
-    private Runnable mR2;
     private Runnable mR3;
     private Runnable mR4;
-    private Runnable mR5;
     private Runnable mR6;
-    private Runnable mR7;
+    private PlaybackOsdDelegate mOsd;
+    private EpisodeScrollDelegate mEpisodeScroll;
     private History mHistory;
     private String mPlayTitle = "";
     private VodTheme mTheme;
@@ -370,12 +366,11 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.swipeLayout.setEnabled(false);
         mClock = Clock.create();
         mR1 = this::hideControl;
-        mR2 = this::setTraffic;
         mR3 = this::setOrient;
         mR4 = this::showEmpty;
-        mR5 = this::scrollEpisode;
         mR6 = this::runLock;
-        mR7 = this::setOsd;
+        mOsd = new PlaybackOsdDelegate(this, mBinding, this::isFullscreen);
+        mEpisodeScroll = new EpisodeScrollDelegate(this, mBinding);
         mPiP = new PiP();
         checkDanmakuImg();
         setRecyclerView();
@@ -548,6 +543,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mBinding.quality.setItemAnimator(null);
         mBinding.quality.addItemDecoration(new SpaceItemDecoration(8));
         mBinding.quality.setAdapter(mQualityAdapter = new QualityAdapter(this));
+        mEpisodeScroll.setAdapter(mEpisodeAdapter);
         // 平板整屏剧照详情：选集、线路排成横向分带（TMDB 海报式布局），手机保持原样
         if (isLand()) setHorizontal(mBinding.flag);
     }
@@ -1593,11 +1589,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         onLock();
     }
 
-    private void scrollEpisode() {
-        if (isDestroyed() || mBinding == null || mEpisodeAdapter == null) return;
-        mBinding.episode.scrollToPosition(mEpisodeAdapter.getPosition());
-    }
-
     private void onRotate() {
         setR1Callback();
         if (isFullscreen()) exitFullscreen();
@@ -1761,7 +1752,7 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         setFullscreen(false);
         if (isLand() && !player().isPortrait()) setTransition();
         setRequestedOrientation(PlaybackOrientation.getExitFullscreenOrientation(isPort()));
-        mBinding.episode.postDelayed(mR5, 100);
+        mEpisodeScroll.schedule();
         mBinding.video.setLayoutParams(mFrameParams);
         mKeyDown.resetScale();
         App.post(mR3, 2000);
@@ -1782,14 +1773,13 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void showProgress() {
         mBinding.progress.getRoot().setVisibility(View.VISIBLE);
-        App.post(mR2, 0);
+        mOsd.startTraffic();
         hideError();
     }
 
     private void hideProgress() {
         mBinding.progress.getRoot().setVisibility(View.GONE);
-        App.removeCallbacks(mR2);
-        Traffic.reset();
+        mOsd.stopTraffic();
     }
 
     private void showError(String text) {
@@ -1838,11 +1828,11 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         setR1Callback();
         // 控制栏每次弹出都重取一次分辨率，避免尺寸回调早于元数据而被清掉
         updateTitle(null);
-        if (isFullscreen()) setOsd();
+        mOsd.refreshOsd();
     }
 
     private void hideControl() {
-        App.removeCallbacks(mR7);
+        mOsd.stopOsd();
         View root = mBinding.control.getRoot();
         if (root.getVisibility() == View.GONE) {
             App.removeCallbacks(mR1);
@@ -1858,32 +1848,6 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
 
     private void dismissDialogs() {
         for (Fragment fragment : getSupportFragmentManager().getFragments()) if (fragment instanceof DialogFragment dialog) dialog.dismiss();
-    }
-
-    private void setTraffic() {
-        Traffic.setSpeed(mBinding.progress.traffic);
-        App.post(mR2, 1000);
-    }
-
-    /** 横屏全屏才显示网速/电量：控制栏收起即停止刷新，避免后台空转 */
-    private void setOsd() {
-        App.removeCallbacks(mR7);
-        if (!isFullscreen() || !isVisible(mBinding.control.getRoot())) return;
-        Traffic.setSpeed(mBinding.control.speed);
-        setBattery();
-        App.post(mR7, 1000);
-    }
-
-    private void setBattery() {
-        Intent intent = registerReceiver(null, new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
-        int level = intent == null ? -1 : intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
-        int scale = intent == null ? -1 : intent.getIntExtra(BatteryManager.EXTRA_SCALE, -1);
-        if (level < 0 || scale <= 0) {
-            mBinding.control.battery.setVisibility(View.GONE);
-            return;
-        }
-        mBinding.control.battery.setVisibility(View.VISIBLE);
-        mBinding.control.battery.setLevel(level * 100 / scale);
     }
 
     private void setOrient() {
@@ -2489,8 +2453,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         Timer.get().reset();
         DanmakuApi.cancel();
         RefreshEvent.keep();
-        App.removeCallbacks(mR1, mR2, mR3, mR4, mR6, mR7);
-        if (mBinding != null && mBinding.episode != null) mBinding.episode.removeCallbacks(mR5);
+        App.removeCallbacks(mR1, mR3, mR4, mR6);
+        mOsd.release();
+        mEpisodeScroll.release();
         super.onDestroy();
     }
 }
