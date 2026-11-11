@@ -13,6 +13,7 @@ import androidx.annotation.Nullable;
 /**
  * 播放页电量屏显：手机状态栏样式的电池图标，替代原来的「88%」纯文字。
  * 只画图标不画数字，外框 + 正极帽 + 按电量比例填充，低于 20% 转红。
+ * 描边粗细与顶部控制栏的线框图标保持一致，避免同排出现两种视觉重量。
  */
 public class BatteryView extends View {
 
@@ -34,28 +35,31 @@ public class BatteryView extends View {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         float d = getResources().getDisplayMetrics().density;
-        setMeasuredDimension(Math.round(24 * d), Math.round(12 * d));
+        setMeasuredDimension(Math.round(25 * d), Math.round(14 * d));
     }
 
     @Override
     protected void onDraw(Canvas canvas) {
         float d = getResources().getDisplayMetrics().density;
+        float stroke = 2f * d;
         float bodyW = 20 * d;
-        float bodyH = 10 * d;
-        float capW = 2 * d;
-        float capH = 4 * d;
-        float pad = 1.8f * d;
+        float bodyH = 12 * d;
+        float capW = 2.5f * d;
+        float capH = 5 * d;
+        float pad = 2.5f * d;
 
         paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(1.2f * d);
-        paint.setColor(Color.argb(190, 255, 255, 255));
-        rect.set(0, 0, bodyW, bodyH);
-        canvas.drawRoundRect(rect, 1.5f * d, 1.5f * d, paint);
+        paint.setStrokeWidth(stroke);
+        paint.setColor(Color.WHITE);
+        // 描边以路径为中心，内缩半个线宽，避免外框被 View 边界裁切
+        float h = stroke / 2f;
+        rect.set(h, h, bodyW - h, bodyH - h);
+        canvas.drawRoundRect(rect, 2f * d, 2f * d, paint);
 
         paint.setStyle(Paint.Style.FILL);
         canvas.drawRect(bodyW, (bodyH - capH) / 2f, bodyW + capW, (bodyH + capH) / 2f, paint);
 
-        paint.setColor(level <= 20 ? Color.rgb(0xE5, 0x53, 0x53) : Color.argb(225, 255, 255, 255));
+        paint.setColor(level <= 20 ? Color.rgb(0xE5, 0x53, 0x53) : Color.WHITE);
         float innerW = (bodyW - pad * 2) * Math.max(0, level) / 100f;
         if (innerW > 0) canvas.drawRect(pad, pad, pad + innerW, bodyH - pad, paint);
     }

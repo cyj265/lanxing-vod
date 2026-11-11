@@ -59,13 +59,13 @@
 
         </androidx.appcompat.widget.LinearLayoutCompat>
 
-        <!-- 网速 + 电量：只在横屏全屏时出现，竖屏详情态不占位 -->
+        <!-- 网速 + 电量：只在横屏全屏时出现，竖屏详情态不占位。与右侧线框图标同白度、同间距 -->
         <androidx.appcompat.widget.LinearLayoutCompat
             android:id="@+id/osd"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center_vertical"
-            android:layout_marginEnd="4dp"
+            android:layout_marginEnd="12dp"
             android:gravity="center_vertical"
             android:orientation="horizontal"
             android:visibility="gone"
@@ -76,7 +76,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:fontFeatureSettings="tnum"
-                android:textColor="@color/white_70"
+                android:textColor="@color/white"
                 android:textSize="12sp"
                 tools:text="1.2 MB/s" />
 
@@ -84,7 +84,7 @@
                 android:id="@+id/battery"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
+                android:layout_marginStart="8dp"
                 tools:visibility="visible" />
 
         </androidx.appcompat.widget.LinearLayoutCompat>
