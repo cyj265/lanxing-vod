@@ -53,7 +53,14 @@ public class FolderActivity extends BaseActivity {
     @Override
     protected void initView(Bundle savedInstanceState) {
         setSupportActionBar(mBinding.toolbar);
-        Class type = getResult().getTypes().get(0);
+        // 进程被回收后恢复任务栈、或 Intent extras 被系统/部分 ROM 丢弃时，result 可能为 null；
+        // 此时直接关闭页面回到上一页，避免启动即崩（Bugly #7010）
+        Result result = getResult();
+        if (result == null || result.getTypes().isEmpty()) {
+            finish();
+            return;
+        }
+        Class type = result.getTypes().get(0);
         setTitle(type.getTypeName());
         getSupportFragmentManager().beginTransaction().replace(R.id.container, FolderFragment.newInstance(getKey(), type, 8), FRAGMENT_TAG).commit();
     }
@@ -70,7 +77,8 @@ public class FolderActivity extends BaseActivity {
 
     @Override
     protected void onBackInvoked() {
-        if (getFragment().canBack()) getFragment().goBack();
+        FolderFragment fragment = getFragment();
+        if (fragment != null && fragment.canBack()) fragment.goBack();
         else super.onBackInvoked();
     }
 }
