@@ -5,6 +5,9 @@ import static android.widget.ImageView.ScaleType.FIT_CENTER;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Rect;
+import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.text.TextUtils;
 import android.util.Base64;
@@ -113,7 +116,11 @@ public class ImgUtil {
         String url = urls.get(index);
         view.setScaleType(CENTER_CROP);
         try {
-            Drawable current = view.getDrawable();
+            // 不能把 view.getDrawable() 原样交给 Glide 当 placeholder：那个实例由上一次
+            // Glide 请求管理，新请求 into() 时会取消旧请求并回收其位图，而 View 此刻仍在
+            // onDraw 里绘制它，触发 "Canvas: trying to use a recycled bitmap" 及
+            // GifDrawable 空帧 NPE。这里复制成一张独立快照，生命周期与 Glide 完全解耦。
+            Drawable placeholder = snapshot(view);
             RequestBuilder<Drawable> builder = Glide.with(view).load(getUrl(url)).listener(new RequestListener<Drawable>() {
                 @Override
                 public boolean onLoadFailed(@Nullable GlideException e, Object model, @NonNull Target<Drawable> target, boolean isFirstResource) {
@@ -128,10 +135,38 @@ public class ImgUtil {
                 }
             });
             // 详情剧照会从列表小图换成豆瓣大图，用当前画面做占位淡入，避免硬切一下
-            if (current != null) builder = builder.placeholder(current);
+            if (placeholder != null) builder = builder.placeholder(placeholder);
             builder.transition(DrawableTransitionOptions.withCrossFade(220)).centerCrop().into(view);
         } catch (Throwable e) {
             App.post(() -> loadStep(text, urls, index + 1, view));
+        }
+    }
+
+    /** 把 View 当前画面复制成独立位图作占位，限制在 720px 内，避免整屏 Bitmap 的内存开销 */
+    private static Drawable snapshot(ImageView view) {
+        Drawable current = view.getDrawable();
+        if (current == null) return null;
+        int w = view.getWidth();
+        int h = view.getHeight();
+        if (w <= 0 || h <= 0) {
+            w = current.getIntrinsicWidth();
+            h = current.getIntrinsicHeight();
+        }
+        if (w <= 0 || h <= 0) return null;
+        float scale = Math.min(1f, 720f / Math.max(w, h));
+        int bw = Math.max(1, Math.round(w * scale));
+        int bh = Math.max(1, Math.round(h * scale));
+        try {
+            Bitmap bitmap = Bitmap.createBitmap(bw, bh, Bitmap.Config.ARGB_8888);
+            Canvas canvas = new Canvas(bitmap);
+            Rect bounds = current.copyBounds();
+            current.setBounds(0, 0, bw, bh);
+            current.draw(canvas);
+            current.setBounds(bounds);
+            return new BitmapDrawable(view.getResources(), bitmap);
+        } catch (Throwable e) {
+            // 当前画面本身可能已被回收（例如 GifDrawable 空帧），此时放弃占位即可
+            return null;
         }
     }
 

@@ -7,11 +7,14 @@ import android.graphics.Paint;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Shader;
+import android.graphics.drawable.Drawable;
 import android.util.AttributeSet;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.AppCompatImageView;
+
+import com.fongmi.android.tv.utils.AppLog;
 
 /**
  * 底部渐隐的 ImageView。
@@ -49,17 +52,40 @@ public class FadeImageView extends AppCompatImageView {
     @Override
     protected void onDraw(Canvas canvas) {
         if (!fadeEnabled) {
-            super.onDraw(canvas);
+            try {
+                super.onDraw(canvas);
+            } catch (RuntimeException e) {
+                dropBrokenDrawable(e);
+            }
             return;
         }
         int width = getWidth();
         int height = getHeight();
         if (width <= 0 || height <= 0) return;
         int save = canvas.saveLayer(0, 0, width, height, null);
-        super.onDraw(canvas);
-        int start = (int) (height * fadeStart);
-        paint.setShader(new LinearGradient(0, start, 0, height, 0xFFFFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP));
-        canvas.drawRect(0, 0, width, height, paint);
-        canvas.restoreToCount(save);
+        try {
+            super.onDraw(canvas);
+            int start = (int) (height * fadeStart);
+            paint.setShader(new LinearGradient(0, start, 0, height, 0xFFFFFFFF, 0x00FFFFFF, Shader.TileMode.CLAMP));
+            canvas.drawRect(0, 0, width, height, paint);
+        } catch (RuntimeException e) {
+            dropBrokenDrawable(e);
+        } finally {
+            canvas.restoreToCount(save);
+        }
+    }
+
+    /**
+     * Glide 新旧请求交接时可能回收 View 仍在绘制的位图（Canvas: trying to use a recycled
+     * bitmap / GifDrawable 空帧 NPE）。ImgUtil 已改为独立快照占位，这里再兜一层：
+     * 摘掉失效画面让下一帧重绘，避免整页崩溃（Bugly #7014 / #3035 / #3037）。
+     */
+    private void dropBrokenDrawable(RuntimeException e) {
+        AppLog.e(e);
+        Drawable broken = getDrawable();
+        // 只在坏 Drawable 还没被 Glide 的新资源替换掉时才摘除，避免误清新图
+        post(() -> {
+            if (getDrawable() == broken) setImageDrawable(null);
+        });
     }
 }

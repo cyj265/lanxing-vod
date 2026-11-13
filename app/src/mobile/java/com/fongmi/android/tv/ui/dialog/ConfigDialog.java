@@ -128,7 +128,7 @@ public class ConfigDialog extends BaseAlertDialog {
         String name = binding.name.getText().toString().trim();
         if (edit) Config.find(ori, type).url(url).name(name).update();
         if (url.isEmpty()) Config.delete(ori, type);
-        ((ConfigListener) requireParentFragment()).setConfig(Config.find(url, type));
+        notifyConfig(Config.find(url, type));
         dismiss();
     }
 
@@ -136,7 +136,18 @@ public class ConfigDialog extends BaseAlertDialog {
 
     private void setConfig(Uri uri) {
         if (!isAdded()) return;
-        ((ConfigListener) requireParentFragment()).setConfig(Config.find(UrlUtil.toLocalUrl(uri), type));
+        notifyConfig(Config.find(UrlUtil.toLocalUrl(uri), type));
         dismiss();
+    }
+
+    /**
+     * 宿主 Fragment 不一定实现 ConfigListener（例如「设置 → 界面」的壁纸配置入口），
+     * 原先直接强转 requireParentFragment() 会抛 ClassCastException（Bugly #4030 / #7012）。
+     * 改为按 parent → activity 顺序安全分发，两者都不是监听器时静默跳过而不是崩溃。
+     */
+    private void notifyConfig(Config config) {
+        Fragment parent = getParentFragment();
+        if (parent instanceof ConfigListener) ((ConfigListener) parent).setConfig(config);
+        else if (getActivity() instanceof ConfigListener) ((ConfigListener) getActivity()).setConfig(config);
     }
 }

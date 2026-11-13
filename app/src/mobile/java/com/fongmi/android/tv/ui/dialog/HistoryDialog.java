@@ -144,12 +144,16 @@ public class HistoryDialog extends BaseBottomSheetDialog implements ConfigAdapte
         Callback callback = new Callback() {
             @Override
             public void success() {
+                // VodConfig/LiveConfig.load 通过 App.post 回调，不绑定 Fragment 生命周期；
+                // 弹窗关闭后 getString() 会抛 "not attached to a context"（Bugly #4032 / #2034）
+                if (!isAdded() || binding == null) return;
                 Notify.show(getString(R.string.refresh_success));
                 reloadList();
             }
 
             @Override
             public void error(String msg) {
+                if (!isAdded()) return;
                 Notify.show(msg);
             }
         };
@@ -187,6 +191,7 @@ public class HistoryDialog extends BaseBottomSheetDialog implements ConfigAdapte
         Callback callback = new Callback() {
             @Override
             public void success() {
+                if (!isAdded() || binding == null) return;
                 reloadList();
             }
         };

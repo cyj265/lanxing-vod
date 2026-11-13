@@ -15,9 +15,11 @@ import androidx.viewbinding.ViewBinding;
 
 import com.fongmi.android.tv.R;
 import com.fongmi.android.tv.api.config.WallConfig;
+import com.fongmi.android.tv.bean.Config;
 import com.fongmi.android.tv.databinding.FragmentSettingUiBinding;
 import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.impl.Callback;
+import com.fongmi.android.tv.impl.ConfigListener;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.Setting;
 import com.fongmi.android.tv.ui.base.BaseFragment;
@@ -31,7 +33,7 @@ import com.fongmi.android.tv.ui.dialog.GlassAlertDialogBuilder;
 import java.util.ArrayList;
 import java.util.List;
 
-public class SettingUiFragment extends BaseFragment {
+public class SettingUiFragment extends BaseFragment implements ConfigListener {
 
     private FragmentSettingUiBinding mBinding;
     private String[] walls;
@@ -123,6 +125,40 @@ public class SettingUiFragment extends BaseFragment {
                         ConfigDialog.create().wall().show(this);
                     }
                 }).show();
+    }
+
+    /**
+     * 「设置 → 界面 → 壁纸 → 订阅壁纸地址」会打开 wall 类型的 ConfigDialog。
+     * 本页原先未实现 ConfigListener，导致弹窗内硬强转崩溃（Bugly #4030 / #7012）。
+     * 补齐实现，让订阅地址真正被加载，而不只是不崩。
+     */
+    @Override
+    public void setConfig(Config config) {
+        if (!isAdded()) return;
+        if (config.getUrl().startsWith("file")) PermissionUtil.requestFile(this, granted -> loadWall(config));
+        else loadWall(config);
+    }
+
+    private void loadWall(Config config) {
+        Setting.putWall(0);
+        WallConfig.load(config, new Callback() {
+            @Override
+            public void start() {
+                if (isAdded()) Notify.progress(requireActivity());
+            }
+
+            @Override
+            public void success() {
+                Notify.dismiss();
+                if (isAdded()) setWallText();
+            }
+
+            @Override
+            public void error(String msg) {
+                Notify.dismiss();
+                Notify.show(msg);
+            }
+        });
     }
 
     private void pickWall() {
