@@ -42,6 +42,10 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
     private Context appCtx;
     private long lastSearchMs;
 
+    // 持有同一 Runnable 引用，弹窗销毁时才能 remove 掉尚未执行的看门狗回调
+    private final Runnable mCheckAttached = this::checkAttached;
+    private final Runnable mCheckDevices = this::checkDevices;
+
     public static DLNACastManager get() {
         return Loader.INSTANCE;
     }
@@ -133,11 +137,13 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
     }
 
     private void notifyAdded(Device bean) {
-        if (deviceListener != null) App.post(() -> deviceListener.onDeviceAdded(bean));
+        DeviceListener listener = deviceListener;
+        if (listener != null) App.post(() -> listener.onDeviceAdded(bean));
     }
 
     private void notifyRemoved(Device bean) {
-        if (deviceListener != null) App.post(() -> deviceListener.onDeviceRemoved(bean));
+        DeviceListener listener = deviceListener;
+        if (listener != null) App.post(() -> listener.onDeviceRemoved(bean));
     }
 
     public void init(Context context) {
@@ -158,8 +164,8 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
             }
         }
         bind(context.getApplicationContext());
-        App.post(this::checkAttached, 5000);
-        App.post(this::checkDevices, 12000);
+        App.post(mCheckAttached, 5000);
+        App.post(mCheckDevices, 12000);
     }
 
     private void checkAttached() {
@@ -222,9 +228,13 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
         return upnpService != null ? upnpService.getControlPoint() : null;
     }
 
-    public void release(Context context) {
+    /** 弹窗关闭时调用：解除 jupnp 绑定，让 DLNACastService.onDestroy() 释放组播锁并 shutdown。
+     *  用 init() 时缓存的 applicationContext，避免 Fragment 已 detach 后取不到 Context。可重复调用。 */
+    public void release() {
+        App.removeCallbacks(mCheckAttached, mCheckDevices);
+        deviceListener = null;
         detach();
-        unbind(context.getApplicationContext());
+        if (appCtx != null) unbind(appCtx);
     }
 
     private void bind(Context context) {
@@ -234,7 +244,11 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
 
     private void unbind(Context context) {
         if (!bound) return;
-        context.unbindService(this);
+        try {
+            context.unbindService(this);
+        } catch (Throwable ignore) {
+            // 服务可能已被系统回收，重复解绑会抛 IllegalArgumentException
+        }
         bound = false;
     }
 
@@ -247,7 +261,12 @@ public class DLNACastManager extends DefaultRegistryListener implements ServiceC
     }
 
     private void detach() {
-        if (upnpService != null) upnpService.getRegistry().removeListener(this);
+        if (upnpService == null) return;
+        try {
+            upnpService.getRegistry().removeListener(this);
+        } catch (Throwable ignore) {
+            // 服务已 shutdown 时 Registry 不可用
+        }
         upnpService = null;
     }
 

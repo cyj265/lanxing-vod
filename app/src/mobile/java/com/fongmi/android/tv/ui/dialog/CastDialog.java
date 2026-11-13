@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.ui.dialog;
 
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.os.Build;
@@ -64,6 +65,8 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
     private boolean fm;
 
     private final Runnable mEmpty = this::showEmpty;
+    private final Runnable mSearch2s = () -> DLNACastManager.get().search();
+    private final Runnable mSearch4s = () -> DLNACastManager.get().search();
 
     private static final String PERM_LOCAL_NETWORK = "android.permission.ACCESS_LOCAL_NETWORK";
 
@@ -223,8 +226,8 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
             DLNACastManager.get().search();
             adapter.sort(DLNACastManager.get().getRegistered(), this::setRecyclerVisible);
         });
-        App.post(() -> DLNACastManager.get().search(), 2000);
-        App.post(() -> DLNACastManager.get().search(), 4500);
+        App.post(mSearch2s, 2000);
+        App.post(mSearch4s, 4500);
         showLoading();
     }
 
@@ -240,17 +243,20 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
 
     @Override
     public void onDeviceAdded(Device device) {
+        if (!isAdded() || binding == null) return;
         binding.recycler.setVisibility(View.VISIBLE);
         adapter.sort(device);
     }
 
     @Override
     public void onDeviceRemoved(Device device) {
+        if (!isAdded() || binding == null) return;
         adapter.remove(device);
     }
 
     @Override
     public void onFind(Device device) {
+        if (!isAdded() || binding == null) return;
         binding.recycler.setVisibility(View.VISIBLE);
         adapter.sort(device);
     }
@@ -280,12 +286,27 @@ public class CastDialog extends BaseAlertDialog implements DeviceAdapter.OnClick
         return false;
     }
 
+    /** 弹窗关闭后必须真正解绑 DLNA 服务：否则 jupnp 的 SSDP 线程与 Wifi 组播锁
+     *  会一直存活到进程被杀（退后台、锁屏仍在占用）。onDismiss / onDestroyView 双触发，幂等。
+     *  控制层 DLNACast 走独立 OkHttp SOAP，不依赖 jupnp，解绑不会打断已建立的投屏。 */
+    private void releaseCast() {
+        App.removeCallbacks(mEmpty, mSearch2s, mSearch4s);
+        DLNACastManager.get().setDeviceListener(null);
+        DLNACastManager.get().release();
+    }
+
+    @Override
+    public void onDismiss(@NonNull DialogInterface dialog) {
+        releaseCast();
+        super.onDismiss(dialog);
+    }
+
     @Override
     public void onDestroyView() {
         super.onDestroyView();
-        App.removeCallbacks(mEmpty);
-        DLNACastManager.get().setDeviceListener(null);
+        releaseCast();
         scanTask.stop();
+        binding = null;
     }
 
     private final ActivityResultLauncher<Intent> launcher = registerForActivityResult(new ActivityResultContracts.StartActivityForResult(), result -> {
