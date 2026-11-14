@@ -135,6 +135,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Random;
 
 public class VideoActivity extends PlaybackActivity implements Clock.Callback, CustomKeyDown.Listener, ControlDialog.Listener, ParseDialog.Listener, VodPlaybackHost, FlagAdapter.OnClickListener, EpisodeAdapter.OnClickListener, QualityAdapter.OnClickListener, QuickAdapter.OnClickListener, CastDialog.Listener, InfoDialog.Listener {
 
@@ -177,6 +178,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     private String mTypeName;
     private boolean mDeferredShown;
     private ValueAnimator mDeferredAnimator;
+    /** 记住上次进详情页挑中的背景，保证连续两次进入不撞同一张；不做定时轮播，零后台开销 */
+    private static volatile String sLastBackdropName = "";
+    private static volatile String sLastBackdropUrl = "";
     /** 详情态/播放态的目标布局，过渡期间以它为准，不靠 View 可见性反复判定 */
     private boolean mDetailMode;
     /** 过渡期间锁定的播放器高度：动画终点和结束态布局共用，避免差一截 */
@@ -1136,10 +1140,13 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     /**
-     * 详情页剧照分级加载（手机整屏、平板视频窗内）：
+     * 详情页背景分级加载（手机整屏、平板视频窗内）：
      * ① 先用站源图（剥离缩略参数后的原图优先，失败回退原始 URL）保证立即有画面；
-     * ② 后台按片名查豆瓣 /l/ 大图（≈1080×1914，正好全屏），命中后替换；
-     * ③ 任何一级失败都由 ImgUtil.loadWithFallback 自动回退，最终兜底文字占位，不会黑屏。
+     * ② 后台按片名查豆瓣候选图（高清海报 + 竖版宣传图），命中后随机挑一张替换；
+     * ③ 只在「进入详情页」时挑一次，不做定时轮播：无 Handler 轮询、无后台换图、无重复解码。
+     *    候选清单在 Douban 里缓存 24h，同一部剧 24h 内只发一次图库请求；
+     *    连续两次进入会排除上次那张，做到「这次这张、下次另一张」。
+     * ④ 任何一级失败都由 ImgUtil.loadWithFallback 自动回退，最终兜底文字占位，不会黑屏。
      */
     private void loadBackdrop(String name, String year, String pic) {
         if (mBinding == null || mBinding.deferredCover == null) return;
@@ -1148,13 +1155,18 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         if (!TextUtils.isEmpty(original) && !original.equals(pic)) base.add(original);
         if (!TextUtils.isEmpty(pic)) base.add(pic);
         ImgUtil.loadWithFallback(name, base, mBinding.deferredCover);
-        Douban.getLargePicAsync(name, year, large -> {
+        Douban.getBackdropsAsync(name, year, urls -> {
             if (mBinding == null || mBinding.deferredCover == null) return;
             // 已经起播、或期间切了片，就不要再替换背景
             if (mPlayConfirmed || !name.equals(getVodName())) return;
-            if (TextUtils.isEmpty(large)) return;
+            if (urls == null || urls.isEmpty()) return;
+            List<String> pool = new ArrayList<>(urls);
+            if (pool.size() > 1 && name.equals(sLastBackdropName)) pool.remove(sLastBackdropUrl);
+            String picked = pool.get(new Random().nextInt(pool.size()));
+            sLastBackdropName = name;
+            sLastBackdropUrl = picked;
             List<String> chain = new ArrayList<>();
-            chain.add(large);
+            chain.add(picked);
             chain.addAll(base);
             ImgUtil.loadWithFallback(name, chain, mBinding.deferredCover);
         });

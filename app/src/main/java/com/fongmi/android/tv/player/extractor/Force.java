@@ -13,6 +13,7 @@ import com.forcetech.Util;
 import com.github.catvod.net.OkHttp;
 import com.google.common.net.HttpHeaders;
 
+import java.io.File;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -20,11 +21,33 @@ import java.util.regex.Pattern;
 public class Force implements Source.Extractor, ServiceConnection {
 
     private static final Pattern PATTERN = Pattern.compile("(?i)(p[2-9]p|mitv)");
+    private static volatile Boolean sNativeAvailable;
     private final HashSet<String> set = new HashSet<>();
+
+    /**
+     * forcetech-release.aar 的 jni/ 只有 armeabi-v7a 的 libmitv.so / libp2p.so / libp3p.so，
+     * 而本工程只出 arm64_v8a 包（abiFilters "arm64-v8a"），这些 32 位库不会进 APK 的 lib/。
+     * SDK 内部把 System.loadLibrary 的失败静默吞掉，服务照常绑定；等退出播放时
+     * PxPService / MainActivity 的 onUnbind 无条件调 ForceTV.stop()，native 实现缺失
+     * 直接抛 UnsatisfiedLinkError（Bugly #7016 / #7018）。checkLibrary() 把 assets 里的
+     * libmitv.so 拷到 cache 也救不了：System.loadLibrary 不查 cache，且那是 32 位 ELF。
+     * <p>
+     * 与其改二进制 aar，不如在入口判断 native 库是否真的可用：不可用时压根不绑定服务，
+     * 让这些源按普通 URL 交给播放器（原本也播不了），把「无效且闪退」变成「无效但不崩」。
+     * 若日后 aar 换成 arm64-v8a 的 so，去掉这里的 is64Bit 判断即可自动重新启用。
+     */
+    private static boolean nativeAvailable() {
+        if (sNativeAvailable != null) return sNativeAvailable;
+        String dir = App.get().getApplicationInfo().nativeLibraryDir;
+        sNativeAvailable = dir != null
+                && new File(dir, System.mapLibraryName("mitv")).isFile()
+                && !android.os.Process.is64Bit();
+        return sNativeAvailable;
+    }
 
     @Override
     public boolean match(Uri uri) {
-        return PATTERN.matcher(UrlUtil.scheme(uri)).find();
+        return nativeAvailable() && PATTERN.matcher(UrlUtil.scheme(uri)).find();
     }
 
     private void init(String scheme) {
