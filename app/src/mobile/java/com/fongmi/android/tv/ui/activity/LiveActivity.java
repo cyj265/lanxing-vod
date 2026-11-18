@@ -1196,9 +1196,13 @@ public class LiveActivity extends PlaybackActivity implements CustomKeyDown.List
     public void setLive(Live item) {
         if (item.isSelected()) item.getGroups().clear();
         LiveConfig.get().setHome(item);
-        player().reset();
-        player().clear();
-        player().stop();
+        // 切台可能在服务尚未连接/已解绑时到达，player() 直接取 mService.player() 会 NPE
+        // （Bugly #2038 / #4034）。此时跳过播放器重置，其余 UI 与配置刷新照常执行。
+        if (service() != null && service().player() != null) {
+            player().reset();
+            player().clear();
+            player().stop();
+        }
         resetAdapter();
         hideControl();
         mLive.reset();

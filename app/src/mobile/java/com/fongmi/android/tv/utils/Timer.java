@@ -63,7 +63,14 @@ public class Timer {
     private void sendPause() {
         Intent intent = new Intent(App.get(), PlaybackService.class);
         intent.setAction(ActionEvent.PAUSE);
-        App.get().startService(intent);
+        // 定时回调触发时 App 可能已退到后台，后台启动前台服务被系统拒绝（Bugly #7021）
+        try {
+            App.get().startService(intent);
+        } catch (RuntimeException e) {
+            // 只吞后台启动前台服务的系统限制（API31+，按类名判断避免 minSdk 24 直接引用）
+            boolean denied = e.getClass().getName().contains("ForegroundServiceStartNotAllowedException");
+            if (!denied) throw e;
+        }
     }
 
     public void delay() {

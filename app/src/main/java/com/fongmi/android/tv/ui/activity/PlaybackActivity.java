@@ -268,7 +268,14 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     }
 
     private void bindPlaybackService() {
-        startService(new Intent(this, PlaybackService.class));
+        // Android 12+ 后台启动前台服务会被系统拒绝，bindService 仍会拉起服务，故吞掉该异常（Bugly #7021）
+        try {
+            startService(new Intent(this, PlaybackService.class));
+        } catch (RuntimeException e) {
+            // 只吞后台启动前台服务的系统限制（API31+，按类名判断避免 minSdk 24 直接引用）
+            boolean denied = e.getClass().getName().contains("ForegroundServiceStartNotAllowedException");
+            if (!denied) throw e;
+        }
         bindService(new Intent(this, PlaybackService.class).setAction(PlaybackService.LOCAL_BIND_ACTION), this, BIND_AUTO_CREATE);
         buildControllerAsync();
         bound = true;
