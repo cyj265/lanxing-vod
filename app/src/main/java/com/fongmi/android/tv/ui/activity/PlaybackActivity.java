@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.Observer;
+import androidx.lifecycle.ViewModelProvider;
 import androidx.media3.common.C;
 import androidx.media3.common.MediaMetadata;
 import androidx.media3.common.Player;
@@ -36,6 +37,7 @@ import com.fongmi.android.tv.playback.PlaybackIntent;
 import com.fongmi.android.tv.player.PlayerManager;
 import com.fongmi.android.tv.player.media.PlaySpec;
 import com.fongmi.android.tv.service.PlaybackService;
+import com.fongmi.android.tv.service.PlaybackServiceConnection;
 import com.fongmi.android.tv.setting.DanmakuSetting;
 import com.fongmi.android.tv.setting.PlayerSetting;
 import com.fongmi.android.tv.setting.SubtitleSetting;
@@ -56,11 +58,11 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     private ListenableFuture<MediaController> mControllerFuture;
     private MediaController mController;
     private PlaybackService mService;
+    private PlaybackServiceConnection serviceConnection;
     private boolean initialized;
     private boolean audioOnly;
     private boolean scrubbing;
     private boolean redirect;
-    private boolean bound;
     private boolean stop;
     private boolean lock;
 
@@ -268,17 +270,11 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     }
 
     private void bindPlaybackService() {
-        // Android 12+ 后台启动前台服务会被系统拒绝，bindService 仍会拉起服务，故吞掉该异常（Bugly #7021）
-        try {
-            startService(new Intent(this, PlaybackService.class));
-        } catch (RuntimeException e) {
-            // 只吞后台启动前台服务的系统限制（API31+，按类名判断避免 minSdk 24 直接引用）
-            boolean denied = e.getClass().getName().contains("ForegroundServiceStartNotAllowedException");
-            if (!denied) throw e;
-        }
-        bindService(new Intent(this, PlaybackService.class).setAction(PlaybackService.LOCAL_BIND_ACTION), this, BIND_AUTO_CREATE);
+        // 绑定状态交给 ViewModel 持有，跨 Activity 重建复用，消除 mService 的 null 窗口（Bugly #2038/#4034）
+        // startService 的后台启动限制兜底（#7021）已随绑定逻辑一起移入 PlaybackServiceConnection
+        serviceConnection = new ViewModelProvider(this).get(PlaybackServiceConnection.class);
+        serviceConnection.attach(this);
         buildControllerAsync();
-        bound = true;
     }
 
     private void buildControllerAsync() {
@@ -479,10 +475,9 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
     }
 
     private void releaseBinding() {
-        if (!bound) return;
-        bound = false;
         if (mService != null) mService.removePlayerCallback(mPlayerCallback);
-        unbindService(this);
+        if (serviceConnection != null) serviceConnection.detach(this);
+        serviceConnection = null;
         mService = null;
     }
 
@@ -606,6 +601,7 @@ public abstract class PlaybackActivity extends BaseActivity implements MediaCont
         super.onResume();
         claimBinding();
         setRedirect(false);
+        if (!initialized) activateService();
         dispatchPendingObservers();
         resumePlayback();
     }
