@@ -58,6 +58,12 @@ public final class ExoPlayerEffect implements PlayerEffect {
         else videoEffectController.clear(player);
     }
 
+    /** 视频输入格式就绪/变化时重新判定特效（如从 1080p 切到 4K） */
+    public void onVideoFormatChanged(Format format) {
+        if (player == null) return;
+        videoEffectController.onVideoFormatChanged(player, getVideoProfile(), format);
+    }
+
     @Override
     public void previewVideoEffect(boolean original) {
         if (previewVideoEffect == original) return;

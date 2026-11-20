@@ -1,11 +1,13 @@
 package com.fongmi.android.tv.player.exo;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.media3.common.Format;
 import androidx.media3.common.MediaItem;
 import androidx.media3.common.PlaybackException;
 import androidx.media3.common.Player;
 import androidx.media3.common.Tracks;
+import androidx.media3.exoplayer.DecoderReuseEvaluation;
 import androidx.media3.exoplayer.ExoPlayer;
 import androidx.media3.exoplayer.analytics.AnalyticsListener;
 import androidx.media3.exoplayer.audio.AudioSink;
@@ -48,6 +50,12 @@ public class ExoPlayerEngine implements PlayerEngine, AnalyticsListener {
     @Override
     public void onTracksChanged(@NonNull EventTime eventTime, @NonNull Tracks tracks) {
         effect.applyVideoEffect();
+    }
+
+    @Override
+    public void onVideoInputFormatChanged(@NonNull EventTime eventTime, @NonNull Format format, @Nullable DecoderReuseEvaluation decoderReuseEvaluation) {
+        // 视频格式确定/切换时重新判定特效：4K 自动跳过 GL 后处理，避免帧处理失败
+        effect.onVideoFormatChanged(format);
     }
 
     @Override
