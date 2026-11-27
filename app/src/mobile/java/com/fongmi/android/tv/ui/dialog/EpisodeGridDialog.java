@@ -111,7 +111,11 @@ public class EpisodeGridDialog extends BaseBottomSheetDialog {
         @NonNull
         @Override
         public Fragment createFragment(int position) {
-            return EpisodeFragment.newInstance(spanCount, episodes.subList(position * itemCount, Math.min(position * itemCount + itemCount, episodes.size())));
+            int size = episodes == null ? 0 : episodes.size();
+            int from = Math.min(position * itemCount, size);
+            int to = Math.min(from + itemCount, size);
+            if (from >= to) return EpisodeFragment.newInstance(spanCount, new ArrayList<>());
+            return EpisodeFragment.newInstance(spanCount, episodes.subList(from, to));
         }
 
         @Override

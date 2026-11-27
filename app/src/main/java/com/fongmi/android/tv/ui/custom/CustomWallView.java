@@ -1,6 +1,7 @@
 package com.fongmi.android.tv.ui.custom;
 
 import android.content.Context;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.Drawable;
@@ -21,6 +22,7 @@ import androidx.media3.ui.PlayerView;
 import androidx.palette.graphics.Palette;
 
 import com.fongmi.android.tv.R;
+import com.fongmi.android.tv.utils.AppLog;
 import com.fongmi.android.tv.databinding.ViewWallBinding;
 import com.fongmi.android.tv.event.ConfigEvent;
 import com.fongmi.android.tv.event.RefreshEvent;
@@ -110,8 +112,15 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
     }
 
     private void loadRes(int resId) {
-        binding.image.setImageResource(resId);
-        setScrim(true);
+        try {
+            if (resId <= 0) throw new Resources.NotFoundException("invalid wall resId=" + resId);
+            binding.image.setImageResource(resId);
+            setScrim(true);
+        } catch (Exception e) {
+            AppLog.e(e);
+            binding.image.setImageResource(R.drawable.wallpaper_1);
+            setScrim(true);
+        }
     }
 
     /** 内置壁纸配色偏亮，压一层渐变暗色保证文字可读；自定义壁纸/视频不压，尊重原图 */
@@ -205,7 +214,7 @@ public class CustomWallView extends FrameLayout implements DefaultLifecycleObser
     }
 
     private boolean isBuiltIn(int wall, int type) {
-        return type == TYPE_RES && wall > 0 && wall < WALL_PAPERS.length;
+        return type == TYPE_RES && wall > 0 && wall < WALL_PAPERS.length && WALL_PAPERS[wall] != 0;
     }
 
     @Override

@@ -176,7 +176,11 @@ public class Platform extends Python.Platform {
     private void loadNativeLibs() throws JSONException {
         String pythonVer = buildJson.getString("python_version");
         for (String lib : new String[]{"crypto_chaquopy", "ssl_chaquopy", "sqlite3_chaquopy", "python" + pythonVer, "chaquopy_java"}) {
-            System.loadLibrary(lib);
+            try {
+                System.loadLibrary(lib);
+            } catch (UnsatisfiedLinkError e) {
+                throw new IllegalStateException("Failed to load native lib " + lib, e);
+            }
         }
     }
 }

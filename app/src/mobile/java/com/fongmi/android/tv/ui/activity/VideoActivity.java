@@ -428,6 +428,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     }
 
     private void triggerAction(View target) {
+        // 全屏/画中画下不响应竖屏详情区的快搜/设置/收藏等操作，只由全屏控制条接管
+        if (isFullscreen() || isInPictureInPictureMode()) return;
         // 同一个按钮 300ms 内只放行一次：收藏是 toggle，重复触发会「加入→取消」互相抵消，
         // 表现就是「图标没变化，却提示已取消收藏」。
         long now = SystemClock.uptimeMillis();
@@ -451,6 +453,9 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
     /** 用屏幕绝对坐标做命中测试，避开滚动偏移与各层坐标系换算 */
     private View findActionAt(int x, int y) {
         if (mBinding == null) return null;
+        // 全屏/画中画下 video 铺满整屏，竖屏详情按钮只是被盖住但 visibility 仍为 VISIBLE，
+        // 按绝对坐标命中会把点播放器的手势误判成快搜/设置等操作。全屏时这些按钮不参与兜底。
+        if (isFullscreen() || isInPictureInPictureMode()) return null;
         View[] views = {
                 mBinding.deferredPlay, mBinding.keepBtn, mBinding.quickBtn,
                 mBinding.castBtn, mBinding.settingBtn
@@ -881,7 +886,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         // 注意：detailActions 是 detailContent（垂直 LinearLayout）的子 View，
         // 对它调用 bringToFront() 会把它挪到子 View 末尾（选集列表之后）而不是只改层级 ——
         // 四个按钮会整行从首屏消失。按钮的点击由 Activity 层兜底保证，这里只确保可见。
-        if (mBinding.detailActions != null) mBinding.detailActions.setVisibility(View.VISIBLE);
+        // 全屏/画中画下保持隐藏，避免起播流程重新把竖屏按钮行显示出来
+        if (mBinding.detailActions != null) mBinding.detailActions.setVisibility(isFullscreen() || isInPictureInPictureMode() ? View.GONE : View.VISIBLE);
         for (View button : new View[]{mBinding.deferredPlay, mBinding.keepBtn, mBinding.quickBtn, mBinding.castBtn, mBinding.settingBtn}) {
             if (button == null) continue;
             button.setEnabled(true);
@@ -1756,6 +1762,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         setRotate(player().isPortrait());
         mKeyDown.resetScale();
         App.post(mR3, 2000);
+        // 竖屏详情按钮行（快搜/收藏/投屏/设置）不参与全屏显示
+        if (mBinding.detailActions != null) mBinding.detailActions.setVisibility(View.GONE);
         hideControl();
     }
 
@@ -1769,6 +1777,8 @@ public class VideoActivity extends PlaybackActivity implements Clock.Callback, C
         mKeyDown.resetScale();
         App.post(mR3, 2000);
         setRotate(false);
+        // 恢复竖屏详情按钮行（快搜/收藏/投屏/设置）
+        if (mBinding.detailActions != null) mBinding.detailActions.setVisibility(View.VISIBLE);
         hideControl();
     }
 
